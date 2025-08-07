@@ -15,7 +15,7 @@ import { enemyTemplates } from './data/enemies';
 import './App.css';
 
 function App() {
-    const [currentScene, setCurrentScene] = useState("scene2b");
+    const [currentScene, setCurrentScene] = useState("scene1");
     const [playerCharacter, setPlayerCharacter] = useState(initialCharacter);
     const [combatLog, setCombatLog] = useState([]);
     const [isShortResting, setIsShortResting] = useState(false);
