@@ -1,0 +1,32 @@
+/* src/components/CombatLog.css */
+
+.icon {
+    margin-right: 5px;
+}
+
+.damage-icon {
+    color: red; /* Icône rouge pour les dégâts subis */
+}
+
+.magic-icon {
+    color: #4A90E2; /* Une couleur bleue pour les sorts */
+}
+
+.heal-icon {
+    color: green; /* Vert pour le soin */
+}
+
+.miss-icon {
+    color: gray; /* Gris pour un coup raté */
+}
+
+/* Ajoutez d'autres styles pour les messages si vous le souhaitez */
+p.enemy-damage {
+    color: #cc0000;
+}
+p.player-damage {
+    color: #0066cc;
+}
+.victory-icon {
+    color: rgb(147, 235, 147); /* Ou une autre couleur festive */
+}

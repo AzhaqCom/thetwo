@@ -1,0 +1,157 @@
+export const enemyTemplates = {
+    gobelin: {
+        name: "Gobelin",
+        maxHP: 7,
+        currentHP: 7,
+        ac: 15,
+        xp: 50,
+        stats: {
+            force: 8,
+            dexterite:14,
+            constitution: 10,
+            intelligence: 10,
+            sagesse: 8,
+            charisme: 8,
+        },
+        attacks: [
+            {
+                name: "son Cimeterre",
+                type: "corps-à-corps",
+                attackBonus: 4,
+                reach: 1.5,
+                targets: 1,
+                damageDice: "1d6",
+                damageBonus: 2,
+                damageType: "tranchant",
+                description: "Attaque au corps à corps avec une arme : +4 au toucher, allonge 1,50 m, une cible. Touché : 5 (1d6 + 2) dégâts tranchants."
+            }
+        ],
+        image: "https://www.aidedd.org/dnd/images/goblin.jpg"
+    },
+    kobold: {
+        name: "Kobold",
+        maxHP: 5,
+        currentHP: 5,
+        ac: 12,
+        xp:25,
+        stats: {
+            force: 8,
+            dexterite: 15,
+            constitution: 10,
+            intelligence: 8,
+            sagesse: 8,
+            charisme: 8,
+        },
+        attacks: [
+            {
+                name: "sa Dague",
+                type: "corps-à-corps",
+                attackBonus: 4,
+                reach: 1,
+                targets: 1,
+                damageDice: "1d4",
+                damageBonus: 2,
+                damageType: "perforant",
+                description: "Attaque au corps à corps : +4 au toucher, allonge 1 m, une cible. Touché : 4 (1d4 + 2) dégâts perforants."
+            }
+        ],
+        image: "https://www.aidedd.org/dnd/images/kobold.jpg"
+    },
+    squelette: {
+        name: "Squelette",
+        maxHP: 13,
+        currentHP: 13,
+        ac: 13,
+        stats: {
+            force: 10,
+            dexterite: 14,
+            constitution: 15,
+            intelligence: 6,
+            sagesse: 8,
+            charisme: 5,
+        },
+        attacks: [
+            {
+                name: "son Epee courte",
+                type: "corps-à-corps",
+                attackBonus: 4,
+                reach: 1,
+                targets: 1,
+                damageDice: "1d6",
+                damageBonus: 2,
+                damageType: "perforant",
+                description: "Attaque au corps à corps : +4 au toucher, allonge 1 m, une cible. Touché : 4 (1d4 + 2) dégâts perforants."
+            }
+        ],
+        image: "https://www.aidedd.org/dnd/images/skeleton.jpg"
+    },
+    diable: {
+        name: "Diable épineux",
+        maxHP: 22,
+        currentHP: 22,
+        ac: 13,
+        stats: {
+            force: 10,
+            dexterite: 15,
+            constitution: 12,
+            intelligence: 11,
+            sagesse: 14,
+            charisme: 8,
+        },
+        attackSets: [
+            {
+                name: "Morsure et fourche",
+                attacks: [
+                    {
+                        name: "Morsure",
+                        type: "corps-à-corps",
+                        attackBonus: 2,
+                        damageDice: "2d4",
+                        damageBonus: 0,
+                        damageType: "tranchants",
+                        description: "Attaque avec ces crocs aceres"
+                    },
+                    {
+                        name: "Fourche",
+                        type: "corps-à-corps",
+                        attackBonus: 2,
+                        damageDice: "1d6",
+                        damageBonus: 0, // D'après la fiche, pas de bonus de dégâts
+                        damageType: "perforants",
+                        description: "Attaque avec une fourche"
+                    }
+                ]
+            },
+            {
+                name: "Double épine caudale",
+                attacks: [
+                    {
+                        name: "Épine caudale",
+                        type: "distance",
+                        attackBonus: 4,
+                        damageDice: "1d4",
+                        damageBonus: 2,
+                        damageType: "perforants",
+                        secondaryDamageDice: "1d6",
+                        secondaryDamageBonus: 0,
+                        secondaryDamageType: "feu",
+                        description: "Projette une épine de sa queue"
+                    },
+                    {
+                        name: "Épine caudale", // Une deuxième épine
+                        type: "distance",
+                        attackBonus: 4,
+                        damageDice: "1d4",
+                        damageBonus: 2,
+                        damageType: "perforants",
+                        secondaryDamageDice: "1d6",
+                        secondaryDamageBonus: 0,
+                        secondaryDamageType: "feu",
+                        description: "Projette une épine de sa queue"
+                    }
+                ]
+            }
+        ],
+        image: "https://www.aidedd.org/dnd/images/spined-devil.jpg"
+    }
+};
