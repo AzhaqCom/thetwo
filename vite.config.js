@@ -3,8 +3,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
+const base_path = process.env.VITE_APP_BASE_PATH || '';
+
 export default defineConfig({
   plugins: [react()],
-  base: '/rpg-textuel-react/', // C'est ici qu'il faut ajouter cette ligne
-})
+  base: base_path,
+});

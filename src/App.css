@@ -338,7 +338,9 @@ button:hover {
     margin: 0 0 5px 0;
     color: #f0e6d3;
 }
-
+.character-sheet .ability-score p{
+    margin: 0;
+}
 .character-sheet .proficiencies-and-skills,
 .character-sheet .spellcasting {
     margin-bottom: 15px;
