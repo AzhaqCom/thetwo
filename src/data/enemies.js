@@ -27,6 +27,33 @@ export const enemyTemplates = {
             }
         ],
         image: "https://www.aidedd.org/dnd/images/goblin.jpg"
+    }, mephiteBoueux: {
+        name: "Méphite boueux",
+        maxHP: 27,
+        currentHP: 27,
+        ac: 11,
+        stats: {
+            force: 8,
+            dexterite: 12,
+            constitution: 12,
+            intelligence: 9,
+            sagesse: 11,
+            charisme: 7
+        },
+        attacks: [
+            {
+                name: "Poing",
+                type: "corps-à-corps",
+                attackBonus: 3,
+                reach: 1.5,
+                targets: 1,
+                damageDice: "1d6",
+                damageBonus: 1,
+                damageType: "contondant",
+                description: "Attaque au corps à corps avec une arme : +3 au toucher, allonge 1,50 m, une créature. Touché : 4 (1d6 + 1) dégâts contondants."
+            }
+        ]
+        , image: "https://www.aidedd.org/dnd/images/mud-mephit.jpg"
     },
     kobold: {
         name: "Kobold",
