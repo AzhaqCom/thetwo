@@ -1,6 +1,14 @@
+export const spellSlotsByLevel = {
+    1: { 1: 2 },
+    2: { 1: 3 },
+    3: { 1: 4, 2: 2 },
+    4: { 1: 4, 2: 3 },
+    5: { 1: 4, 2: 3, 3: 2 }
+};
+
 export const character = {
     name: "Elarion",
-    level: 1, 
+    level: 1,
     currentXP: 0,
     race: "Haut Elfe",
     class: "Magicien",
@@ -14,12 +22,12 @@ export const character = {
     hitDice: 1,
     hitDiceType: 6,
     stats: {
-        force: 8,
-        dexterite: 14,
+        force: 10,
+        dexterite: 15,
         constitution: 12,
-        intelligence: 17,
+        intelligence: 16,
         sagesse: 13,
-        charisme: 10
+        charisme: 12
     },
     proficiencies: {
         saves: ["intelligence", "sagesse"],
@@ -27,12 +35,11 @@ export const character = {
     },
     spellcasting: {
         ability: "intelligence",
-        spellSlots: {
-            0: { total: Infinity, used: 0 }, // Les sorts mineurs ne coûtent pas d'emplacement
-            1: { total: 2, used: 0 }
-        },
-        // On ne stocke que les noms des sorts
+        spellSlots: {},
+        knownSpells: [], 
         cantrips: ["Projectile Magique", "Rayon de givre"],
-        preparedSpells: ["Armure du Mage"]
-    }, inventory: []
+        preparedSpells: ["Armure du Mage"] ,
+        activeSpells:{}
+    },
+    inventory: []
 };

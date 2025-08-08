@@ -1,11 +1,22 @@
-import React from 'react';
+// dans components/CharacterSheet.js
+
+import React, { useState } from 'react'; // <-- Importez useState
 import { getModifier } from '../components/utils/utils';
-import { spells } from '../data/spells';
 import { levels } from '../data/levels';
-import { HeartIcon } from './Icons';
-const CharacterSheet = ({ character, onUseItem }) => {
+import { HeartIcon } from './Icons'; // Assurez-vous que le chemin est correct
+
+const CharacterSheet = ({ character }) => {
+    // onUseItem et onCastSpell ne sont plus nécessaires ici
     const mod = getModifier;
     const stats = character.stats;
+
+    // Définissez l'état pour la visibilité des compétences
+    const [skillsVisible, setSkillsVisible] = useState(false);
+
+    // Fonction pour basculer la visibilité
+    const toggleSkills = () => {
+        setSkillsVisible(!skillsVisible);
+    };
 
     const getSaveBonus = (statName) => {
         const isProficient = character.proficiencies.saves.includes(statName);
@@ -16,19 +27,13 @@ const CharacterSheet = ({ character, onUseItem }) => {
         const isProficient = character.proficiencies.skills.includes(skillName);
         return mod(stats[baseStat]) + (isProficient ? character.proficiencyBonus : 0);
     };
-
     const getSpellAttackBonus = () => {
-        const abilityMod = mod(stats[character.spellcasting.ability]);
+        const abilityMod = mod(character.stats[character.spellcasting.ability]);
         return abilityMod + character.proficiencyBonus;
-    };
-
-    const getSpellSaveDC = () => {
-        return 8 + getSpellAttackBonus();
     };
     const nextLevelXP = levels[character.level + 1]?.xpRequired || character.currentXP;
     const currentLevelXP = levels[character.level].xpRequired;
     const xpProgress = nextLevelXP > currentLevelXP ? ((character.currentXP - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100 : 100;
-
 
     const skillToStat = {
         acrobaties: "dexterite",
@@ -92,92 +97,39 @@ const CharacterSheet = ({ character, onUseItem }) => {
                         />
                     </div>
                 </div>
-                <div className="stat-block">
-                    <span>Vitesse: {character.speed}</span>
-                </div>
             </div>
-            <div className="inventory">
-                <h4>Inventaire</h4>
-                <ul>
-                    {character.inventory.length === 0 ? (
-                        <li>Ton inventaire est vide.</li>
-                    ) : (
-                        character.inventory.map((item) => (
-                            <li key={item.id}>
-                                <strong>{item.name}</strong>: {item.description}
-                                <button onClick={() => onUseItem(item)}>Utiliser</button>
-                            </li>
-                        ))
-                    )}
-                </ul>
-            </div>
+
             <div className="abilities">
                 {Object.entries(stats).map(([statName, score]) => (
                     <div className="ability-score" key={statName}>
                         <h4>{statName.slice(0, 3).toUpperCase()}</h4>
                         <span>{score}</span>
                         <p>Mod: {mod(score) >= 0 ? `+${mod(score)}` : mod(score)}</p>
-                        <p>Sauvegarde: {getSaveBonus(statName) >= 0 ? `+${getSaveBonus(statName)}` : getSaveBonus(statName)}</p>
                     </div>
                 ))}
+                <div className="proficiencies">
+                    <p>Bonus de Maîtrise: +{character.proficiencyBonus}</p>
+                    <p>Bonus d'attaque : <span className="font-semibold">+{getSpellAttackBonus()}</span></p>
+                </div>
             </div>
 
-            <div className="proficiencies-and-skills">
-                <p>Bonus de Maîtrise: +{character.proficiencyBonus}</p>
-                <p>Initiative: {mod(stats.dexterite) >= 0 ? `+${mod(stats.dexterite)}` : mod(stats.dexterite)}</p>
 
-                <h4>Compétences</h4>
-                <ul>
-                    {Object.entries(skillToStat).map(([skill, stat]) => (
-                        <li key={skill}>
-                            <input type="checkbox" readOnly checked={character.proficiencies.skills.includes(skill)} />
-                            {skill.charAt(0).toUpperCase() + skill.slice(1)} ({stat.slice(0, 3).toUpperCase()}) :
-                            {getSkillBonus(skill, stat) >= 0 ? `+${getSkillBonus(skill, stat)}` : getSkillBonus(skill, stat)}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            <div className="spellcasting">
-                <h4>Sorts de Magicien</h4>
-                <p>Caractéristique : {character.spellcasting.ability.charAt(0).toUpperCase() + character.spellcasting.ability.slice(1)}</p>
-                <p>DD de Sauvegarde : {getSpellSaveDC()}</p>
-                <p>Bonus d'attaque : +{getSpellAttackBonus()}</p>
-
-                <h5>Emplacements de sorts</h5>
-                <ul>
-                    {Object.entries(character.spellcasting.spellSlots).map(([level, slots]) => (
-                        // On n'affiche pas le niveau 0 car il est infini
-                        level !== "0" && (
-                            <li key={level}>
-                                Niv. {level}: {slots.used}/{slots.total}
+            <div className="skills">
+                <h4 onClick={toggleSkills} style={{ cursor: 'pointer' }}>
+                    Compétences {skillsVisible ? '▼' : '►'} {/* Ajout d'un indicateur visuel */}
+                </h4>
+                {skillsVisible && ( // <-- La liste n'est rendue que si skillsVisible est true
+                    <ul>
+                        {Object.entries(skillToStat).map(([skill, stat]) => (
+                            <li key={skill}>
+                                <input type="checkbox" readOnly checked={character.proficiencies.skills.includes(skill)} />
+                                {skill.charAt(0).toUpperCase() + skill.slice(1)} ({stat.slice(0, 3).toUpperCase()}) :
+                                {getSkillBonus(skill, stat) >= 0 ? `+${getSkillBonus(skill, stat)}` : getSkillBonus(skill, stat)}
                             </li>
-                        )
-                    ))}
-                </ul>
-
-                <h5>Sorts Mineurs (Cantrips)</h5>
-                <ul>
-                    {character.spellcasting.cantrips.map((spellName, index) => (
-                        <li key={index}>
-                            <strong>{spellName}</strong>: {spells[spellName]?.description}
-                        </li>
-                    ))}
-                </ul>
-
-                <h5>Sorts Préparés</h5>
-                <ul>
-                    {character.spellcasting.preparedSpells.map((spellName, index) => {
-                        const spell = spells[spellName];
-                        return (
-                            <li key={index}>
-                                <strong>{spell.name}</strong> (Niv. {spell.level}, {spell.school}): {spell.description}
-                            </li>
-                        );
-                    })}
-                </ul>
+                        ))}
+                    </ul>
+                )}
             </div>
-
         </div>
     );
 };

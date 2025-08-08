@@ -1,216 +1,254 @@
 export const scenes = {
     "scene1": {
-        text: `Tu es Elarion, un jeune magicien haut-elfe de la cité d’Ilveras. Tes cheveux argentés tombent en mèches fines autour de ton visage pâle et élégant, et tes yeux d’un bleu profond reflètent la curiosité insatiable qui t’anime.  
-Tu portes une robe de mage bleu nuit, brodée de runes argentées qui scintillent à la lumière, et un sac contenant tes parchemins et tes instruments d’érudit.  
-Ilveras est une cité ancienne, bâtie sur des falaises dominant la mer. Les tours de cristal de l’Académie des Arcanes s’élèvent au centre, tandis que les ruelles pavées, les fontaines chantantes et les jardins suspendus témoignent de la grandeur passée de ce royaume elfique.  
-Aujourd’hui, tu te trouves dans la grande bibliothèque de l’Académie, le cœur de ton apprentissage. Les étagères s’étendent jusqu’au plafond, remplies de parchemins et de grimoires poussiéreux. Une étrange lueur émane d’un vieux manuscrit sur un pupitre isolé. L’air semble vibrer d’une magie ancienne.`,
+        text: `Tu es Elarion, un jeune magicien haut-elfe de la cité d'Ilveras. Tes cheveux argentés tombent en mèches fines autour de ton visage pâle et élégant, et tes yeux d'un bleu profond reflètent la curiosité insatiable qui t'anime. 
+Tu portes une robe de mage bleu nuit, brodée de runes argentées qui scintillent à la lumière, et un sac contenant tes parchemins et tes instruments d'érudit. 
+Ilveras est une cité ancienne, bâtie sur des falaises dominant la mer. Les tours de cristal de l'Académie des Arcanes s'élèvent au centre, tandis que les ruelles pavées, les fontaines chantantes et les jardins suspendus témoignent de la grandeur passée de ce royaume elfique. 
+Aujourd'hui, tu te trouves dans la grande bibliothèque de l'Académie, le cœur de ton apprentissage. Les étagères s'étendent jusqu'au plafond, remplies de parchemins et de grimoires poussiéreux. Une étrange lueur émane d'un vieux manuscrit sur un pupitre isolé. L'air semble vibrer d'une magie ancienne.`,
         choices: [
             { text: "Approcher et lire le manuscrit", next: "scene2a" },
-            { text: "Explorer les étagères à la recherche d’un savoir oublié", next: "scene2b" },
-            { text: "Ignorer le manuscrit et sortir dans les jardins de l’académie", next: "scene2c" }
+            { text: "Explorer les étagères à la recherche d'un savoir oublié", next: "scene2b" },
+            { text: "Ignorer le manuscrit et sortir dans les jardins de l'académie", next: "scene2c" }
         ]
     },
     "scene2a": {
-        text: `La page s’écrit sous tes yeux. Un symbole brûlant se grave sur ta paume. Tu perds connaissance quelques instants.  
+        text: `La page s'écrit sous tes yeux. Un symbole brûlant se grave sur ta paume. Tu perds connaissance quelques instants. 
 À ton réveil, le manuscrit est fermé et tout semble calme, mais ton esprit est étrangement éveillé.`,
         choices: [
             { text: "Continuer l'exploration de la bibliothèque", next: "scene3" }
         ]
     },
     "scene2b": {
-        text: `En fouillant les étagères, tu trouves un ancien parchemin. Tu le range alors dans ta sacoche.`,
+        text: `En fouillant les étagères, tu trouves un ancien parchemin qui semble te murmurer des secrets. Il est d'une grande valeur pour un érudit comme toi.`,
         choices: [
-            { text: "Prendre le parchemin et continuer", next: {
-                type: "item",
-                item: "scrollOfIntelligence", // Le nom de l'objet à donner
-                nextScene: "scene3"
-            } }
+            {
+                text: "Prendre le parchemin et continuer",
+                next: { type: "item", item: "scrollOfIntelligence", nextScene: "scene3" }
+            }
         ]
     },
     "scene2c": {
-        text: `Tu ignores le manuscrit et sors dans les jardins suspendus de l’académie. L’air est frais et les fleurs exhalent un parfum mystérieux.  
+        text: `Tu ignores le manuscrit et sors dans les jardins suspendus de l'académie. L'air est frais et les fleurs exhalent un parfum mystérieux. 
 Cependant, une étrange sensation de chaleur sur ta main gauche te fait découvrir un symbole magique gravé dans ta paume.`,
         choices: [
             { text: "Continuer vers la sortie de l'académie", next: "scene3" }
         ]
     },
     "scene3": {
-        text: `Alors que tu quittes l'académie, la route se rétrécit et deux gobelins surgissent d’un buisson, armes brandies !`,
+        text: `Alors que tu quittes l'académie, la route se rétrécit et deux gobelins, au sourire dément, surgissent d'un buisson, armes brandies ! Ils semblent prêts à en découdre.`,
         choices: [
             {
                 text: "En Garde !",
-                action: (onChoice) => {
-                    // On passe un objet qui décrit la rencontre
-                    onChoice({
-                        type: 'combat',
-                        enemies: [
-                            { type: 'gobelin', count: 2 }
-                        ], next: 'scene4'
-                    });
+                action: {
+                    type: 'combat',
+                    enemies: [{ type: 'gobelin', count: 2 }],
+                    next: 'scene4'
                 }
             }
         ]
     },
     "scene4": {
-        text: `Après le combat, tu arrives dans une clairière tranquille avec une fontaine cristalline. L'endroit est parfait pour un court repos ou pour méditer.`,
+        text: `Après le combat, tu arrives dans une clairière tranquille avec une fontaine cristalline qui chante doucement. L'endroit est parfait pour un court repos ou pour méditer.`,
         choices: [
-            // CORRECTION : on utilise maintenant un objet action pour le repos court
             {
-                text: "Faire un repos court",
+                text: "Faire un repos court (récupère des PV)",
                 action: { type: 'shortRest', nextScene: "scene5" }
             },
             { text: "Continuer l'exploration", next: "scene5" }
         ]
     },
     "scene5": {
-        text: `Tu pénètres dans une forêt mystérieuse. Des murmures magiques semblent flotter dans l’air. Deux chemins se présentent devant toi : l'un plus sombre, l'autre bordé de fleurs luminescentes.`,
+        text: `Tu pénètres dans une forêt mystérieuse. Des murmures magiques semblent flotter dans l'air, des créatures invisibles t'observent. Deux chemins se présentent devant toi : l'un plus sombre et escarpé, l'autre bordé de fleurs luminescentes.`,
         choices: [
-            { text: "Prendre le chemin sombre", next: "scene6a" },
-            { text: "Prendre le chemin lumineux", next: "scene6b" }
+            { text: "Prendre le chemin sombre", next: "scene6" },
+            { text: "Prendre le chemin lumineux", next: "scene6" }
+        ]
+    },
+    "scene6": {
+        text: `En arrivant devant un pont ancien, tu aperçois un symbole gravé dans la pierre. Il représente un blason oublié de la fondation de l'Académie, mais l'histoire derrière ce symbole a été perdue au fil du temps.`,
+        choices: [
+            {
+                text: "Essayer de se souvenir de l'histoire du blason",
+                action: {
+                    type: 'skillCheck',
+                    skill: 'histoire',
+                    dc: 15,
+                    onSuccess: "scene6a",
+                    onPartialSuccess: "scene6b",
+                    onFailure: "scene6c"
+                }
+            },
+            {
+                text: "Ignorer le blason et traverser le pont",
+                next: "scene7"
+            }
         ]
     },
     "scene6a": {
-        text: `Le chemin sombre te mène à un cercle de pierres anciennes, gravées de runes incompréhensibles. Une énigme semble t’attendre.`,
+        text: `Grâce à tes vastes connaissances, tu te souviens parfaitement que ce blason appartient à l'un des fondateurs originels de l'Académie, un mage excentrique qui a scellé un passage secret derrière le pont. Tu découvres un mécanisme caché et un passage s'ouvre, révélant un coffre.`,
         choices: [
-            { text: "Essayer de résoudre l'énigme", next: "scene7" },
-            { text: "Contourner le cercle", next: "scene7" }
+            {
+                text: "Ouvrir le coffre",
+                next: { type: "item", item: "potionVieSup", nextScene: "scene7" }
+            }
         ]
     },
     "scene6b": {
-        text: `Le chemin lumineux te conduit à une clairière remplie de fleurs qui émettent une lueur douce. Soudain, un piège magique se déclenche, envoyant des éclairs autour de toi !`,
+        text: `Tu te souviens que ce blason est lié aux fondateurs de l'Académie, mais tu ne parviens pas à te souvenir des détails précis. En tâtonnant autour de la pierre, tu sens une légère vibration, mais tu ne parviens pas à activer le mécanisme. Tu continues ton chemin.`,
         choices: [
-            { text: "Esquiver les éclairs", next: "scene7" }
+            {
+                text: "Continuer l'exploration",
+                next: "scene7"
+            }
+        ]
+    },
+    "scene6c": {
+        text: `Le blason ne te dit absolument rien. En touchant la pierre, une décharge électrique te parcourt, te laissant un peu étourdi. Il vaut mieux ne pas insister et continuer.`,
+        choices: [
+            {
+                text: "Continuer l'exploration",
+                next: "scene7"
+            }
         ]
     },
     "scene7": {
-        text: `Tu découvres un petit trésor dissimulé : une potion de soins et un parchemin contenant un sort offensif de niveau 1.`,
+        text: `Après avoir traversé le pont, tu découvres un petit trésor dissimulé dans une crevasse : une potion de soins et un parchemin de force.`,
         choices: [
-            { text: "Prendre le trésor et continuer", next: "scene8" }
+            {
+                text: "Prendre ces précieux objets !",
+                next: {
+                    type: "item",
+                    item: ["potionOfHealing", "scrollOfIntelligence"],
+                    nextScene: "scene8"
+                }
+            }
         ]
     },
     "scene8": {
-        text: `Un jeune apprenti mage apparaît. Il te propose de l’accompagner pour trouver une relique perdue dans les ruines de l’ancienne cité.`,
+        text: `Un jeune apprenti mage, l'air perdu, apparaît sur ton chemin. Il te propose de l'accompagner pour trouver une relique perdue dans les ruines de l'ancienne cité. Tu sens qu'il a besoin d'aide.`,
         choices: [
             { text: "Accepter la proposition", next: "scene9" },
             { text: "Refuser et continuer seul", next: "scene9" }
         ]
     },
     "scene9": {
-        text: `Tu arrives aux ruines anciennes. L’air est chargé de magie. Les murs effondrés laissent deviner d’anciens secrets.`,
+        text: `Tu arrives aux ruines anciennes, où les murs effondrés laissent deviner d'anciens secrets. L'air est chargé de magie, mais aussi d'une étrange odeur de mort.`,
         choices: [
             { text: "Explorer les ruines", next: "scene10" },
-            { text: "continuer ma route", next: "scene12" }
+            { text: "Continuer ma route", next: "scene12" }
         ]
     },
     "scene10": {
-        text: `Une créature magique mineure surgit ! Un kobold spectral t’attaque.`,
+        text: `Une créature tout droit venue des profondeurs apparaît ! Une goule assoifée de sang t'attaque, accompagnée de deux squelettes. L'odeur de décomposition est insoutenable.`,
         choices: [
             {
                 text: "Engager le combat",
-                action: (onChoice) => {
-                    // On passe un objet qui décrit la rencontre
-                    onChoice({
-                        type: 'combat',
-                        enemies: [
-                            { type: 'kobold', count: 1 }
-                        ], next: 'scene11'
-                    });
+                action: {
+                    type: 'combat',
+                    enemies: [
+                        
+                        { type: 'squelette', count: 2 }
+                    ],
+                    next: 'scene11'
                 }
             }
         ]
     },
     "scene11": {
-        text: `Après le combat, tu installes un camp improvisé pour un court repos.`,
+        text: `Après le combat, tu trouves un endroit relativement sûr pour t'installer. C'est l'occasion de te remettre de tes blessures et de reprendre ton souffle.`,
         choices: [
-
             {
-                text: "Faire un repos court",
+                text: "Faire un repos court (récupère des PV)",
                 action: { type: 'shortRest', nextScene: "scene12" }
             },
-            { text: "Continuer l'exploration", next: "scene12" }
+            {
+                text: "Faire un repos long (récupère tous les PV et les ressources de classe)",
+                action: { type: 'longRest', nextScene: "scene12" }
+            }
         ]
     },
     "scene12": {
-        text: `En continuant, tu découvres un artefact ancien qui augmente temporairement ton intelligence.`,
+        text: `En continuant ton chemin, tu découvres un artefact ancien. C'est un Parchemin de Vitalité qui augmente la résistance de celui qui le lit.`,
         choices: [
-            { text: "Prendre l'artefact", next: "scene13" }
+            {
+                text: "Prendre le parchemin",
+                next: { type: "item", item: "scrollOfConstitution", nextScene: "scene13" }
+            }
         ]
     },
     "scene13": {
-        text: `Un sentier mène à une caverne mystérieuse. L’air est épais et chargé de magie.`,
+        text: `Un sentier mène à une caverne mystérieuse. L'air est épais et chargé de magie. Une odeur de souffre en émane. Tu as l'occasion de prendre un long repos avant d'entrer.`,
         choices: [
-
             {
-                text: "Faire un repos long avant d'entrer",
+                text: "Faire un repos long (récupère tous les PV et les ressources de classe)",
                 action: { type: 'longRest', nextScene: "scene14" }
             }
         ]
     },
     "scene14": {
-        text: `Deux gobelins surgissent des ombres pour t'attaquer.`,
+        text: `À l'intérieur de la caverne, deux diablotins surgissent des ombres tout feu tout flammes pour t'attaquer. Ils gardent l'entrée de la salle principale.`,
         choices: [
             {
                 text: "Engager le combat",
-                action: (onChoice) => {
-                    onChoice({
-                        type: 'combat',
-                        enemies: [
-                            { type: 'gobelin', count: 2 }
-                        ], next: 'scene15'
-                    });
+                action: {
+                    type: 'combat',
+                    enemies: [{ type: 'diablotins', count: 2 }],
+                    next: 'scene15'
                 }
             }
         ]
     },
     "scene15": {
-        text: `Après le combat, tu trouves un lac magique parfait pour un repos long.`,
+        text: `Après le combat, tu trouves un lac magique qui scintille dans l'obscurité. L'endroit est parfait pour te régénérer complètement.`,
         choices: [
-            // CORRECTION : on utilise maintenant un objet action pour le repos long
-            { text: "Faire un repos long", action: { type: 'longRest', nextScene: "scene16" } },
+            {
+                text: "Faire un repos long (récupère tous les PV et les ressources de classe)",
+                action: { type: 'longRest', nextScene: "scene16" }
+            },
             { text: "Continuer l'exploration", next: "scene16" }
         ]
     },
     "scene16": {
-        text: `Tu explores un ancien temple avec des runes mystiques gravées dans les murs.`,
+        text: `Tu explores un ancien temple avec des runes mystiques gravées dans les murs. Tu sens une énergie démoniaque émaner d'une des runes.`,
         choices: [
             { text: "Étudier les runes", next: "scene17" },
             { text: "Ignorer et avancer", next: "scene17" }
         ]
     },
     "scene17": {
-        text: `Un Diable épineux apparaît pour tester ta maîtrise des sorts.`,
+        text: `Un Diable épineux apparaît pour tester ta maîtrise des sorts. Il te défie d'un regard brûlant.`,
         choices: [
             {
                 text: "Combattre le Diable épineux",
-                action: (onChoice) => {
-                    onChoice({
-                        type: 'combat',
-                        enemies: [
-                            { type: 'diable', count: 1 }
-                        ],
-                        next: "scene18"
-                    });
+                action: {
+                    type: 'combat',
+                    enemies: [{ type: 'diable', count: 1 }],
+                    next: "scene18"
                 }
             }
         ]
     },
     "scene18": {
-        text: `Après la bataille, tu trouves des parchemins rares contenant des sorts offensifs.`,
+        text: `Après la bataille, tu trouves un parchemin améliorant ton agilité, ainsi que des notes sur l'art de la prestidigitation.`,
         choices: [
-            { text: "Prendre les parchemins", next: "scene19" }
+            {
+                text: "Prendre les parchemins",
+                next: { type: "item", item: ["scrollOfDexterity","bookArtHeal"], nextScene: "scene19" }
+            }
         ]
     },
     "scene19": {
-        text: `Un maître de l'académie te retrouve et t'accorde un bonus pour ton apprentissage. Ton intelligence et ton dextérité augmentent légèrement.`,
+        text: `Un maître de l'académie te retrouve, impressionné par tes exploits. Il t'accorde un bonus pour ton apprentissage. Ton intelligence et ta dextérité augmentent légèrement.`,
         choices: [
-            { text: "Remercier le maître et continuer", next: "scene20" }
+            {
+                text: "Prendre les parchemins",
+                next: { type: "item", item: ["scrollOfDexterity", "scrollOfIntelligence"], nextScene: "scene20" }
+            }
         ]
     },
     "scene20": {
         text: `Le prologue se termine. Tu es prêt à partir pour de nouvelles aventures, fort de ton apprentissage et de tes découvertes.`,
         choices: [
-            { text: "Commencer l'aventure principale", next: "prologue-end" }
+            { text: "Commencer l'aventure principale", next: "scene1" }
         ]
     }
 };
-

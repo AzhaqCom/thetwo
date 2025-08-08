@@ -1,9 +1,9 @@
-// src/App.jsx
-
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { scenes } from './data/scenes';
-import { character as initialCharacter } from './data/character';
+import { character as initialCharacter, spellSlotsByLevel } from './data/character';
 import CharacterSheet from './components/CharacterSheet';
+import InventoryPanel from './components/InventoryPanel';
+import SpellcastingPanel from './components/SpellcastingPanel';
 import CombatLog from './components/CombatLog';
 import Scene from './components/Scene';
 import CombatPanel from './components/combat/CombatPanel';
@@ -12,7 +12,31 @@ import LongRestPanel from './components/LongRestPanel';
 import { items } from './data/items';
 import { levels } from './data/levels';
 import { enemyTemplates } from './data/enemies';
+import { spells } from './data/spells';
+import { getModifier } from './components/utils/utils';
 import './App.css';
+
+// Définition de skillToStat pour une utilisation plus large
+const skillToStat = {
+    acrobaties: "dexterite",
+    arcane: "intelligence",
+    athletisme: "force",
+    discretion: "dexterite",
+    dressage: "sagesse",
+    escamotage: "dexterite",
+    histoire: "intelligence",
+    intimidation: "charisme",
+    intuition: "sagesse",
+    investigation: "intelligence",
+    medecine: "sagesse",
+    nature: "intelligence",
+    perception: "sagesse",
+    persuasion: "charisme",
+    religion: "intelligence",
+    representation: "charisme",
+    survie: "sagesse",
+    tromperie: "charisme"
+};
 
 function App() {
     const [currentScene, setCurrentScene] = useState("scene1");
@@ -22,12 +46,46 @@ function App() {
     const [isLongResting, setIsLongResting] = useState(false);
     const [nextSceneAfterRest, setNextSceneAfterRest] = useState(null);
     const [combatKey, setCombatKey] = useState(0);
+
     const addCombatMessage = useCallback((message, type = 'default') => {
         setCombatLog(prevLog => [...prevLog, { message, type }]);
     }, []);
 
-    const handleCombatVictory = useCallback((defeatedEncounterData) => {
+    useEffect(() => {
+        const getSpellSlotsForLevel = (level) => {
+            const slots = spellSlotsByLevel[level];
+            if (!slots) {
+                return {};
+            }
 
+            const newSlots = {};
+            for (const spellLevel in slots) {
+                newSlots[spellLevel] = { total: slots[spellLevel], used: 0 };
+            }
+            return newSlots;
+        };
+
+        const getKnownSpells = (level) => {
+            const slots = spellSlotsByLevel[level];
+            const maxSpellLevel = slots ? Math.max(...Object.keys(slots).map(Number)) : 0;
+            const cantrips = Object.values(spells).filter(spell => spell.level === 0).map(spell => spell.name);
+            const leveledSpells = Object.values(spells)
+                .filter(spell => spell.level > 0 && spell.level <= maxSpellLevel)
+                .map(spell => spell.name);
+            return [...cantrips, ...leveledSpells];
+        };
+
+        setPlayerCharacter(prev => ({
+            ...prev,
+            spellcasting: {
+                ...prev.spellcasting,
+                spellSlots: getSpellSlotsForLevel(prev.level),
+                knownSpells: getKnownSpells(prev.level)
+            }
+        }));
+    }, [playerCharacter.level]);
+
+    const handleCombatVictory = useCallback((defeatedEncounterData) => {
         const totalXPGained = defeatedEncounterData.reduce((sum, encounter) => {
             const enemyTemplate = enemyTemplates[encounter.type];
             if (enemyTemplate) {
@@ -36,30 +94,30 @@ function App() {
             return sum;
         }, 0);
 
-        setPlayerCharacter(prevCharacter => {
-            let newXP = prevCharacter.currentXP + totalXPGained;
-            let newLevel = prevCharacter.level;
+        let newXP = playerCharacter.currentXP + totalXPGained;
+        let newLevel = playerCharacter.level;
 
-            const nextLevelXP = levels[newLevel + 1]?.xpRequired;
-            if (nextLevelXP && newXP >= nextLevelXP) {
-                newLevel++;
-                addCombatMessage(`Tu as atteint le niveau ${newLevel} !`, 'level-up');
-            }
+        const levelUpMessages = [];
+        while (levels[newLevel + 1] && newXP >= levels[newLevel + 1].xpRequired) {
+            newLevel++;
+            levelUpMessages.push(`Tu as atteint le niveau ${newLevel} !`);
+        }
 
-            return {
-                ...prevCharacter,
-                currentXP: newXP,
-                level: newLevel,
-            };
-        });
-
+        levelUpMessages.forEach(msg => addCombatMessage(msg, 'level-up'));
         if (totalXPGained > 0) {
             addCombatMessage(`Tu as gagné ${totalXPGained} points d'expérience.`, 'xp-gain');
         }
 
+        setPlayerCharacter(prevCharacter => ({
+            ...prevCharacter,
+            currentXP: newXP,
+            level: newLevel,
+        }));
+        
         const nextScene = currentScene.next || "sceneFallback";
         setCurrentScene(nextScene);
-    }, [currentScene, addCombatMessage]);
+    }, [currentScene, playerCharacter, addCombatMessage]);
+
     const handlePlayerTakeDamage = useCallback((damage, message) => {
         setPlayerCharacter(prev => {
             const newHP = Math.max(0, prev.currentHP - damage);
@@ -67,24 +125,27 @@ function App() {
             return { ...prev, currentHP: newHP };
         });
     }, [addCombatMessage]);
-    const handleItemGain = useCallback((itemName) => {
-        const itemToAdd = items[itemName];
-        if (itemToAdd) {
-            setPlayerCharacter(prev => ({
-                ...prev,
-                inventory: [...prev.inventory, { ...itemToAdd, id: Date.now() + Math.random() }] // Ajout d'un ID unique
-            }));
-            addCombatMessage(`Tu as trouvé un(e) ${itemToAdd.name} ! Il a été ajouté à ton inventaire.`, 'item-gain');
-        }
-    }, [addCombatMessage]);
+
+    const handleItemGain = useCallback((itemNames) => {
+        const itemsToProcess = Array.isArray(itemNames) ? itemNames : [itemNames];
+
+        itemsToProcess.forEach(itemName => {
+            const itemToAdd = items[itemName];
+            if (itemToAdd) {
+                setPlayerCharacter(prev => ({
+                    ...prev,
+                    inventory: [...prev.inventory, { ...itemToAdd, id: Date.now() + Math.random() }]
+                }));
+                addCombatMessage(`Tu as trouvé un(e) ${itemToAdd.name} ! Il a été ajouté à ton inventaire.`, 'item-gain');
+            }
+        });
+    }, [addCombatMessage, items, setPlayerCharacter]);
 
     const handleUseItem = useCallback((itemToUse) => {
         if (itemToUse.type === 'consumable') {
-            // Applique l'effet de l'objet
             const updatedCharacter = itemToUse.use(playerCharacter);
             setPlayerCharacter({
                 ...updatedCharacter,
-                // Supprime l'objet de l'inventaire
                 inventory: playerCharacter.inventory.filter(item => item.id !== itemToUse.id)
             });
 
@@ -94,6 +155,7 @@ function App() {
             addCombatMessage(`L'objet ${itemToUse.name} ne peut pas être utilisé.`, 'info');
         }
     }, [playerCharacter, addCombatMessage]);
+
     const resetCharacter = useCallback(() => {
         setPlayerCharacter(prev => {
             const healedCharacter = {
@@ -113,11 +175,12 @@ function App() {
             return healedCharacter;
         });
     }, [setPlayerCharacter]);
+
     const handleReplayCombat = useCallback(() => {
         resetCharacter();
         setCombatLog([]);
         setCombatKey(prevKey => prevKey + 1);
-    }, [resetCharacter, setCombatLog, currentScene]);
+    }, [resetCharacter, setCombatLog]);
 
     const handlePlayerCastSpell = useCallback((spell) => {
         if (spell.level > 0) {
@@ -139,7 +202,80 @@ function App() {
         return true;
     }, [playerCharacter, addCombatMessage, setPlayerCharacter]);
 
-    // Fonction unifiée pour démarrer un repos court
+    const handleCastSpellOutOfCombat = useCallback((spellName) => {
+        const spell = spells[spellName];
+
+        if (!spell) {
+            addCombatMessage(`Sort "${spellName}" introuvable.`, 'error');
+            return;
+        }
+
+        if (!spell.castableOutOfCombat) {
+            addCombatMessage(`${spell.name} ne peut pas être lancé hors combat.`, 'info');
+            return;
+        }
+
+        if (spell.level > 0) {
+            const spellSlots = playerCharacter.spellcasting.spellSlots[spell.level];
+            if (!spellSlots || spellSlots.used >= spellSlots.total) {
+                addCombatMessage(`Tu n'as plus d'emplacement de sort de niveau ${spell.level} disponible pour lancer ${spell.name}.`, 'info');
+                return;
+            }
+        }
+
+        let updatedCharacter = { ...playerCharacter };
+        let castSuccess = true;
+
+        switch (spellName) {
+            case "Armure du Mage":
+                const dexModifier = Math.floor((playerCharacter.stats.dexterite - 10) / 2);
+                updatedCharacter.ac = 13 + dexModifier;
+                addCombatMessage(`Tu as lancé ${spell.name} ! Ta Classe d'Armure est maintenant de ${updatedCharacter.ac}.`, 'spell-cast');
+                updatedCharacter.activeSpells = { ...updatedCharacter.activeSpells, "Armure du Mage": true };
+                break;
+            default:
+                addCombatMessage(`${spell.name} a été lancé. (Effet non implémenté hors combat)`, 'spell-cast');
+                break;
+        }
+
+        if (spell.level > 0 && castSuccess) {
+            const newSpellSlots = { ...updatedCharacter.spellcasting.spellSlots };
+            newSpellSlots[spell.level] = {
+                ...newSpellSlots[spell.level],
+                used: newSpellSlots[spell.level].used + 1
+            };
+            updatedCharacter.spellcasting = {
+                ...updatedCharacter.spellcasting,
+                spellSlots: newSpellSlots
+            };
+        }
+
+        setPlayerCharacter(updatedCharacter);
+
+    }, [playerCharacter, addCombatMessage, setPlayerCharacter]);
+
+    const handlePrepareSpell = useCallback((spellName) => {
+        const spell = spells[spellName];
+        if (!spell) {
+            addCombatMessage(`Sort "${spellName}" introuvable.`, 'error');
+            return;
+        }
+        
+        if (!playerCharacter.spellcasting.preparedSpells.includes(spellName)) {
+            setPlayerCharacter(prev => ({
+                ...prev,
+                spellcasting: {
+                    ...prev.spellcasting,
+                    preparedSpells: [...prev.spellcasting.preparedSpells, spellName]
+                }
+            }));
+            addCombatMessage(`${spell.name} a été ajouté à tes sorts préparés.`);
+        } else {
+            addCombatMessage(`${spell.name} est déjà préparé.`);
+        }
+    }, [playerCharacter, addCombatMessage, setPlayerCharacter]);
+
+
     const startShortRest = useCallback((nextScene) => {
         addCombatMessage("Tu as commencé un repos court pour te soigner.");
         setIsShortResting(true);
@@ -169,15 +305,14 @@ function App() {
         setNextSceneAfterRest(null);
     }, [addCombatMessage, nextSceneAfterRest]);
 
-    // Fonction unifiée pour démarrer un repos long
     const startLongRest = useCallback((nextScene) => {
         addCombatMessage("Tu as trouvé un endroit sûr et te prépares pour un long repos.");
         setIsLongResting(true);
         setNextSceneAfterRest(nextScene);
     }, [addCombatMessage]);
 
-    // Fonction qui gère la guérison et la transition de scène du repos long
     const handleLongRest = useCallback(() => {
+        addCombatMessage("Tu te sens revigoré ! Tous tes PV et emplacements de sorts ont été restaurés.", 'heal');
         setPlayerCharacter(prev => {
             const healedCharacter = {
                 ...prev,
@@ -195,12 +330,47 @@ function App() {
             };
             return healedCharacter;
         });
-
-        addCombatMessage("Tu te sens revigoré ! Tous tes PV et emplacements de sorts ont été restaurés.", 'heal');
         setIsLongResting(false);
         setCurrentScene(nextSceneAfterRest);
         setNextSceneAfterRest(null);
     }, [addCombatMessage, nextSceneAfterRest]);
+
+    // Nouvelle fonction pour gérer les tests de compétence
+    const handleSkillCheck = useCallback((skill, dc, onSuccess, onPartialSuccess, onFailure) => {
+        // Obtenir la statistique associée à la compétence
+        const statName = skillToStat[skill];
+        const statValue = playerCharacter.stats[statName];
+        const statModifier = getModifier(statValue);
+        
+        // Vérifier si le personnage est compétent
+        const isProficient = playerCharacter.proficiencies.skills.includes(skill);
+        const proficiencyBonus = isProficient ? playerCharacter.proficiencyBonus : 0;
+        
+        // Calculer le bonus total pour la compétence
+        const skillBonus = statModifier + proficiencyBonus;
+
+        // Lancer un dé D20
+        const roll = Math.floor(Math.random() * 20) + 1;
+        const totalRoll = roll + skillBonus;
+        
+        addCombatMessage(`Tu lances un dé pour la compétence ${skill} (${statName}). Ton résultat est de ${roll} + ${skillBonus} (bonus de compétence) = ${totalRoll}. Le DD est de ${dc}.`, 'skill-check');
+
+        let nextScene = onFailure;
+
+        // Déterminer le résultat du test
+        if (totalRoll >= dc) {
+            nextScene = onSuccess;
+            addCombatMessage("Réussite ! Tu as réussi le test de compétence.");
+        } else if (totalRoll >= (dc - 5) && onPartialSuccess) {
+            nextScene = onPartialSuccess;
+            addCombatMessage("Réussite partielle. Tu n'as pas réussi totalement, mais tu as un indice ou une petite récompense.");
+        } else {
+            nextScene = onFailure;
+            addCombatMessage("Échec. Tu n'as pas réussi le test de compétence.");
+        }
+        
+        setCurrentScene(nextScene);
+    }, [playerCharacter, addCombatMessage]);
 
     const renderCurrentScene = () => {
         if (isLongResting) {
@@ -244,40 +414,67 @@ function App() {
                 <Scene
                     text={currentSceneData.text}
                     choices={currentSceneData.choices}
-
                     onChoice={(nextAction) => {
-                        if (typeof nextAction === 'string') {
-                            setCurrentScene(nextAction);
-                        } else if (typeof nextAction === 'object' && nextAction.type === 'combat') {
-                            setCurrentScene(nextAction);
-                        } else if (typeof nextAction === 'object' && nextAction.type === 'longRest') {
-                            startLongRest(nextAction.nextScene);
-                        } else if (typeof nextAction === 'object' && nextAction.type === 'shortRest') {
-                            startShortRest(nextAction.nextScene);
-                        } else if (typeof nextAction === 'object' && nextAction.type === 'item') { // NOUVEAU : Gère le gain d'objet
-                            handleItemGain(nextAction.item);
-                            if (nextAction.nextScene) {
-                                setCurrentScene(nextAction.nextScene);
+                        const action = typeof nextAction === 'function' ? nextAction() : nextAction;
+
+                        if (typeof action === 'string') {
+                            setCurrentScene(action);
+                        } else if (typeof action === 'object') {
+                            switch (action.type) {
+                                case 'combat':
+                                    setCurrentScene({ ...action, next: action.next });
+                                    break;
+                                case 'longRest':
+                                    startLongRest(action.nextScene);
+                                    break;
+                                case 'shortRest':
+                                    startShortRest(action.nextScene);
+                                    break;
+                                case 'item':
+                                    handleItemGain(action.item);
+                                    if (action.nextScene) {
+                                        setCurrentScene(action.nextScene);
+                                    }
+                                    break;
+                                // Nouveau cas pour le test de compétence
+                                case 'skillCheck':
+                                    handleSkillCheck(
+                                        action.skill,
+                                        action.dc,
+                                        action.onSuccess,
+                                        action.onPartialSuccess,
+                                        action.onFailure
+                                    );
+                                    break;
+                                default:
+                                    console.warn("Type d'action inconnu :", action.type);
+                                    break;
                             }
-                        } else if (typeof nextAction === 'function') {
-                            nextAction(setCurrentScene, startShortRest, startLongRest, handleItemGain); // PASSE la nouvelle fonction
                         }
                     }}
                 />
             );
         }
 
-        return <p>Fin du jeu :)</p>;
+        return <p>Fin du jeu</p>;
     };
 
     return (
         <div className="game-container">
+            <div className="sidebar left-sidebar">
+                <InventoryPanel characterInventory={playerCharacter.inventory} onUseItem={handleUseItem} />
+                <SpellcastingPanel
+                    character={playerCharacter}
+                    onCastSpell={handleCastSpellOutOfCombat}
+                    onPrepareSpell={handlePrepareSpell}
+                />
+            </div>
             <div className="main-content">
                 {renderCurrentScene()}
                 <CombatLog logMessages={combatLog} />
             </div>
-            <div className="sidebar">
-                <CharacterSheet character={playerCharacter} onUseItem={handleUseItem} />
+            <div className="sidebar right-sidebar">
+                <CharacterSheet character={playerCharacter} />
             </div>
         </div>
     );

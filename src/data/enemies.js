@@ -4,10 +4,10 @@ export const enemyTemplates = {
         maxHP: 7,
         currentHP: 7,
         ac: 15,
-        xp: 50,
+        xp: 2550,
         stats: {
             force: 8,
-            dexterite:14,
+            dexterite: 14,
             constitution: 10,
             intelligence: 10,
             sagesse: 8,
@@ -33,7 +33,7 @@ export const enemyTemplates = {
         maxHP: 5,
         currentHP: 5,
         ac: 12,
-        xp:25,
+        xp: 25,
         stats: {
             force: 8,
             dexterite: 15,
@@ -57,11 +57,42 @@ export const enemyTemplates = {
         ],
         image: "https://www.aidedd.org/dnd/images/kobold.jpg"
     },
+    goule: {
+        name: "Goule",
+        maxHP: 22,
+        currentHP: 22,
+        ac: 12,
+        xp: 200,
+        stats: {
+            force: 13,
+            dexterite: 15,
+            constitution: 10,
+            intelligence: 7,
+            sagesse: 10,
+            charisme: 6,
+        },
+        attacks: [
+            {
+                name: "Griffes",
+                type: "corps-à-corps",
+                attackBonus: 4,
+                reach: 1.5,
+                targets: 1,
+                damageDice: "2d4",
+                damageBonus: 2,
+                damageType: "tranchant",
+                description: "Attaque au corps à corps avec une arme : +4 au toucher, allonge 1,50 m, une cible. Touché : 7 (2d4 + 2) dégâts tranchants. Si la cible est une créature autre qu'un elfe ou un mort-vivant, celle-ci doit réussir un jet de sauvegarde de Constitution DD 10 pour ne pas être paralysée pendant 1 minute. La cible peut relancer le jet de sauvegarde à la fin de chacun de ses tours, mettant fin à l'effet qui l'affecte en cas de réussite."
+            }
+
+        ],
+        image: 'https://www.aidedd.org/dnd/images/ghoul.jpg',
+    },
     squelette: {
         name: "Squelette",
         maxHP: 13,
         currentHP: 13,
         ac: 13,
+        xp: 50,
         stats: {
             force: 10,
             dexterite: 14,
@@ -85,11 +116,44 @@ export const enemyTemplates = {
         ],
         image: "https://www.aidedd.org/dnd/images/skeleton.jpg"
     },
+    diablotin: {
+        name: "Diablotin",
+        maxHP: 10,
+        currentHP: 10,
+        ac: 13,
+        xp: 200,
+        stats: {
+            force: 6,
+            dexterite: 17,
+            constitution: 13,
+            intelligence: 11,
+            sagesse: 12,
+            charisme: 14,
+        },
+        attacks: [
+            {
+
+                name: "Dard",
+                type: "corps-à-corps",
+                attackBonus: 5,
+                reach: 1,
+                targets: 1,
+                damageDice: "1d4",
+                damageBonus: 3,
+                damageType: "perforants",
+                description: "Attaque au corps à corps : +4 au toucher, allonge 1 m, une cible. Touché : 4 (1d4 + 2) dégâts perforants."
+            }
+
+        ],
+        image: "https://www.aidedd.org/dnd/images/imp.jpg"
+    }
+    ,
     diable: {
         name: "Diable épineux",
         maxHP: 22,
         currentHP: 22,
         ac: 13,
+        xp: 450,
         stats: {
             force: 10,
             dexterite: 15,
