@@ -6,6 +6,9 @@ body {
     margin: 0px;
     line-height: 1.6;
 }
+p{
+    margin: 5px;
+}
 .text-sm{
     font-size: 14px;
 }
@@ -13,16 +16,16 @@ body {
     display: flex;
     justify-content: space-between; /* Permet aux sidebars de se positionner aux extrémités */
     padding: 10px;
-    gap: 20px; /* Espace entre les colonnes */
+    gap: 15px; /* Espace entre les colonnes */
     height: 100vh; /* Prend toute la hauteur de la vue */
     box-sizing: border-box;
-    max-width: 1300px; /* Conservez votre max-width */
+    max-width: 1400px; /* Conservez votre max-width */
     margin: 0 auto; /* Centre le container */
 }
 
 .main-content {
    width: 50%;
-    padding: 15px;
+    padding: 10px;
     border: 1px solid #333;
     border-radius: 8px;
     background-color: #1a1a1a;
@@ -136,7 +139,18 @@ button:hover {
 .spellcasting li strong {
     color: #f0e6d3;
 }
-
+.inventory li strong {
+     font-size: 16px;
+     line-height: 16px;
+}
+.inventory li.item{
+    gap: 7px;
+}
+.inventory li.item span{
+    font-size: 14px;
+    line-height: 14px;
+    text-align: center;
+}
 .inventory button,
 .spellcasting button {
     background-color: #555;
@@ -163,6 +177,7 @@ button:hover {
     border: 1px solid #444;
     padding: 10px;
     background: #111;
+    border-radius: 5px;
 
 }
 
@@ -189,11 +204,11 @@ button:hover {
 
 .scene-text {
     white-space: pre-wrap;
-    min-height: 460px;
+    min-height: 320px;
     transition: all 0.3s ease;
     margin-bottom: 1rem;
-    font-size: 1.1rem;
-    line-height: 1.6;
+    font-size: 1rem;
+    line-height: 1.5;
 }
 
 .scene-choices {
@@ -300,6 +315,91 @@ button:hover {
 .enemy-hp-bar-fill {
     height: 100%;
     background-color: #d32f2f;
+    transition: width 0.3s ease;
+}
+
+.companion-display-container {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.companion-card {
+    width: 140px;
+    padding: 12px;
+    text-align: center;
+    border-radius: 10px;
+    border: 3px solid transparent;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transition: border 0.3s ease, box-shadow 0.3s ease;
+    user-select: none;
+    background-color: #f9f9f9;
+}
+
+.companion-image {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.companion-name-initiative {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    font-weight: bold;
+    font-size: 16px;
+    color: #222;
+}
+
+.companion-name {
+    user-select: none;
+}
+
+.companion-ac {
+    font-size: 14px;
+    color: #666;
+    font-weight: normal;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 2px 6px;
+    user-select: none;
+}
+
+.companion-hp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #b71c1c;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 6px;
+    user-select: none;
+}
+
+.heart-icon {
+    vertical-align: middle;
+    margin-right: 6px;
+    fill: red;
+}
+
+.companion-hp-bar {
+    height: 8px;
+    width: 100%;
+    background-color: #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.companion-hp-bar-fill {
+    height: 100%;
+    background-color: #b71c1c;
     transition: width 0.3s ease;
 }
 

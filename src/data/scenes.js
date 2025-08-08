@@ -111,10 +111,10 @@ Cependant, une étrange sensation de chaleur sur ta main gauche te fait découvr
         ]
     },
     "scene7": {
-        text: `Après avoir traversé le pont, tu découvres un petit trésor dissimulé dans une crevasse : une potion de soins et un parchemin de force.`,
+        text: `Après avoir traversé le pont, tu découvres un petit trésor dissimulé dans une crevasse : une potion de soins et un parchemin d'Intelligence'.`,
         choices: [
             {
-                text: "Prendre ces précieux objets !",
+                text: "Les ranger dans mon sac !",
                 next: {
                     type: "item",
                     item: ["potionOfHealing", "scrollOfIntelligence"],
@@ -126,8 +126,15 @@ Cependant, une étrange sensation de chaleur sur ta main gauche te fait découvr
     "scene8": {
         text: `Un jeune apprenti mage, l'air perdu, apparaît sur ton chemin. Il te propose de l'accompagner pour trouver une relique perdue dans les ruines de l'ancienne cité. Tu sens qu'il a besoin d'aide.`,
         choices: [
-            { text: "Accepter la proposition", next: "scene9" },
-            { text: "Refuser et continuer seul", next: "scene9" }
+            {
+                text: "Accepter la proposition",
+                next: {
+                    type: "ally",
+                    ally: "Tyrion",
+                    nextScene: "scene9"
+                }
+            },
+
         ]
     },
     "scene9": {
@@ -145,7 +152,7 @@ Cependant, une étrange sensation de chaleur sur ta main gauche te fait découvr
                 action: {
                     type: 'combat',
                     enemies: [
-                        
+
                         { type: 'squelette', count: 2 }
                     ],
                     next: 'scene11'
@@ -176,11 +183,49 @@ Cependant, une étrange sensation de chaleur sur ta main gauche te fait découvr
         ]
     },
     "scene13": {
-        text: `Un sentier mène à une caverne mystérieuse. L'air est épais et chargé de magie. Une odeur de souffre en émane. Tu as l'occasion de prendre un long repos avant d'entrer.`,
+        text: `Un sentier mène à une caverne mystérieuse. L'air est épais et chargé de magie. Une odeur de souffre en émane. Tu sens qu'il a un danger imminent.`,
         choices: [
             {
-                text: "Faire un repos long (récupère tous les PV et les ressources de classe)",
-                action: { type: 'longRest', nextScene: "scene14" }
+                text: "Essayer de percevoir le danger",
+                action: {
+                    type: 'skillCheck',
+                    skill: 'perception',
+                    dc: 14,
+                    onSuccess: "scene13a",
+                    onPartialSuccess: "scene13b",
+                    onFailure: "scene13c"
+                }
+            },
+            {
+                text: "Rentrer dans la caverne",
+                next: "scene14"
+            }
+        ]
+    },
+    "scene13a": {
+        text: `Grâce à ton ouie fine d'elfe et a tes sens alerte, tu as entendu des bruits de pas et des chuchotements provenant de l'intérieur de la caverne. Tu te prépares à un combat imminent.`,
+        choices: [
+            {
+                text: "Se tenir pret",
+                next: { type: "item", item: "scrollOfSagesse", nextScene: "scene14" }
+            }
+        ]
+    },
+    "scene13b": {
+        text: `Tu entends des bruits étranges venant de la caverne, mais tu ne peux pas identifier clairement le danger. Tu décides de rester sur tes gardes.`,
+        choices: [
+            {
+                text: "Rentrer dans la caverne",
+                next: "scene14"
+            }
+        ]
+    },
+    "scene13c": {
+        text: `Hélas, tu n'entends rien de suspect. Tu te sens un peu imprudent, mais tu décides de continuer malgré tout.`,
+        choices: [
+            {
+                text: "Rentrer dans la caverne",
+                next: "scene14"
             }
         ]
     },
@@ -191,7 +236,7 @@ Cependant, une étrange sensation de chaleur sur ta main gauche te fait découvr
                 text: "Engager le combat",
                 action: {
                     type: 'combat',
-                    enemies: [{ type: 'diablotins', count: 2 }],
+                    enemies: [{ type: 'diablotin', count: 2 }],
                     next: 'scene15'
                 }
             }
@@ -232,7 +277,7 @@ Cependant, une étrange sensation de chaleur sur ta main gauche te fait découvr
         choices: [
             {
                 text: "Prendre les parchemins",
-                next: { type: "item", item: ["scrollOfDexterity","bookArtHeal"], nextScene: "scene19" }
+                next: { type: "item", item: ["scrollOfDexterity", "bookArtHeal"], nextScene: "scene19" }
             }
         ]
     },

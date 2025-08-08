@@ -19,6 +19,7 @@ const rollDice = (diceString) => {
 
 const CombatPanel = ({
     playerCharacter,
+    playerCompanion,
     onCombatEnd,
     addCombatMessage,
     setCombatLog,
@@ -26,39 +27,48 @@ const CombatPanel = ({
     onPlayerCastSpell,
     onPlayerTakeDamage,
     onReplayCombat,
-    combatKey
+    combatKey,
+    onCompanionTakeDamage
 }) => {
+
     const [combatEnemies, setCombatEnemies] = useState([]);
-    const [playerHP, setPlayerHP] = useState(playerCharacter.maxHP);
+    const [companionCharacter, setCompanionCharacter] = useState(playerCompanion ? { ...playerCompanion, currentHP: playerCompanion.maxHP } : null);
     const [turnOrder, setTurnOrder] = useState([]);
     const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
     const [combatPhase, setCombatPhase] = useState('initiative-roll');
     const [playerAction, setPlayerAction] = useState(null);
     const [actionTargets, setActionTargets] = useState([]);
+    // Les états `defeated` et `victory` sont maintenant gérés par la logique de fin de combat dans le parent.
+    // Cependant, nous les conservons ici pour le rendu du CombatEndPanel
     const [defeated, setDefeated] = useState(false);
-    // NOUVEAU : État pour le statut de victoire
     const [victory, setVictory] = useState(false);
 
+    console.log("CombatPanel rendu. combatKey :", combatKey, " Phase :", combatPhase, " Vie du joueur :", playerCharacter.currentHP);
+    
     const resetCombat = () => {
+        console.log("Fonction resetCombat appelée.");
         onReplayCombat();
     };
 
-    // Detect player death
-    useEffect(() => {
-        if (playerCharacter.currentHP <= 0 && combatPhase !== 'end') {
-            addCombatMessage("Défaite... Tu as perdu connaissance.", 'defeat');
-            setDefeated(true);
-            setCombatPhase('end');
-        }
-    }, [playerCharacter.currentHP, combatPhase, addCombatMessage]);
+    // --- ANCIEN useEffect SUPPRIMÉ ---
+    // Cet useEffect a été supprimé car la logique de défaite est gérée dans le parent (App.js).
 
-    // Move to next turn
     const handleNextTurn = useCallback(() => {
         const allEnemiesDefeated = combatEnemies.every(enemy => enemy.currentHP <= 0);
         if (allEnemiesDefeated) {
             setCombatPhase('end');
-            setVictory(true); // NOUVEAU : Le joueur a gagné
+            setVictory(true);
             addCombatMessage("Victoire ! Les ennemis sont vaincus.", 'victory');
+            return;
+        }
+        
+        // Nouvelle vérification : si le joueur est vaincu, on termine immédiatement.
+        // Cela permet de s'assurer que le combat s'arrête si le joueur meurt
+        // avant même que le tour d'un ennemi ne se termine.
+        if (playerCharacter.currentHP <= 0) {
+            setCombatPhase('end');
+            setDefeated(true);
+            addCombatMessage("Défaite... Tu as perdu connaissance.", 'defeat');
             return;
         }
 
@@ -66,18 +76,25 @@ const CombatPanel = ({
         let safetyCounter = 0;
         while (
             safetyCounter < turnOrder.length &&
-            ((turnOrder[nextIndex].type === 'enemy' && combatEnemies.find(e => e.name === turnOrder[nextIndex].name)?.currentHP <= 0) ||
-                (turnOrder[nextIndex].type === 'player' && playerCharacter.currentHP <= 0))
+            (
+                (turnOrder[nextIndex].type === 'enemy' && combatEnemies.find(e => e.name === turnOrder[nextIndex].name)?.currentHP <= 0) ||
+                (turnOrder[nextIndex].type === 'player' && playerCharacter.currentHP <= 0) ||
+                (turnOrder[nextIndex].type === 'companion' && companionCharacter && companionCharacter.currentHP <= 0)
+            )
         ) {
             nextIndex = (nextIndex + 1) % turnOrder.length;
             safetyCounter++;
+        }
+
+        if (safetyCounter >= turnOrder.length) {
+            return;
         }
 
         setCurrentTurnIndex(nextIndex);
         setCombatPhase('turn');
         setPlayerAction(null);
         setActionTargets([]);
-    }, [currentTurnIndex, turnOrder, combatEnemies, addCombatMessage, playerCharacter.currentHP]);
+    }, [currentTurnIndex, turnOrder, combatEnemies, addCombatMessage, playerCharacter.currentHP, companionCharacter]);
 
     const calculateDamage = (attack) => {
         let totalDamage = rollDice(attack.damageDice) + (attack.damageBonus || 0);
@@ -88,7 +105,6 @@ const CombatPanel = ({
             totalDamage += secondaryDamage;
             message += ` + ${secondaryDamage} dégâts ${attack.secondaryDamageType} (${totalDamage}dmg)`;
         }
-
         return { damage: totalDamage, message };
     };
 
@@ -113,32 +129,86 @@ const CombatPanel = ({
             return;
         }
 
-        addCombatMessage(`${currentTurnEntity.name} utilise ${attackSet.name} !`);
-
         for (const attack of attackSet.attacks) {
             const attackRoll = Math.floor(Math.random() * 20) + 1 + (attack.attackBonus || 0);
-            const playerAC = playerCharacter.ac;
+            const targets = [playerCharacter, companionCharacter].filter(c => c && c.currentHP > 0);
+            const randomTarget = targets[Math.floor(Math.random() * targets.length)];
 
-            if (attackRoll >= playerAC) {
+            if (!randomTarget) {
+                addCombatMessage(`${currentTurnEntity.name} n'a pas de cible valide à attaquer.`);
+                handleNextTurn();
+                return;
+            }
+
+            if (attackRoll >= randomTarget.ac) {
                 const { damage, message } = calculateDamage(attack);
-                onPlayerTakeDamage(damage, `${currentTurnEntity.name} touche avec ${attack.name} ! Il inflige ${message}.`);
+                if (randomTarget.type === 'player') {
+                    onPlayerTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
+                } else if (randomTarget.type === 'companion') {
+                    onCompanionTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
+                }
             } else {
                 addCombatMessage(`${currentTurnEntity.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
             }
         }
+        handleNextTurn();
+    }, [addCombatMessage, handleNextTurn, onPlayerTakeDamage, playerCharacter, turnOrder, currentTurnIndex, combatEnemies, companionCharacter, onCompanionTakeDamage]);
+
+    const companionAttack = useCallback(() => {
+        if (!companionCharacter || companionCharacter.currentHP <= 0) {
+            addCombatMessage("Le compagnon est déjà vaincu et ne peut pas agir.");
+            handleNextTurn();
+            return;
+        }
+
+        const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
+        if (livingEnemies.length === 0) {
+            addCombatMessage("Il n'y a plus d'ennemis à attaquer.");
+            handleNextTurn();
+            return;
+        }
+
+        const attack = companionCharacter.attacks?.[0];
+        if (!attack) {
+            addCombatMessage(`${companionCharacter.name} n'a pas d'attaque définie.`);
+            handleNextTurn();
+            return;
+        }
+
+        const target = livingEnemies[Math.floor(Math.random() * livingEnemies.length)];
+        const attackBonus = getModifier(companionCharacter.stats.force || companionCharacter.stats.dexterite);
+        const attackRoll = Math.floor(Math.random() * 20) + 1 + attackBonus;
+        if (attackRoll >= target.ac) {
+            const { damage, message } = calculateDamage(attack);
+
+            const updatedEnemies = combatEnemies.map(enemy => {
+                if (enemy.name === target.name) {
+                    const newHP = Math.max(0, enemy.currentHP - damage);
+                    return { ...enemy, currentHP: newHP };
+                }
+                return enemy;
+            });
+            setCombatEnemies(updatedEnemies);
+            addCombatMessage(`${companionCharacter.name} touche ${target.name} avec ${attack.name} ! Il inflige ${message}.`, 'player-damage');
+            if (updatedEnemies.find(e => e.name === target.name).currentHP <= 0) {
+                addCombatMessage(`${target.name} a été vaincu !`);
+            }
+        } else {
+            addCombatMessage(`${companionCharacter.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
+        }
 
         handleNextTurn();
-    }, [addCombatMessage, handleNextTurn, onPlayerTakeDamage, playerCharacter.ac, turnOrder, currentTurnIndex, combatEnemies]);
+    }, [addCombatMessage, handleNextTurn, combatEnemies, companionCharacter]);
 
     const handleTargetSelection = useCallback(
         (enemy) => {
             const maxTargets = playerAction?.projectiles || 1;
             setActionTargets((prevTargets) => {
-                if (prevTargets.length >= maxTargets) return prevTargets;
-                return [...prevTargets, enemy];
+                const newTargets = [...prevTargets, enemy];
+                return newTargets;
             });
         },
-        [playerAction, actionTargets]
+        [playerAction]
     );
 
     const handleCastSpellClick = useCallback(() => {
@@ -163,7 +233,6 @@ const CombatPanel = ({
                 if (spell.requiresAttackRoll) {
                     const spellAttackBonus = playerCharacter.proficiencyBonus + getModifier(playerCharacter.stats.intelligence);
                     const attackRoll = Math.floor(Math.random() * 20) + 1 + spellAttackBonus;
-
                     if (attackRoll >= updatedEnemies[index].ac) {
                         damage = rollDice(spell.damage.dice) + (spell.damage.bonus || 0);
                         updatedEnemies[index].currentHP = Math.max(0, updatedEnemies[index].currentHP - damage);
@@ -199,14 +268,16 @@ const CombatPanel = ({
     }, [actionTargets, playerAction, handleCastSpellClick]);
 
     useEffect(() => {
+        console.log("useEffect d'initialisation lancé. Phase :", combatPhase, " combatKey :", combatKey);
+        if (combatPhase === 'end') {
+            return;
+        }
         if (combatPhase !== 'initiative-roll' || !encounterData || !encounterData.length) {
             return;
         }
-
         const initialCombatEnemies = encounterData.flatMap((encounter) => {
             const template = enemyTemplates[encounter.type];
             if (!template) {
-                console.error(`Modèle d'ennemi non trouvé pour le type : ${encounter.type}`);
                 return [];
             }
             return Array(encounter.count)
@@ -214,7 +285,7 @@ const CombatPanel = ({
                 .map((_, index) => ({
                     ...template,
                     name: `${template.name} ${index + 1}`,
-                    id: encounter.type, // NOUVEAU : on ajoute l'id pour le retrouver plus facilement
+                    id: encounter.type,
                     ac: template.ac || 10,
                     currentHP: template.currentHP ?? template.maxHP ?? 10,
                     maxHP: template.maxHP ?? 10,
@@ -223,22 +294,17 @@ const CombatPanel = ({
                     image: template.image || '',
                 }));
         });
-
         if (!initialCombatEnemies.length) {
             addCombatMessage("Erreur lors du chargement des ennemis. Le combat se termine.");
             setCombatPhase('end');
             return;
         }
-
         const enemiesWithInitiative = initialCombatEnemies.map((enemy) => ({
             ...enemy,
             initiative: Math.floor(Math.random() * 20) + 1 + getModifier(enemy.stats.dexterite),
             type: 'enemy',
         }));
-
-        setCombatEnemies(enemiesWithInitiative);
         addCombatMessage('Un combat commence !');
-
         const playerDexMod = getModifier(playerCharacter.stats.dexterite);
         const playerInitiative = Math.floor(Math.random() * 20) + 1 + playerDexMod;
         const playerWithInitiative = {
@@ -247,48 +313,77 @@ const CombatPanel = ({
             type: 'player',
             ac: playerCharacter.ac || 10,
         };
-
-        const order = [...enemiesWithInitiative, playerWithInitiative].sort((a, b) => {
+        const combatants = [playerWithInitiative, ...enemiesWithInitiative];
+        if (playerCompanion) {
+            const companionDexMod = getModifier(playerCompanion.stats.dexterite);
+            const companionInitiative = Math.floor(Math.random() * 20) + 1 + companionDexMod;
+            const companionWithInitiative = {
+                ...playerCompanion,
+                initiative: companionInitiative,
+                type: 'companion',
+                ac: playerCompanion.ac || 10,
+            };
+            combatants.push(companionWithInitiative);
+        }
+        const order = combatants.sort((a, b) => {
             if (b.initiative === a.initiative) {
                 if (a.type === 'player') return -1;
                 if (b.type === 'player') return 1;
+                if (a.type === 'companion') return -1;
+                if (b.type === 'companion') return 1;
                 return 0;
             }
             return b.initiative - a.initiative;
         });
-
+        setCombatEnemies(enemiesWithInitiative);
         setTurnOrder(order);
-
         order.forEach((entity) => {
             addCombatMessage(`${entity.name} a lancé l'initiative et a obtenu ${entity.initiative}.`, 'initiative');
         });
-
-    }, [encounterData, playerCharacter, addCombatMessage, combatPhase, combatKey]);
+    }, [encounterData, playerCharacter, playerCompanion, addCombatMessage, combatPhase, combatKey]);
 
     useEffect(() => {
         if (combatPhase === 'initiative-roll' || combatPhase === 'end' || !turnOrder.length) return;
-
         const currentTurnEntity = turnOrder[currentTurnIndex];
         const isPlayerTurn = currentTurnEntity.type === 'player';
-        const entityInState = combatEnemies.find((e) => e.name === currentTurnEntity.name);
-
+        const isCompanionTurn = currentTurnEntity.type === 'companion';
+        const isEnemyTurn = currentTurnEntity.type === 'enemy';
+        let entityInState = null;
+        if (isPlayerTurn) {
+            entityInState = playerCharacter;
+        } else if (isCompanionTurn) {
+            entityInState = companionCharacter;
+        } else {
+            entityInState = combatEnemies.find((e) => e.name === currentTurnEntity.name);
+        }
         if (entityInState && entityInState.currentHP <= 0) {
             addCombatMessage(`${currentTurnEntity.name} est déjà vaincu. On passe au suivant.`);
             handleNextTurn();
             return;
         }
-
         if (combatPhase === 'turn') {
             if (isPlayerTurn) {
+                // Vérifier si le joueur est vaincu avant de lui donner la main.
+                // Cela empêche le combat de se bloquer si le joueur est mort mais que son tour arrive.
+                if (playerCharacter.currentHP <= 0) {
+                    addCombatMessage("Tu es vaincu et ne peux pas agir. Le combat se termine.");
+                    setCombatPhase('end');
+                    setDefeated(true);
+                    return;
+                }
                 setCombatPhase('player-action');
                 addCombatMessage("C'est ton tour !");
-            } else {
+            } else if (isCompanionTurn) {
+                addCombatMessage(`C'est le tour de ${currentTurnEntity.name}...`);
+                const timer = setTimeout(() => companionAttack(), 400);
+                return () => clearTimeout(timer);
+            } else if (isEnemyTurn) {
                 addCombatMessage(`C'est le tour de ${currentTurnEntity.name}...`);
                 const timer = setTimeout(() => enemyAttack(), 400);
                 return () => clearTimeout(timer);
             }
         }
-    }, [currentTurnIndex, combatPhase, turnOrder, addCombatMessage, enemyAttack, combatEnemies, handleNextTurn]);
+    }, [currentTurnIndex, combatPhase, turnOrder, addCombatMessage, enemyAttack, companionAttack, combatEnemies, handleNextTurn, playerCharacter, companionCharacter]);
 
     return (
         <div>
@@ -304,9 +399,10 @@ const CombatPanel = ({
                 <>
                     <CombatEndPanel
                         onContinue={() => {
+                            console.log("Fin du combat : onContinue() est appelé.");
                             setCombatLog([]);
                             if (victory) {
-                                onCombatEnd(encounterData); 
+                                onCombatEnd(encounterData);
                             } else {
                                 onCombatEnd([]);
                             }
@@ -314,9 +410,12 @@ const CombatPanel = ({
                         hasWon={victory}
                     />
                     {defeated && (
-                        <button onClick={resetCombat} style={{ marginTop: '10px' }}>
-                            Rejouer le combat
-                        </button>
+                        <>
+                            <p>Le bouton "Rejouer" est rendu. L'état 'defeated' est à : {String(defeated)}</p>
+                            <button onClick={resetCombat} style={{ marginTop: '10px' }}>
+                                Rejouer le combat
+                            </button>
+                        </>
                     )}
                 </>
             )}

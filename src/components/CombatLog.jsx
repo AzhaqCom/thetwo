@@ -1,7 +1,7 @@
 // src/components/CombatLog.jsx
 
 import React, { useEffect, useRef } from 'react';
-import { HeartIcon, SwordIcon, MagicIcon, MissIcon, SkullIcon, DiceIcon ,VictoryIcon} from './Icons';
+import { HeartIcon, SwordIcon, MagicIcon, MissIcon, SkullIcon, DiceIcon, VictoryIcon, BagIcon, UpgradeIcon, LevelUpIcon, ExpIcon, SpellIcon, BurningBlobsIcon, DurationIcon } from './Icons';
 import './CombatLog.css'; // N'oubliez pas d'importer le fichier CSS
 
 const getIconForType = (type) => {
@@ -10,7 +10,7 @@ const getIconForType = (type) => {
             return <MagicIcon className="magic-icon" />;
         case 'enemy-damage':
             return <SwordIcon className="damage-icon" />;
-        case 'victory': 
+        case 'victory':
             return <VictoryIcon className="victory-icon" />;
         case 'heal':
             return <HeartIcon className="heal-icon" />;
@@ -20,6 +20,20 @@ const getIconForType = (type) => {
             return <SkullIcon className="defeat-icon" />;
         case 'initiative':
             return <DiceIcon />;
+        case 'bag':
+            return <BagIcon className="bag-icon" />;
+        case 'upgrade':
+            return <UpgradeIcon className="upgrade-icon" />;
+        case 'levelup':
+            return <LevelUpIcon className="levelup-icon" />;
+        case 'experience':
+            return <ExpIcon className="exp-icon" />;
+        case 'spell':
+            return <SpellIcon className="spell-icon" />;
+        case 'burning-blobs':
+            return <BurningBlobsIcon className="burning-blobs-icon" />;
+        case 'duration':
+            return <DurationIcon className="duration-icon" />;
         default:
             return null;
     }

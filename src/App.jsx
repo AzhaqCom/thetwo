@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { scenes } from './data/scenes';
 import { character as initialCharacter, spellSlotsByLevel } from './data/character';
 import CharacterSheet from './components/CharacterSheet';
+import CompanionSheet from './components/CompanionSheet';
 import InventoryPanel from './components/InventoryPanel';
 import SpellcastingPanel from './components/SpellcastingPanel';
 import CombatLog from './components/CombatLog';
@@ -13,10 +14,11 @@ import { items } from './data/items';
 import { levels } from './data/levels';
 import { enemyTemplates } from './data/enemies';
 import { spells } from './data/spells';
+import { companions } from './data/companions';
 import { getModifier } from './components/utils/utils';
+import CompanionDisplay from './components/combat/CompanionDisplay';
 import './App.css';
 
-// Définition de skillToStat pour une utilisation plus large
 const skillToStat = {
     acrobaties: "dexterite",
     arcane: "intelligence",
@@ -39,8 +41,9 @@ const skillToStat = {
 };
 
 function App() {
-    const [currentScene, setCurrentScene] = useState("scene1");
+    const [currentScene, setCurrentScene] = useState("scene17");
     const [playerCharacter, setPlayerCharacter] = useState(initialCharacter);
+    const [playerCompanion, setPlayerCompanion] = useState(null);
     const [combatLog, setCombatLog] = useState([]);
     const [isShortResting, setIsShortResting] = useState(false);
     const [isLongResting, setIsLongResting] = useState(false);
@@ -84,6 +87,24 @@ function App() {
             }
         }));
     }, [playerCharacter.level]);
+    const handleCombatEnd = useCallback((hasWon) => {
+        // Logique pour mettre fin au combat, quel que soit le résultat
+        // Gère la victoire (gain d'XP) ou la défaite (pas d'XP)
+        // Puis passe à la scène suivante
+        // Cette fonction pourrait être plus complexe selon tes besoins
+        if (hasWon) {
+            // Logique de victoire
+            // ...
+            const nextScene = scenes[currentScene].next || "sceneFallback";
+            setCurrentScene(nextScene);
+        } else {
+            // Logique de défaite
+            // Tu peux choisir une scène de game over, ou rien.
+            // C'est ici que tu peux afficher le bouton pour rejouer.
+            addCombatMessage("Défaite... Tu as perdu connaissance.", 'defeat');
+            // Tu peux introduire une nouvelle phase ou un nouveau state ici si nécessaire
+        }
+    }, [currentScene, addCombatMessage, scenes]);
 
     const handleCombatVictory = useCallback((defeatedEncounterData) => {
         const totalXPGained = defeatedEncounterData.reduce((sum, encounter) => {
@@ -103,25 +124,40 @@ function App() {
             levelUpMessages.push(`Tu as atteint le niveau ${newLevel} !`);
         }
 
-        levelUpMessages.forEach(msg => addCombatMessage(msg, 'level-up'));
         if (totalXPGained > 0) {
-            addCombatMessage(`Tu as gagné ${totalXPGained} points d'expérience.`, 'xp-gain');
+            addCombatMessage(`Tu as gagné ${totalXPGained} points d'expérience.`, 'experience');
         }
-
+        levelUpMessages.forEach(msg => addCombatMessage(msg, 'levelup'));
         setPlayerCharacter(prevCharacter => ({
             ...prevCharacter,
             currentXP: newXP,
             level: newLevel,
         }));
-        
+
         const nextScene = currentScene.next || "sceneFallback";
         setCurrentScene(nextScene);
     }, [currentScene, playerCharacter, addCombatMessage]);
 
+    // 👈 CORRECTION ICI
     const handlePlayerTakeDamage = useCallback((damage, message) => {
+        addCombatMessage(message, 'enemy-damage');
         setPlayerCharacter(prev => {
             const newHP = Math.max(0, prev.currentHP - damage);
-            addCombatMessage(message, 'enemy-damage');
+            if (newHP <= 0) {
+                // Le joueur est vaincu, on appelle la fonction de fin de combat
+                // Note: Tu devras peut-être introduire un state 'isCombatOver'
+                // pour empêcher le combat de continuer après la défaite.
+                handleCombatEnd(false); // Le joueur n'a pas gagné
+            }
+            return { ...prev, currentHP: newHP };
+        });
+    }, [addCombatMessage, handleCombatEnd]);
+
+    const handleCompanionTakeDamage = useCallback((damage, message) => {
+        addCombatMessage(message, 'enemy-damage');
+        setPlayerCompanion(prev => {
+            if (!prev) return null;
+            const newHP = Math.max(0, prev.currentHP - damage);
             return { ...prev, currentHP: newHP };
         });
     }, [addCombatMessage]);
@@ -136,7 +172,7 @@ function App() {
                     ...prev,
                     inventory: [...prev.inventory, { ...itemToAdd, id: Date.now() + Math.random() }]
                 }));
-                addCombatMessage(`Tu as trouvé un(e) ${itemToAdd.name} ! Il a été ajouté à ton inventaire.`, 'item-gain');
+                addCombatMessage(`Tu as trouvé un(e) ${itemToAdd.name} ! Il a été ajouté à ton inventaire.`, 'bag');
             }
         });
     }, [addCombatMessage, items, setPlayerCharacter]);
@@ -150,13 +186,14 @@ function App() {
             });
 
             const message = itemToUse.message(updatedCharacter.currentHP - playerCharacter.currentHP);
-            addCombatMessage(message, 'item-use');
+            addCombatMessage(message, itemToUse.iconType);
         } else {
-            addCombatMessage(`L'objet ${itemToUse.name} ne peut pas être utilisé.`, 'info');
+            addCombatMessage(`L'objet ${itemToUse.name} ne peut pas être utilisé.`, itemToUse.iconType);
         }
     }, [playerCharacter, addCombatMessage]);
 
     const resetCharacter = useCallback(() => {
+        console.log("resetCharacter prev player:", prev);
         setPlayerCharacter(prev => {
             const healedCharacter = {
                 ...prev,
@@ -174,9 +211,17 @@ function App() {
             };
             return healedCharacter;
         });
+
+        setPlayerCompanion(prev => {
+            if (prev) {
+                return { ...prev, currentHP: prev.maxHP, hitDice: prev.level };
+            }
+            return null;
+        });
     }, [setPlayerCharacter]);
 
     const handleReplayCombat = useCallback(() => {
+        console.log("handleReplayCombat appelé — playerHP avant reset:", playerCharacter.currentHP);
         resetCharacter();
         setCombatLog([]);
         setCombatKey(prevKey => prevKey + 1);
@@ -230,7 +275,7 @@ function App() {
             case "Armure du Mage":
                 const dexModifier = Math.floor((playerCharacter.stats.dexterite - 10) / 2);
                 updatedCharacter.ac = 13 + dexModifier;
-                addCombatMessage(`Tu as lancé ${spell.name} ! Ta Classe d'Armure est maintenant de ${updatedCharacter.ac}.`, 'spell-cast');
+                addCombatMessage(`Tu as lancé ${spell.name} ! Ta Classe d'Armure est maintenant de ${updatedCharacter.ac}.`, 'upgrade');
                 updatedCharacter.activeSpells = { ...updatedCharacter.activeSpells, "Armure du Mage": true };
                 break;
             default:
@@ -260,7 +305,7 @@ function App() {
             addCombatMessage(`Sort "${spellName}" introuvable.`, 'error');
             return;
         }
-        
+
         if (!playerCharacter.spellcasting.preparedSpells.includes(spellName)) {
             setPlayerCharacter(prev => ({
                 ...prev,
@@ -269,7 +314,7 @@ function App() {
                     preparedSpells: [...prev.spellcasting.preparedSpells, spellName]
                 }
             }));
-            addCombatMessage(`${spell.name} a été ajouté à tes sorts préparés.`);
+            addCombatMessage(`${spell.name} a été ajouté à tes sorts préparés.`, 'spell');
         } else {
             addCombatMessage(`${spell.name} est déjà préparé.`);
         }
@@ -277,7 +322,7 @@ function App() {
 
 
     const startShortRest = useCallback((nextScene) => {
-        addCombatMessage("Tu as commencé un repos court pour te soigner.");
+        addCombatMessage("Tu as commencé un repos court pour te soigner.", 'duration');
         setIsShortResting(true);
         setNextSceneAfterRest(nextScene);
     }, [addCombatMessage]);
@@ -294,7 +339,7 @@ function App() {
                 hitDice: prev.hitDice - 1
             }));
 
-            addCombatMessage(`Tu as dépensé un dé de vie (d${playerCharacter.hitDiceType}) et récupères ${healedHP} PV.`);
+            addCombatMessage(`Tu as dépensé un dé de vie (d${playerCharacter.hitDiceType}) et récupères ${healedHP} PV.`, 'heal');
         }
     }, [playerCharacter, addCombatMessage, setPlayerCharacter]);
 
@@ -306,7 +351,7 @@ function App() {
     }, [addCombatMessage, nextSceneAfterRest]);
 
     const startLongRest = useCallback((nextScene) => {
-        addCombatMessage("Tu as trouvé un endroit sûr et te prépares pour un long repos.");
+        addCombatMessage("Tu as trouvé un endroit sûr et te prépares pour un long repos.", 'duration');
         setIsLongResting(true);
         setNextSceneAfterRest(nextScene);
     }, [addCombatMessage]);
@@ -330,34 +375,32 @@ function App() {
             };
             return healedCharacter;
         });
+
+        setPlayerCompanion(prev => {
+            if (prev) {
+                return { ...prev, currentHP: prev.maxHP, hitDice: prev.level };
+            }
+            return null;
+        });
+
         setIsLongResting(false);
         setCurrentScene(nextSceneAfterRest);
         setNextSceneAfterRest(null);
     }, [addCombatMessage, nextSceneAfterRest]);
 
-    // Nouvelle fonction pour gérer les tests de compétence
     const handleSkillCheck = useCallback((skill, dc, onSuccess, onPartialSuccess, onFailure) => {
-        // Obtenir la statistique associée à la compétence
         const statName = skillToStat[skill];
         const statValue = playerCharacter.stats[statName];
         const statModifier = getModifier(statValue);
-        
-        // Vérifier si le personnage est compétent
         const isProficient = playerCharacter.proficiencies.skills.includes(skill);
         const proficiencyBonus = isProficient ? playerCharacter.proficiencyBonus : 0;
-        
-        // Calculer le bonus total pour la compétence
         const skillBonus = statModifier + proficiencyBonus;
-
-        // Lancer un dé D20
         const roll = Math.floor(Math.random() * 20) + 1;
         const totalRoll = roll + skillBonus;
-        
-        addCombatMessage(`Tu lances un dé pour la compétence ${skill} (${statName}). Ton résultat est de ${roll} + ${skillBonus} (bonus de compétence) = ${totalRoll}. Le DD est de ${dc}.`, 'skill-check');
+
+        addCombatMessage(`Tu lances un dé pour la compétence ${skill} (${statName}). Ton résultat est de ${roll} + ${skillBonus} (bonus de compétence) = ${totalRoll}. Le DD était de ${dc}.`, 'skill-check');
 
         let nextScene = onFailure;
-
-        // Déterminer le résultat du test
         if (totalRoll >= dc) {
             nextScene = onSuccess;
             addCombatMessage("Réussite ! Tu as réussi le test de compétence.");
@@ -368,7 +411,7 @@ function App() {
             nextScene = onFailure;
             addCombatMessage("Échec. Tu n'as pas réussi le test de compétence.");
         }
-        
+
         setCurrentScene(nextScene);
     }, [playerCharacter, addCombatMessage]);
 
@@ -404,6 +447,8 @@ function App() {
                     onPlayerCastSpell={handlePlayerCastSpell}
                     onReplayCombat={handleReplayCombat}
                     combatKey={combatKey}
+                    playerCompanion={playerCompanion}
+                    onCompanionTakeDamage={handleCompanionTakeDamage}
                 />
             );
         }
@@ -436,7 +481,16 @@ function App() {
                                         setCurrentScene(action.nextScene);
                                     }
                                     break;
-                                // Nouveau cas pour le test de compétence
+                                case 'ally':
+                                    const companionToAdd = companions[action.ally];
+                                    if (companionToAdd) {
+                                        setPlayerCompanion(companionToAdd);
+                                        addCombatMessage(`${companionToAdd.name} te rejoint dans ton aventure !`, 'upgrade');
+                                        setCurrentScene(action.nextScene);
+                                    } else {
+                                        console.error(`Compagnon '${action.ally}' introuvable.`);
+                                    }
+                                    break;
                                 case 'skillCheck':
                                     handleSkillCheck(
                                         action.skill,
@@ -462,6 +516,7 @@ function App() {
     return (
         <div className="game-container">
             <div className="sidebar left-sidebar">
+                {playerCompanion && <CompanionDisplay companion={playerCompanion} />}
                 <InventoryPanel characterInventory={playerCharacter.inventory} onUseItem={handleUseItem} />
                 <SpellcastingPanel
                     character={playerCharacter}
@@ -475,6 +530,7 @@ function App() {
             </div>
             <div className="sidebar right-sidebar">
                 <CharacterSheet character={playerCharacter} />
+                {playerCompanion && <CompanionSheet companion={playerCompanion} />}
             </div>
         </div>
     );

@@ -9,7 +9,7 @@ const Scene = ({ text, choices, onChoice }) => {
             skipTyping();
         }
     };
- 
+
     return (
         <div className="scene">
             <div className="scene-text" onClick={handleTextClick}>
@@ -21,7 +21,7 @@ const Scene = ({ text, choices, onChoice }) => {
                         key={index}
                         onClick={() => {
                             if (choice.next) {
-                                console.log(choice.next)
+
                                 onChoice(choice.next);
                             } else if (choice.action) {
                                 onChoice(choice.action);
