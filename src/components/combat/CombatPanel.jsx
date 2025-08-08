@@ -43,28 +43,27 @@ const CombatPanel = ({
     const [defeated, setDefeated] = useState(false);
     const [victory, setVictory] = useState(false);
 
-    console.log("CombatPanel rendu. combatKey :", combatKey, " Phase :", combatPhase, " Vie du joueur :", playerCharacter.currentHP);
-    
+    // Reset combat phase when combatKey changes (for replay functionality)
+    useEffect(() => {
+       
+        setCombatPhase('initiative-roll');
+        setDefeated(false);
+        setVictory(false);
+        setCombatEnemies([]);
+        setTurnOrder([]);
+        setCurrentTurnIndex(0);
+        setPlayerAction(null);
+        setActionTargets([]);
+    }, [combatKey]);
+
+
     const resetCombat = () => {
-        console.log("Fonction resetCombat appelée.");
         onReplayCombat();
     };
 
-    // --- ANCIEN useEffect SUPPRIMÉ ---
-    // Cet useEffect a été supprimé car la logique de défaite est gérée dans le parent (App.js).
+
 
     const handleNextTurn = useCallback(() => {
-        const allEnemiesDefeated = combatEnemies.every(enemy => enemy.currentHP <= 0);
-        if (allEnemiesDefeated) {
-            setCombatPhase('end');
-            setVictory(true);
-            addCombatMessage("Victoire ! Les ennemis sont vaincus.", 'victory');
-            return;
-        }
-        
-        // Nouvelle vérification : si le joueur est vaincu, on termine immédiatement.
-        // Cela permet de s'assurer que le combat s'arrête si le joueur meurt
-        // avant même que le tour d'un ennemi ne se termine.
         if (playerCharacter.currentHP <= 0) {
             setCombatPhase('end');
             setDefeated(true);
@@ -267,8 +266,21 @@ const CombatPanel = ({
         }
     }, [actionTargets, playerAction, handleCastSpellClick]);
 
+
     useEffect(() => {
-        console.log("useEffect d'initialisation lancé. Phase :", combatPhase, " combatKey :", combatKey);
+        if (combatPhase === 'end' || combatEnemies.length === 0) {
+            return;
+        }
+
+        const allEnemiesDefeated = combatEnemies.every(enemy => enemy.currentHP <= 0);
+        if (allEnemiesDefeated) {
+            setCombatPhase('end');
+            setVictory(true);
+            addCombatMessage("Victoire ! Les ennemis sont vaincus.", 'victory');
+        }
+    }, [combatEnemies, combatPhase, addCombatMessage]);
+
+    useEffect(() => {
         if (combatPhase === 'end') {
             return;
         }
@@ -399,7 +411,7 @@ const CombatPanel = ({
                 <>
                     <CombatEndPanel
                         onContinue={() => {
-                            console.log("Fin du combat : onContinue() est appelé.");
+                           
                             setCombatLog([]);
                             if (victory) {
                                 onCombatEnd(encounterData);
@@ -411,7 +423,7 @@ const CombatPanel = ({
                     />
                     {defeated && (
                         <>
-                            <p>Le bouton "Rejouer" est rendu. L'état 'defeated' est à : {String(defeated)}</p>
+                            <p>Tu as été vaincu. Tu peux rejouer le combat ou continuer l'aventure.</p>
                             <button onClick={resetCombat} style={{ marginTop: '10px' }}>
                                 Rejouer le combat
                             </button>

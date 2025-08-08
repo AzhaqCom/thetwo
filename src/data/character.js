@@ -15,7 +15,7 @@ export const character = {
     historic: "Érudit de l'Académie",
     maxHP: 12,
     currentHP: 12,
-    ac: 1,
+    ac: 13,
     initiative: 0,
     speed: "9m",
     proficiencyBonus: 2,

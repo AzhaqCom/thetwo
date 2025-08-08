@@ -4,7 +4,7 @@ export const enemyTemplates = {
         maxHP: 7,
         currentHP: 7,
         ac: 15,
-        xp: 2550,
+        xp: 50,
         stats: {
             force: 8,
             dexterite: 14,

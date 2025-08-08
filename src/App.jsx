@@ -41,7 +41,7 @@ const skillToStat = {
 };
 
 function App() {
-    const [currentScene, setCurrentScene] = useState("scene17");
+    const [currentScene, setCurrentScene] = useState("scene1");
     const [playerCharacter, setPlayerCharacter] = useState(initialCharacter);
     const [playerCompanion, setPlayerCompanion] = useState(null);
     const [combatLog, setCombatLog] = useState([]);
@@ -193,7 +193,6 @@ function App() {
     }, [playerCharacter, addCombatMessage]);
 
     const resetCharacter = useCallback(() => {
-        console.log("resetCharacter prev player:", prev);
         setPlayerCharacter(prev => {
             const healedCharacter = {
                 ...prev,
@@ -221,7 +220,6 @@ function App() {
     }, [setPlayerCharacter]);
 
     const handleReplayCombat = useCallback(() => {
-        console.log("handleReplayCombat appelé — playerHP avant reset:", playerCharacter.currentHP);
         resetCharacter();
         setCombatLog([]);
         setCombatKey(prevKey => prevKey + 1);
