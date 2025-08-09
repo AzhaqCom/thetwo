@@ -13,7 +13,6 @@ export const enemyTemplates = {
             sagesse: 8,
             charisme: 8,
         },
-        movement: 6,
         attacks: [
             {
                 name: "son Cimeterre",
@@ -41,6 +40,7 @@ export const enemyTemplates = {
             sagesse: 11,
             charisme: 7
         },
+        movement: 6,
         attacks: [
             {
                 name: "Poing",
