@@ -40,7 +40,6 @@ export const enemyTemplates = {
             sagesse: 11,
             charisme: 7
         },
-        movement: 5,
         attacks: [
             {
                 name: "Poing",
@@ -190,6 +189,7 @@ export const enemyTemplates = {
             sagesse: 14,
             charisme: 8,
         },
+        movement: 8,
         attackSets: [
             {
                 name: "Morsure et fourche",
