@@ -36,6 +36,55 @@ export const useCombatActions = ({
         return distance <= 1;
     }, [calculateDistance]);
 
+    // Helper function to find valid targets for enemies
+    const findValidTargetsForEnemy = useCallback(() => {
+        const validTargets = [];
+        
+        // Priority 1: Player (if alive)
+        if (playerCharacter && playerCharacter.currentHP > 0 && combatPositions.player) {
+            validTargets.push({
+                ...playerCharacter,
+                type: 'player',
+                name: playerCharacter.name,
+                ac: playerCharacter.ac,
+                position: combatPositions.player,
+                priority: 1
+            });
+        }
+        
+        // Priority 2: Companion (if alive)
+        if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
+            validTargets.push({
+                ...companionCharacter,
+                type: 'companion',
+                name: companionCharacter.name,
+                ac: companionCharacter.ac,
+                position: combatPositions.companion,
+                priority: 2
+            });
+        }
+        
+        // Sort by priority (lower number = higher priority)
+        return validTargets.sort((a, b) => a.priority - b.priority);
+    }, [playerCharacter, companionCharacter, combatPositions]);
+
+    // Helper function to find best target for companion (lowest HP enemy)
+    const findBestTargetForCompanion = useCallback(() => {
+        const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
+        
+        if (livingEnemies.length === 0) return null;
+        
+        // Find enemy with lowest currentHP
+        const bestTarget = livingEnemies.reduce((lowest, enemy) => {
+            if (enemy.currentHP < lowest.currentHP) {
+                return enemy;
+            }
+            return lowest;
+        });
+        
+        return bestTarget;
+    }, [combatEnemies]);
+
     const enemyAttack = useCallback(() => {
         const currentTurnEntity = turnOrder[currentTurnIndex];
         const enemyData = combatEnemies.find(e => e.name === currentTurnEntity.name);
@@ -53,20 +102,15 @@ export const useCombatActions = ({
             return;
         }
 
-        // Find potential targets
-        const availableTargets = getTargetsInRange(
-            { ...enemyData, type: 'enemy' }, 
-            enemyPos, 
-            { type: 'corps-à-corps' }, // Check melee range first
-            {
-                playerCharacter,
-                companionCharacter,
-                combatEnemies,
-                combatPositions
-            }
-        );
+        // Find valid targets (with priority system)
+        const validTargets = findValidTargetsForEnemy();
+        
+        if (validTargets.length === 0) {
+            addCombatMessage(`${currentTurnEntity.name} n'a aucune cible valide à attaquer.`);
+            handleNextTurn();
+            return;
+        }
 
-        // Check if already in attack range
         const attack = enemyData.attacks?.[0];
         if (!attack) {
             addCombatMessage(`${currentTurnEntity.name} n'a pas d'attaque définie.`);
@@ -74,57 +118,39 @@ export const useCombatActions = ({
             return;
         }
 
-        let targetsInRange = [];
-        if (playerCharacter.currentHP > 0 && combatPositions.player) {
-            if (isInAttackRange(enemyPos, combatPositions.player, attack)) {
-                targetsInRange.push({ ...playerCharacter, type: 'player', name: playerCharacter.name, ac: playerCharacter.ac });
-            }
-        }
-        if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
-            if (isInAttackRange(enemyPos, combatPositions.companion, attack)) {
-                targetsInRange.push({ ...companionCharacter, type: 'companion', name: companionCharacter.name, ac: companionCharacter.ac });
-            }
-        }
+        // Check which targets are in attack range
+        const targetsInRange = validTargets.filter(target => 
+            isInAttackRange(enemyPos, target.position, attack)
+        );
 
         // If no targets in range, try to move closer
         if (targetsInRange.length === 0) {
+            addCombatMessage(`${enemyData.name} n'a aucune cible à portée, il tente de se rapprocher.`);
             const newPosition = calculateEnemyMovementPosition(enemyData);
             if (newPosition && (newPosition.x !== enemyPos.x || newPosition.y !== enemyPos.y)) {
                 updateEnemyPosition(enemyData.name, newPosition);
                 addCombatMessage(`${enemyData.name} se déplace vers une meilleure position.`);
                 
-                // Recalculate targets after movement
-                const newEnemyPos = newPosition;
-                if (playerCharacter.currentHP > 0 && combatPositions.player) {
-                    if (isInAttackRange(newEnemyPos, combatPositions.player, attack)) {
-                        targetsInRange.push({ ...playerCharacter, type: 'player', name: playerCharacter.name, ac: playerCharacter.ac });
-                    }
-                }
-                if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
-                    if (isInAttackRange(newEnemyPos, combatPositions.companion, attack)) {
-                        targetsInRange.push({ ...companionCharacter, type: 'companion', name: companionCharacter.name, ac: companionCharacter.ac });
-                    }
-                }
-            }
-        }
-
-        // Execute attack if targets are in range
-        if (targetsInRange.length > 0) {
-            const randomTarget = targetsInRange[Math.floor(Math.random() * targetsInRange.length)];
-            const attackRoll = Math.floor(Math.random() * 20) + 1 + (attack.attackBonus || 0);
-
-            if (attackRoll >= randomTarget.ac) {
-                const { damage, message } = calculateDamage(attack);
-                if (randomTarget.type === 'player') {
-                    onPlayerTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
-                } else if (randomTarget.type === 'companion') {
-                    onCompanionTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
+                // Recalculate targets after movement with updated position
+                const updatedValidTargets = findValidTargetsForEnemy();
+                const newTargetsInRange = updatedValidTargets.filter(target => 
+                    isInAttackRange(newPosition, target.position, attack)
+                );
+                
+                // Execute attack if now in range
+                if (newTargetsInRange.length > 0) {
+                    const target = newTargetsInRange[0]; // Take highest priority target
+                    executeEnemyAttack(currentTurnEntity, target, attack);
+                } else {
+                    addCombatMessage(`${currentTurnEntity.name} ne peut toujours pas atteindre de cible après son déplacement.`);
                 }
             } else {
-                addCombatMessage(`${currentTurnEntity.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
+                addCombatMessage(`${currentTurnEntity.name} ne peut pas se déplacer vers une meilleure position.`);
             }
         } else {
-            addCombatMessage(`${currentTurnEntity.name} n'a pas de cible à portée pour attaquer.`);
+            // Attack the highest priority target in range
+            const target = targetsInRange[0];
+            executeEnemyAttack(currentTurnEntity, target, attack);
         }
 
         handleNextTurn();
@@ -141,8 +167,25 @@ export const useCombatActions = ({
         combatPositions,
         calculateEnemyMovementPosition,
         updateEnemyPosition,
-        isInAttackRange
+        isInAttackRange,
+        findValidTargetsForEnemy
     ]);
+
+    // Helper function to execute enemy attack
+    const executeEnemyAttack = useCallback((attacker, target, attack) => {
+        const attackRoll = Math.floor(Math.random() * 20) + 1 + (attack.attackBonus || 0);
+
+        if (attackRoll >= target.ac) {
+            const { damage, message } = calculateDamage(attack);
+            if (target.type === 'player') {
+                onPlayerTakeDamage(damage, `${attacker.name} touche ${target.name} avec ${attack.name} ! Il inflige ${message}.`);
+            } else if (target.type === 'companion') {
+                onCompanionTakeDamage(damage, `${attacker.name} touche ${target.name} avec ${attack.name} ! Il inflige ${message}.`);
+            }
+        } else {
+            addCombatMessage(`${attacker.name} tente d'attaquer ${target.name} avec ${attack.name}, mais rate son attaque.`, 'miss');
+        }
+    }, [onPlayerTakeDamage, onCompanionTakeDamage, addCombatMessage]);
 
     const companionAttack = useCallback(() => {
         if (!companionCharacter) {
@@ -164,9 +207,10 @@ export const useCombatActions = ({
             return;
         }
 
-        const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
+        // Find the best target (lowest HP enemy)
+        const bestTarget = findBestTargetForCompanion();
         
-        if (livingEnemies.length === 0) {
+        if (!bestTarget) {
             addCombatMessage("Il n'y a plus d'ennemis à attaquer.");
             handleNextTurn();
             return;
@@ -179,17 +223,12 @@ export const useCombatActions = ({
             return;
         }
 
-        // Check if already in attack range of any enemy
-        let targetsInRange = [];
-        livingEnemies.forEach(enemy => {
-            const enemyPos = combatPositions[enemy.name];
-            if (enemyPos && isInAttackRange(companionPos, enemyPos, { ...attack, type: 'corps-à-corps' })) {
-                targetsInRange.push(enemy);
-            }
-        });
+        // Check if best target is in range
+        const bestTargetPos = combatPositions[bestTarget.name];
+        const isTargetInRange = bestTargetPos && isInAttackRange(companionPos, bestTargetPos, { ...attack, type: 'corps-à-corps' });
 
-        // If no targets in range, try to move closer
-        if (targetsInRange.length === 0) {
+        if (!isTargetInRange) {
+            addCombatMessage(`${companionCharacter.name} n'est pas à portée de sa cible prioritaire (${bestTarget.name}), il se déplace.`);
             const newPosition = calculateEnemyMovementPosition({ 
                 ...companionCharacter, 
                 type: 'companion',
@@ -201,41 +240,18 @@ export const useCombatActions = ({
                 updateEnemyPosition('companion', newPosition);
                 addCombatMessage(`${companionCharacter.name} se déplace vers une meilleure position.`);
                 
-                // Recalculate targets after movement
-                livingEnemies.forEach(enemy => {
-                    const enemyPos = combatPositions[enemy.name];
-                    if (enemyPos && isInAttackRange(newPosition, enemyPos, { ...attack, type: 'corps-à-corps' })) {
-                        targetsInRange.push(enemy);
-                    }
-                });
-            }
-        }
-
-        // Execute attack if targets are in range
-        if (targetsInRange.length > 0) {
-            const target = targetsInRange[Math.floor(Math.random() * targetsInRange.length)];
-            const attackBonus = getModifier(companionCharacter.stats.force || companionCharacter.stats.dexterite);
-            const attackRoll = Math.floor(Math.random() * 20) + 1 + attackBonus;
-            
-            if (attackRoll >= target.ac) {
-                const { damage, message } = calculateDamage(attack);
-                const updatedEnemies = combatEnemies.map(enemy => {
-                    if (enemy.name === target.name) {
-                        const newHP = Math.max(0, enemy.currentHP - damage);
-                        return { ...enemy, currentHP: newHP };
-                    }
-                    return enemy;
-                });
-                setCombatEnemies(updatedEnemies);
-                addCombatMessage(`${companionCharacter.name} touche ${target.name} avec ${attack.name} ! Il inflige ${message}.`, 'player-damage');
-                if (updatedEnemies.find(e => e.name === target.name).currentHP <= 0) {
-                    addCombatMessage(`${target.name} a été vaincu !`);
+                // Check if now in range of best target after movement
+                if (bestTargetPos && isInAttackRange(newPosition, bestTargetPos, { ...attack, type: 'corps-à-corps' })) {
+                    executeCompanionAttack(bestTarget, attack);
+                } else {
+                    addCombatMessage(`${companionCharacter.name} ne peut toujours pas atteindre sa cible après son déplacement.`);
                 }
             } else {
-                addCombatMessage(`${companionCharacter.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
+                addCombatMessage(`${companionCharacter.name} ne peut pas se déplacer vers une meilleure position.`);
             }
         } else {
-            addCombatMessage(`${companionCharacter.name} n'a pas de cible à portée pour attaquer.`);
+            // Attack the best target directly
+            executeCompanionAttack(bestTarget, attack);
         }
 
         handleNextTurn();
@@ -249,8 +265,33 @@ export const useCombatActions = ({
         updateEnemyPosition,
         playerCharacter,
         setCombatEnemies,
-        isInAttackRange
+        isInAttackRange,
+        findBestTargetForCompanion
     ]);
+
+    // Helper function to execute companion attack
+    const executeCompanionAttack = useCallback((target, attack) => {
+        const attackBonus = getModifier(companionCharacter.stats.force || companionCharacter.stats.dexterite);
+        const attackRoll = Math.floor(Math.random() * 20) + 1 + attackBonus;
+        
+        if (attackRoll >= target.ac) {
+            const { damage, message } = calculateDamage(attack);
+            const updatedEnemies = combatEnemies.map(enemy => {
+                if (enemy.name === target.name) {
+                    const newHP = Math.max(0, enemy.currentHP - damage);
+                    return { ...enemy, currentHP: newHP };
+                }
+                return enemy;
+            });
+            setCombatEnemies(updatedEnemies);
+            addCombatMessage(`${companionCharacter.name} touche ${target.name} avec ${attack.name} ! Il inflige ${message}.`, 'player-damage');
+            if (updatedEnemies.find(e => e.name === target.name).currentHP <= 0) {
+                addCombatMessage(`${target.name} a été vaincu !`);
+            }
+        } else {
+            addCombatMessage(`${companionCharacter.name} tente d'attaquer ${target.name} avec ${attack.name}, mais rate son attaque.`, 'miss');
+        }
+    }, [companionCharacter, combatEnemies, setCombatEnemies, addCombatMessage]);
 
     return {
         enemyAttack,
