@@ -151,62 +151,65 @@ const CombatPanel = ({
             }
         }
 
-        const attackSet = enemyData.attackSets?.[Math.floor(Math.random() * enemyData.attackSets.length)] || {
-            name: enemyData.attacks?.[0]?.name,
-            attacks: [enemyData.attacks?.[0]]
-        };
+        // Use setTimeout to ensure position updates are processed before attacks
+        setTimeout(() => {
+            const attackSet = enemyData.attackSets?.[Math.floor(Math.random() * enemyData.attackSets.length)] || {
+                name: enemyData.attacks?.[0]?.name,
+                attacks: [enemyData.attacks?.[0]]
+            };
 
-        if (!attackSet.attacks[0]) {
-            addCombatMessage(`${currentTurnEntity.name} n'a pas d'attaque définie.`);
+            if (!attackSet.attacks[0]) {
+                addCombatMessage(`${currentTurnEntity.name} n'a pas d'attaque définie.`);
+                handleNextTurn();
+                return;
+            }
+
+            // Now handle attacks with updated position
+            const updatedEnemyPos = combatPositions[enemyData.name];
+            
+            // Debug: Log enemy position and available targets
+            console.log(`${enemyData.name} position:`, updatedEnemyPos);
+            console.log('Player position:', combatPositions.player);
+            console.log('Companion position:', combatPositions.companion);
+            console.log('Companion character:', companionCharacter);
+            
+            for (const attack of attackSet.attacks) {
+                const attackRoll = Math.floor(Math.random() * 20) + 1 + (attack.attackBonus || 0);
+                const availableTargets = getTargetsInRange(
+                    { ...enemyData, type: 'enemy' }, 
+                    updatedEnemyPos, 
+                    attack, 
+                    {
+                        playerCharacter,
+                        companionCharacter,
+                        combatEnemies,
+                        combatPositions
+                    }
+                );
+                
+                // Debug: Log available targets
+                console.log(`${enemyData.name} available targets:`, availableTargets);
+                
+                if (availableTargets.length === 0) {
+                    addCombatMessage(`${currentTurnEntity.name} n'a pas de cible à portée pour attaquer.`);
+                    continue;
+                }
+                
+                const randomTarget = availableTargets[Math.floor(Math.random() * availableTargets.length)];
+
+                if (attackRoll >= randomTarget.ac) {
+                    const { damage, message } = calculateDamage(attack);
+                    if (randomTarget.type === 'player') {
+                        onPlayerTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
+                    } else if (randomTarget.type === 'companion') {
+                        onCompanionTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
+                    }
+                } else {
+                    addCombatMessage(`${currentTurnEntity.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
+                }
+            }
             handleNextTurn();
-            return;
-        }
-
-        // Now handle attacks with updated position
-        const updatedEnemyPos = combatPositions[enemyData.name];
-        
-        // Debug: Log enemy position and available targets
-        console.log(`${enemyData.name} position:`, updatedEnemyPos);
-        console.log('Player position:', combatPositions.player);
-        console.log('Companion position:', combatPositions.companion);
-        console.log('Companion character:', companionCharacter);
-        
-        for (const attack of attackSet.attacks) {
-            const attackRoll = Math.floor(Math.random() * 20) + 1 + (attack.attackBonus || 0);
-            const availableTargets = getTargetsInRange(
-                { ...enemyData, type: 'enemy' }, 
-                updatedEnemyPos, 
-                attack, 
-                {
-                    playerCharacter,
-                    companionCharacter,
-                    combatEnemies,
-                    combatPositions
-                }
-            );
-            
-            // Debug: Log available targets
-            console.log(`${enemyData.name} available targets:`, availableTargets);
-            
-            if (availableTargets.length === 0) {
-                addCombatMessage(`${currentTurnEntity.name} n'a pas de cible à portée pour attaquer.`);
-                continue;
-            }
-            
-            const randomTarget = availableTargets[Math.floor(Math.random() * availableTargets.length)];
-
-            if (attackRoll >= randomTarget.ac) {
-                const { damage, message } = calculateDamage(attack);
-                if (randomTarget.type === 'player') {
-                    onPlayerTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
-                } else if (randomTarget.type === 'companion') {
-                    onCompanionTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
-                }
-            } else {
-                addCombatMessage(`${currentTurnEntity.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
-            }
-        }
-        handleNextTurn();
+        }, 100);
     }, [addCombatMessage, handleNextTurn, onPlayerTakeDamage, playerCharacter, turnOrder, currentTurnIndex, combatEnemies, companionCharacter, onCompanionTakeDamage]);
 
     const companionAttack = useCallback(() => {
