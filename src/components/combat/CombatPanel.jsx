@@ -462,51 +462,53 @@ const CombatPanel = ({
                 showTargetingFor={playerAction ? 'player' : null}
             />
 
-            {combatPhase === 'initiative-roll' && <InitiativePanel onStartCombat={() => setCombatPhase('turn')} />}
+            <div className="combat-controls">
+                {combatPhase === 'initiative-roll' && <InitiativePanel onStartCombat={() => setCombatPhase('turn')} />}
 
-            {combatPhase === 'end' && (
-                <>
-                    <CombatEndPanel
-                        onContinue={() => {
-                           
-                            setCombatLog([]);
-                            if (victory) {
-                                onCombatEnd(encounterData);
-                            } else {
-                                onCombatEnd([]);
-                            }
+                {combatPhase === 'end' && (
+                    <>
+                        <CombatEndPanel
+                            onContinue={() => {
+                               
+                                setCombatLog([]);
+                                if (victory) {
+                                    onCombatEnd(encounterData);
+                                } else {
+                                    onCombatEnd([]);
+                                }
+                            }}
+                            hasWon={victory}
+                        />
+                        {defeated && (
+                            <>
+                                <p>Tu as été vaincu. Tu peux rejouer le combat ou continuer l'aventure.</p>
+                                <button onClick={resetCombat} style={{ marginTop: '10px' }}>
+                                    Rejouer le combat
+                                </button>
+                            </>
+                        )}
+                    </>
+                )}
+
+                {combatPhase === 'player-action' && (
+                    <PlayerTurnPanel
+                        playerCharacter={playerCharacter}
+                        onSelectSpell={(spell) => {
+                            setPlayerAction(spell);
+                            setShowTargetingFor('player');
                         }}
-                        hasWon={victory}
+                        onPassTurn={() => {
+                            setPlayerAction(null);
+                            setShowTargetingFor(null);
+                            handleNextTurn();
+                        }}
+                        selectedSpell={playerAction}
+                        selectedTargets={actionTargets}
                     />
-                    {defeated && (
-                        <>
-                            <p>Tu as été vaincu. Tu peux rejouer le combat ou continuer l'aventure.</p>
-                            <button onClick={resetCombat} style={{ marginTop: '10px' }}>
-                                Rejouer le combat
-                            </button>
-                        </>
-                    )}
-                </>
-            )}
+                )}
 
-            {combatPhase === 'player-action' && (
-                <PlayerTurnPanel
-                    playerCharacter={playerCharacter}
-                    onSelectSpell={(spell) => {
-                        setPlayerAction(spell);
-                        setShowTargetingFor('player');
-                    }}
-                    onPassTurn={() => {
-                        setPlayerAction(null);
-                        setShowTargetingFor(null);
-                        handleNextTurn();
-                    }}
-                    selectedSpell={playerAction}
-                    selectedTargets={actionTargets}
-                />
-            )}
-
-            {combatPhase === 'turn' && <p>Le combat est en cours...</p>}
+                {combatPhase === 'turn' && <p>Le combat est en cours...</p>}
+            </div>
         </div>
     );
 };
