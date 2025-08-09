@@ -40,7 +40,7 @@ export const enemyTemplates = {
             sagesse: 11,
             charisme: 7
         },
-        movement: 6,
+        movement: 5,
         attacks: [
             {
                 name: "Poing",
