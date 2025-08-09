@@ -34,6 +34,16 @@ export const useCombatManager = ({
         onCompanionTakeDamage
     );
 
+    // Destructure stable setter functions from combatMovement
+    const {
+        setCombatPositions,
+        setShowMovementFor,
+        setShowTargetingFor,
+        setHasMovedThisTurn,
+        setSelectedAoESquares,
+        setAoECenter
+    } = combatMovement;
+
     // Reset combat when combatKey changes
     useEffect(() => {
         if (combatKey > 0) {
@@ -48,13 +58,13 @@ export const useCombatManager = ({
         setCurrentTurnIndex(0);
         setPlayerAction(null);
         setActionTargets([]);
-        combatMovement.setCombatPositions({});
-        combatMovement.setShowMovementFor(null);
-        combatMovement.setShowTargetingFor(null);
-        combatMovement.setHasMovedThisTurn(false);
-        combatMovement.setSelectedAoESquares([]);
-        combatMovement.setAoECenter(null);
-    }, [combatKey, combatMovement]);
+        setCombatPositions({});
+        setShowMovementFor(null);
+        setShowTargetingFor(null);
+        setHasMovedThisTurn(false);
+        setSelectedAoESquares([]);
+        setAoECenter(null);
+    }, [combatKey, setCombatPositions, setShowMovementFor, setShowTargetingFor, setHasMovedThisTurn, setSelectedAoESquares, setAoECenter, setCombatPhase]);
 
     // Update companion character when playerCompanion changes
     useEffect(() => {
