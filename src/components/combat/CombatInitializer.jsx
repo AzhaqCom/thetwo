@@ -13,24 +13,36 @@ const CombatInitializer = ({
     initializeCombatPositions,
     addCombatMessage
 }) => {
+    const [hasInitialized, setHasInitialized] = useState(false);
+
     // Initialize combat when phase is 'initiative-roll'
     useEffect(() => {
         console.log('CombatInitializer useEffect triggered:', { combatPhase, encounterData, combatKey });
+        
+        // Reset initialization flag when combatKey changes (new combat or replay)
+        if (combatKey !== undefined) {
+            setHasInitialized(false);
+        }
+    }, [combatKey]);
+
+    useEffect(() => {
+        console.log('CombatInitializer initialization check:', { combatPhase, hasInitialized, encounterData: !!encounterData });
         
         if (combatPhase === 'end') {
             console.log('Skipping initialization - combat ended');
             return;
         }
         
-        // Allow initialization on first load (combatKey === 0) regardless of phase
-        // Or when phase is specifically 'initiative-roll'
-        const shouldInitialize = (combatKey === 0 && encounterData && encounterData.length) || 
-                                (combatPhase === 'initiative-roll' && encounterData && encounterData.length);
+        // Only initialize once per combat and when we have encounter data
+        const shouldInitialize = !hasInitialized && encounterData && encounterData.length > 0;
         
         if (!shouldInitialize) {
-            console.log('Skipping initialization - wrong phase or no encounter data');
+            console.log('Skipping initialization - already initialized or no encounter data');
             return;
         }
+
+        console.log('Starting combat initialization...');
+        setHasInitialized(true);
 
         const initialCombatEnemies = encounterData.flatMap((encounter) => {
             const template = enemyTemplates[encounter.type];
@@ -111,7 +123,7 @@ const CombatInitializer = ({
         order.forEach((entity) => {
             addCombatMessage(`${entity.name} a lancé l'initiative et a obtenu ${entity.initiative}.`, 'initiative');
         });
-    }, [encounterData, playerCharacter, playerCompanion, addCombatMessage, combatPhase, combatKey, initializeCombatPositions, setCombatEnemies, setTurnOrder]);
+    }, [combatPhase, hasInitialized, encounterData, playerCharacter, playerCompanion, addCombatMessage, initializeCombatPositions, setCombatEnemies, setTurnOrder]);
 
     return null; // This component doesn't render anything
 };
