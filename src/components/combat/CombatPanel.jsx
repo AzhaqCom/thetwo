@@ -207,6 +207,25 @@ const CombatPanel = ({
             return;
         }
 
+        // First, handle enemy movement
+        const enemyPos = combatPositions[enemyData.name];
+        if (enemyPos) {
+            const newPosition = calculateEnemyMovement(enemyData, enemyPos);
+            if (newPosition && (newPosition.x !== enemyPos.x || newPosition.y !== enemyPos.y)) {
+                // Check for opportunity attacks when enemy moves
+                const opportunityAttacks = checkOpportunityAttacks(enemyData.name, enemyPos, newPosition);
+                opportunityAttacks.forEach(attack => {
+                    executeOpportunityAttack(attack.attacker, attack.target);
+                });
+                
+                setCombatPositions(prev => ({
+                    ...prev,
+                    [enemyData.name]: newPosition
+                }));
+                addCombatMessage(`${enemyData.name} se déplace vers une meilleure position.`);
+            }
+        }
+
         const attackSet = enemyData.attackSets?.[Math.floor(Math.random() * enemyData.attackSets.length)] || {
             name: enemyData.attacks?.[0]?.name,
             attacks: [enemyData.attacks?.[0]]
@@ -218,16 +237,18 @@ const CombatPanel = ({
             return;
         }
 
+        // Now handle attacks with updated position
+        const updatedEnemyPos = combatPositions[enemyData.name];
         for (const attack of attackSet.attacks) {
             const attackRoll = Math.floor(Math.random() * 20) + 1 + (attack.attackBonus || 0);
-            const targets = [playerCharacter, companionCharacter].filter(c => c && c.currentHP > 0);
-            const randomTarget = targets[Math.floor(Math.random() * targets.length)];
-
-            if (!randomTarget) {
-                addCombatMessage(`${currentTurnEntity.name} n'a pas de cible valide à attaquer.`);
-                handleNextTurn();
-                return;
+            const availableTargets = getTargetsInRange(enemyData, updatedEnemyPos, attack);
+            
+            if (availableTargets.length === 0) {
+                addCombatMessage(`${currentTurnEntity.name} n'a pas de cible à portée pour attaquer.`);
+                continue;
             }
+            
+            const randomTarget = availableTargets[Math.floor(Math.random() * availableTargets.length)];
 
             if (attackRoll >= randomTarget.ac) {
                 const { damage, message } = calculateDamage(attack);
