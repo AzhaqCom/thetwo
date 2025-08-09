@@ -1,15 +1,14 @@
 import React from 'react';
-// Importez le composant d'icône créé
-import { HeartIcon } from '../Icons';
+import { HeartIcon } from '../ui/Icons';
 
 const CompanionDisplay = ({ companion }) => {
-  // Le composant ne s'affiche que si un compagnon existe
   if (!companion) {
     return null;
   }
 
-  // La logique pour la barre de vie
-  const hpPercentage = companion.maxHP > 0 ? Math.max(0, (companion.currentHP / companion.maxHP) * 100) : 0;
+  const hpPercentage = companion.maxHP > 0 
+    ? Math.max(0, (companion.currentHP / companion.maxHP) * 100) 
+    : 0;
   
   return (
     <div className="companion-display-container">
@@ -35,9 +34,7 @@ const CompanionDisplay = ({ companion }) => {
         <div className="companion-hp-bar">
           <div
             className="companion-hp-bar-fill"
-            style={{
-              width: `${hpPercentage}%`,
-            }}
+            style={{ width: `${hpPercentage}%` }}
           />
         </div>
       </div>
@@ -45,4 +42,4 @@ const CompanionDisplay = ({ companion }) => {
   );
 };
 
-export default CompanionDisplay;
+export default React.memo(CompanionDisplay);

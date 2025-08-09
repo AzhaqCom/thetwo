@@ -1,11 +1,50 @@
-// src/components/combat/EnemyDisplay.jsx
+import React, { useCallback } from 'react';
+import { HeartIcon } from '../ui/Icons';
 
-import React from 'react';
-// Importez le composant d'icône créé
-import { HeartIcon } from '../Icons';
+const EnemyCard = React.memo(({ enemy, index, selected, targetable, onSelectTarget }) => {
+  const handleClick = useCallback(() => {
+    if (onSelectTarget && targetable) {
+      onSelectTarget(enemy);
+    }
+  }, [onSelectTarget, targetable, enemy]);
 
-const EnemyDisplay = ({ combatEnemies, onSelectTarget, selectedTargets }) => {
-  if (!combatEnemies || combatEnemies.length === 0) {
+  const hpPercentage = enemy.maxHP > 0 
+    ? Math.max(0, (enemy.currentHP / enemy.maxHP) * 100) 
+    : 0;
+
+  return (
+    <div
+      className={`enemy-card ${selected ? 'selected' : ''} ${targetable ? 'targetable' : 'not-targetable'}`}
+      onClick={handleClick}
+      title={`${enemy.name} - Initiative: ${enemy.initiative}`}
+    >
+      {enemy.image && (
+        <img
+          src={enemy.image}
+          alt={enemy.name}
+          className="enemy-image"
+        />
+      )}
+      <div className="enemy-name-initiative">
+        <span className="enemy-name">{enemy.name}</span>
+        <span className="enemy-initiative">Init: {enemy.initiative}</span>
+      </div>
+      <div className="enemy-hp">
+        <HeartIcon />
+        <span>{Math.max(0, enemy.currentHP)} PV</span>
+      </div>
+      <div className="enemy-hp-bar">
+        <div
+          className="enemy-hp-bar-fill"
+          style={{ width: `${hpPercentage}%` }}
+        />
+      </div>
+    </div>
+  );
+});
+
+const EnemyDisplay = ({ combatEnemies = [], onSelectTarget, selectedTargets = [] }) => {
+  if (combatEnemies.length === 0) {
     return null;
   }
 
@@ -18,45 +57,18 @@ const EnemyDisplay = ({ combatEnemies, onSelectTarget, selectedTargets }) => {
         const targetable = isTargetable(enemy);
 
         return (
-          <div
+          <EnemyCard
             key={`${enemy.name}-${index}`}
-            className={`enemy-card ${selected ? 'selected' : ''} ${targetable ? 'targetable' : 'not-targetable'}`}
-            onClick={() => {
-              if (onSelectTarget && targetable) {
-                onSelectTarget(enemy);
-              }
-            }}
-            title={`${enemy.name} - Initiative: ${enemy.initiative}`}
-          >
-            {enemy.image && (
-              <img
-                src={enemy.image}
-                alt={enemy.name}
-                className="enemy-image"
-              />
-            )}
-            <div className="enemy-name-initiative">
-              <span className="enemy-name">{enemy.name}</span>
-              <span className="enemy-initiative">Init: {enemy.initiative}</span>
-            </div>
-            <div className="enemy-hp">
-
-              <HeartIcon />
-              <span>{Math.max(0, enemy.currentHP)} PV</span>
-            </div>
-            <div className="enemy-hp-bar">
-              <div
-                className="enemy-hp-bar-fill"
-                style={{
-                  width: `${enemy.maxHP > 0 ? Math.max(0, (enemy.currentHP / enemy.maxHP) * 100) : 0}%`,
-                }}
-              />
-            </div>
-          </div>
+            enemy={enemy}
+            index={index}
+            selected={selected}
+            targetable={targetable}
+            onSelectTarget={onSelectTarget}
+          />
         );
       })}
     </div>
   );
 };
 
-export default EnemyDisplay;
+export default React.memo(EnemyDisplay);

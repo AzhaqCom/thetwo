@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
-const CombatEndPanel = ({ onContinue,hasWon }) => {
-    return (
-        <div>
-            <h3>Combat terminé !</h3>
-            {hasWon && (
-                <button onClick={onContinue}>Continuer l'aventure</button>
-            )}
-        </div>
-    );
+const CombatEndPanel = ({ onContinue, hasWon }) => {
+  const handleContinue = useCallback(() => {
+    onContinue();
+  }, [onContinue]);
+
+  return (
+    <div>
+      <h3>Combat terminé !</h3>
+      {hasWon && (
+        <button onClick={handleContinue}>Continuer l'aventure</button>
+      )}
+    </div>
+  );
 };
 
-export default CombatEndPanel;
+export default React.memo(CombatEndPanel);
