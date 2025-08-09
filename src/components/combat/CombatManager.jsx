@@ -62,6 +62,7 @@ export const useCombatManager = ({
         }
         
     }, [combatKey, combatMovement]);
+    }, [combatKey, combatMovement.setCombatPositions, combatMovement.setShowMovementFor, combatMovement.setShowTargetingFor, combatMovement.setHasMovedThisTurn, combatMovement.setSelectedAoESquares, combatMovement.setAoECenter]);
 
     // Update companion character when playerCompanion changes
     useEffect(() => {
