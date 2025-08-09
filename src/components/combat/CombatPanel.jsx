@@ -6,7 +6,7 @@ import { rollDice, calculateDamage } from '../utils/combatUtils';
 import InitiativePanel from './InitiativePanel';
 import CombatEndPanel from './CombatEndPanel';
 import PlayerTurnPanel from './PlayerTurnPanel';
-import EnemyDisplay from './EnemyDisplay';
+import CombatGrid from './CombatGrid';
 
 const CombatPanel = ({
     playerCharacter,
@@ -29,6 +29,9 @@ const CombatPanel = ({
     const [combatPhase, setCombatPhase] = useState('initiative-roll');
     const [playerAction, setPlayerAction] = useState(null);
     const [actionTargets, setActionTargets] = useState([]);
+    const [combatPositions, setCombatPositions] = useState({});
+    const [showMovementFor, setShowMovementFor] = useState(null);
+    const [showTargetingFor, setShowTargetingFor] = useState(null);
     // Les états `defeated` et `victory` sont maintenant gérés par la logique de fin de combat dans le parent.
     // Cependant, nous les conservons ici pour le rendu du CombatEndPanel
     const [defeated, setDefeated] = useState(false);
@@ -45,6 +48,9 @@ const CombatPanel = ({
         setCurrentTurnIndex(0);
         setPlayerAction(null);
         setActionTargets([]);
+        setCombatPositions({});
+        setShowMovementFor(null);
+        setShowTargetingFor(null);
     }, [combatKey]);
 
 
@@ -52,6 +58,38 @@ const CombatPanel = ({
         onReplayCombat();
     };
 
+    // Initialize combat positions when enemies are set up
+    const initializeCombatPositions = useCallback((enemies, hasCompanion) => {
+        const positions = {};
+        
+        // Place player at bottom-left
+        positions.player = { x: 0, y: 5 };
+        
+        // Place companion next to player if exists
+        if (hasCompanion) {
+            positions.companion = { x: 1, y: 5 };
+        }
+        
+        // Place enemies at the top, spread out
+        enemies.forEach((enemy, index) => {
+            const x = 6 + (index % 2); // Start from right side
+            const y = Math.floor(index / 2); // Stack vertically if more than 2
+            positions[enemy.name] = { x, y };
+        });
+        
+        setCombatPositions(positions);
+    }, []);
+
+    const handleMoveCharacter = useCallback((characterId, newPosition) => {
+        setCombatPositions(prev => ({
+            ...prev,
+            [characterId]: newPosition
+        }));
+        setShowMovementFor(null);
+        
+        // After moving, continue to next turn or action selection
+        handleNextTurn();
+    }, []);
 
 
     const handleNextTurn = useCallback(() => {
@@ -84,6 +122,8 @@ const CombatPanel = ({
         setCombatPhase('turn');
         setPlayerAction(null);
         setActionTargets([]);
+        setShowMovementFor(null);
+        setShowTargetingFor(null);
     }, [currentTurnIndex, turnOrder, combatEnemies, addCombatMessage, playerCharacter.currentHP, companionCharacter]);
 
     const enemyAttack = useCallback(() => {
@@ -242,6 +282,7 @@ const CombatPanel = ({
         setCombatEnemies(updatedEnemies);
         setPlayerAction(null);
         setActionTargets([]);
+        setShowTargetingFor(null);
         handleNextTurn();
     }, [playerAction, actionTargets, onPlayerCastSpell, combatEnemies, playerCharacter, addCombatMessage, handleNextTurn]);
 
@@ -349,10 +390,11 @@ const CombatPanel = ({
         });
         setCombatEnemies(enemiesWithInitiative);
         setTurnOrder(order);
+        initializeCombatPositions(initialCombatEnemies, !!playerCompanion);
         order.forEach((entity) => {
             addCombatMessage(`${entity.name} a lancé l'initiative et a obtenu ${entity.initiative}.`, 'initiative');
         });
-    }, [encounterData, playerCharacter, playerCompanion, addCombatMessage, combatPhase, combatKey]);
+    }, [encounterData, playerCharacter, playerCompanion, addCombatMessage, combatPhase, combatKey, initializeCombatPositions]);
 
     useEffect(() => {
         if (combatPhase === 'initiative-roll' || combatPhase === 'end' || !turnOrder.length) return;
@@ -389,6 +431,9 @@ const CombatPanel = ({
                 }
                 setCombatPhase('player-action');
                 addCombatMessage("C'est ton tour !");
+                
+                // For now, skip movement phase and go directly to action
+                // Later we can add a movement phase here
             } else if (isCompanionTurn) {
                 addCombatMessage(`C'est le tour de ${currentTurnEntity.name}...`);
                 const timer = setTimeout(() => companionAttack(), 400);
@@ -403,10 +448,18 @@ const CombatPanel = ({
 
     return (
         <div className="combat-panel-container">
-            <EnemyDisplay
+            <CombatGrid
+                playerCharacter={playerCharacter}
+                playerCompanion={companionCharacter}
                 combatEnemies={combatEnemies}
-                onSelectTarget={playerAction ? handleTargetSelection : null}
+                onSelectTarget={handleTargetSelection}
                 selectedTargets={actionTargets}
+                currentTurnIndex={currentTurnIndex}
+                turnOrder={turnOrder}
+                onMoveCharacter={handleMoveCharacter}
+                combatPositions={combatPositions}
+                showMovementFor={showMovementFor}
+                showTargetingFor={playerAction ? 'player' : null}
             />
 
             {combatPhase === 'initiative-roll' && <InitiativePanel onStartCombat={() => setCombatPhase('turn')} />}
@@ -439,9 +492,13 @@ const CombatPanel = ({
             {combatPhase === 'player-action' && (
                 <PlayerTurnPanel
                     playerCharacter={playerCharacter}
-                    onSelectSpell={setPlayerAction}
+                    onSelectSpell={(spell) => {
+                        setPlayerAction(spell);
+                        setShowTargetingFor('player');
+                    }}
                     onPassTurn={() => {
                         setPlayerAction(null);
+                        setShowTargetingFor(null);
                         handleNextTurn();
                     }}
                     selectedSpell={playerAction}
