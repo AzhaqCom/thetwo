@@ -15,10 +15,14 @@ const CombatInitializer = ({
 }) => {
     // Initialize combat when phase is 'initiative-roll'
     useEffect(() => {
+        console.log('CombatInitializer useEffect triggered:', { combatPhase, encounterData, combatKey });
+        
         if (combatPhase === 'end') {
+            console.log('Skipping initialization - combat ended');
             return;
         }
         if (combatPhase !== 'initiative-roll' || !encounterData || !encounterData.length) {
+            console.log('Skipping initialization - wrong phase or no encounter data');
             return;
         }
 

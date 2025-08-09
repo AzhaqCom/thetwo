@@ -36,6 +36,7 @@ export const useCombatManager = ({
 
     // Reset combat when combatKey changes
     useEffect(() => {
+        console.log('Combat reset triggered - combatKey:', combatKey);
         setCombatPhase('initiative-roll');
         setDefeated(false);
         setVictory(false);
@@ -50,7 +51,7 @@ export const useCombatManager = ({
         combatMovement.setHasMovedThisTurn(false);
         combatMovement.setSelectedAoESquares([]);
         combatMovement.setAoECenter(null);
-    }, [combatKey, combatMovement.setCombatPositions, combatMovement.setShowMovementFor, combatMovement.setShowTargetingFor, combatMovement.setHasMovedThisTurn, combatMovement.setSelectedAoESquares, combatMovement.setAoECenter]);
+    }, [combatKey]);
 
     // Update companion character when playerCompanion changes
     useEffect(() => {
