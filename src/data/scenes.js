@@ -157,8 +157,8 @@ Récemment, tu as entendu des murmures concernant une ancienne prophétie liée 
                         { type: 'squelette', count: 2 }
                     ],
                     enemyPositions: [
-                        { x: 0, y: 1 },  // Premier squelette
-                        { x: 7, y: 2 }   // Deuxième squelette
+                        { x: 0, y: 0 },  // Premier squelette
+                        { x: 7, y: 0 }   // Deuxième squelette
                     ],
                     next: 'scene11'
                 }
