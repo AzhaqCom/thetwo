@@ -30,11 +30,9 @@ export const companions = {
             {
                 name: "son Épée Courte",
                 type: "melee",
-                attackBonus: 3,
                 range: 1,
                 description: "Une attaque avec une épée courte.",
                 damageDice: "1d6",
-                damageBonus: 3,
                 damageType: "tranchant",
                 stat: "force" 
             }

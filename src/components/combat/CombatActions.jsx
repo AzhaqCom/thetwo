@@ -270,25 +270,32 @@ export const useCombatActions = ({
 
     // Helper function to execute companion attack
     const executeCompanionAttack = useCallback((target, attack) => {
-        const attackBonus = getModifier(companionCharacter.stats.force || companionCharacter.stats.dexterite);
+        // Calculate attack bonus using D&D 5e rules: stat modifier + proficiency bonus
+        const statName = attack.stat || 'force'; // Default to force if not specified
+        const statModifier = getModifier(companionCharacter.stats[statName]);
+        const attackBonus = statModifier + companionCharacter.proficiencyBonus;
         const attackRoll = Math.floor(Math.random() * 20) + 1 + attackBonus;
         
         if (attackRoll >= target.ac) {
-            const { damage, message } = calculateDamage(attack);
+            // Calculate damage using D&D 5e rules: weapon dice + stat modifier
+            const weaponDamage = rollDice(attack.damageDice);
+            const damageBonus = getModifier(companionCharacter.stats[statName]);
+            const totalDamage = weaponDamage + damageBonus;
+            
             const updatedEnemies = combatEnemies.map(enemy => {
                 if (enemy.name === target.name) {
-                    const newHP = Math.max(0, enemy.currentHP - damage);
+                    const newHP = Math.max(0, enemy.currentHP - totalDamage);
                     return { ...enemy, currentHP: newHP };
                 }
                 return enemy;
             });
             setCombatEnemies(updatedEnemies);
-            addCombatMessage(`${companionCharacter.name} touche ${target.name} avec ${attack.name} ! Il inflige ${message}.`, 'player-damage');
+            addCombatMessage(`${companionCharacter.name} touche ${target.name} avec ${attack.name} (Jet d'attaque: ${attackRoll}) ! Il inflige ${totalDamage} dégâts ${attack.damageType}.`, 'player-damage');
             if (updatedEnemies.find(e => e.name === target.name).currentHP <= 0) {
                 addCombatMessage(`${target.name} a été vaincu !`);
             }
         } else {
-            addCombatMessage(`${companionCharacter.name} tente d'attaquer ${target.name} avec ${attack.name}, mais rate son attaque.`, 'miss');
+            addCombatMessage(`${companionCharacter.name} tente d'attaquer ${target.name} avec ${attack.name} (Jet d'attaque: ${attackRoll}), mais rate son attaque.`, 'miss');
         }
     }, [companionCharacter, combatEnemies, setCombatEnemies, addCombatMessage]);
 
