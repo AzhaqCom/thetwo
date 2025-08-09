@@ -165,16 +165,6 @@ const CombatPanel = ({
         return combatManager.combatPositions[character.name];
     }, [combatManager.combatPositions]);
     
-    // Debug: Log combat state
-    console.log('CombatPanel render - Full state:', {
-        phase: combatManager.combatPhase,
-        positions: combatManager.combatPositions,
-        enemies: combatManager.combatEnemies.length,
-        enemyNames: combatManager.combatEnemies.map(e => e.name),
-        companion: !!combatManager.companionCharacter,
-        turnOrder: combatManager.turnOrder.map(t => ({ name: t.name, type: t.type })),
-        currentTurnIndex: combatManager.currentTurnIndex
-    });
 
     return (
         <div className="combat-panel-container">

@@ -36,11 +36,8 @@ export const useCombatManager = ({
 
     // Reset combat when combatKey changes
     useEffect(() => {
-        console.log('Combat reset triggered - combatKey:', combatKey);
-        
         // Only reset on replay, not initial load
         if (combatKey > 0) {
-            console.log('Resetting combat for replay');
             setCombatPhase('initiative-roll');
             setDefeated(false);
             setVictory(false);
@@ -56,7 +53,6 @@ export const useCombatManager = ({
             combatMovement.setSelectedAoESquares([]);
             combatMovement.setAoECenter(null);
         } else {
-            console.log('Initial combat load - not resetting');
             setCombatPhase('initiative-roll');
             setDefeated(false);
             setVictory(false);
@@ -79,14 +75,11 @@ export const useCombatManager = ({
 
     // Check for victory condition
     useEffect(() => {
-        console.log('Victory check - combatPhase:', combatPhase, 'enemies:', combatEnemies.length);
-        
         if (combatPhase === 'end' || combatEnemies.length === 0) {
             return;
         }
 
         const allEnemiesDefeated = combatEnemies.every(enemy => enemy.currentHP <= 0);
-        console.log('All enemies defeated?', allEnemiesDefeated);
         
         if (allEnemiesDefeated) {
             setCombatPhase('end');

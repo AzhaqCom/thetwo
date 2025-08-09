@@ -19,11 +19,6 @@ export const useCombatMovement = (
 
     // Initialize combat positions when enemies are set up
     const initializeCombatPositions = useCallback((enemies, hasCompanion) => {
-        console.log('initializeCombatPositions called with:', {
-            enemies: enemies.map(e => e.name),
-            hasCompanion
-        });
-        
         const positions = {};
         
         // Place player at bottom-left
@@ -39,10 +34,8 @@ export const useCombatMovement = (
             const x = 6 + (index % 2); // Start from right side
             const y = Math.floor(index / 2); // Stack vertically if more than 2
             positions[enemy.name] = { x, y };
-            console.log(`Positioned ${enemy.name} at (${x}, ${y})`);
         });
         
-        console.log('Final initialized positions:', positions);
         setCombatPositions(positions);
     }, []);
 
