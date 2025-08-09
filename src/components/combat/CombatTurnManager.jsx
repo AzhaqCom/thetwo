@@ -16,7 +16,7 @@ const CombatTurnManager = ({
 }) => {
     // Handle turn progression
     useEffect(() => {
-        if (combatPhase === 'initiative-roll' || combatPhase === 'end' || !turnOrder.length) {
+        if (combatPhase === 'initializing' || combatPhase === 'initiative-display' || combatPhase === 'end' || !turnOrder.length) {
             return;
         }
 

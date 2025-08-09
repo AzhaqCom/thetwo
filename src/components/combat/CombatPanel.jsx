@@ -2,11 +2,7 @@ import React, { useCallback } from 'react';
 import { useCombatManager } from './CombatManager';
 import { useCombatActions } from './CombatActions';
 import { useCombatSpellHandler } from './CombatSpellHandler';
-import CombatInitializer from './CombatInitializer';
 import CombatTurnManager from './CombatTurnManager';
-import InitiativePanel from './InitiativePanel';
-import CombatEndPanel from './CombatEndPanel';
-import PlayerTurnPanel from './PlayerTurnPanel';
 import CombatGrid from './CombatGrid';
 
 const CombatPanel = ({
@@ -164,22 +160,94 @@ const CombatPanel = ({
         if (character.id === 'companion') return combatManager.combatPositions.companion;
         return combatManager.combatPositions[character.name];
     }, [combatManager.combatPositions]);
-    
+
+    // Render different phases
+    const renderCombatPhase = () => {
+        switch (combatManager.combatPhase) {
+            case 'initializing':
+                return (
+                    <div className="combat-controls">
+                        <p>Initialisation du combat...</p>
+                    </div>
+                );
+
+            case 'initiative-display':
+                return (
+                    <div className="combat-controls">
+                        <p>Les jets d'initiative ont été lancés. Clique pour commencer le combat !</p>
+                        <button onClick={combatManager.startCombat}>
+                            Commencer le combat
+                        </button>
+                    </div>
+                );
+
+            case 'player-movement':
+                return (
+                    <div className="combat-controls">
+                        <h3>Phase de Mouvement</h3>
+                        <p>Clique sur une case verte pour te déplacer (6 cases maximum).</p>
+                        <button onClick={() => {
+                            combatManager.setShowMovementFor(null);
+                            combatManager.setCombatPhase('player-action');
+                        }}>
+                            Passer le mouvement
+                        </button>
+                    </div>
+                );
+
+            case 'player-action':
+                return (
+                    <div className="combat-controls">
+                        <h3>Phase d'Action</h3>
+                        <p>C'est ton tour ! Quel sort veux-tu lancer ?</p>
+                        {/* Player action UI would go here */}
+                        <button onClick={() => {
+                            combatManager.setPlayerAction(null);
+                            combatManager.setShowTargetingFor(null);
+                            combatManager.handleNextTurn();
+                        }}>
+                            Passer le tour
+                        </button>
+                    </div>
+                );
+
+            case 'end':
+                return (
+                    <div className="combat-controls">
+                        <h3>Combat terminé !</h3>
+                        {combatManager.victory && (
+                            <button onClick={() => {
+                                setCombatLog([]);
+                                onCombatEnd(encounterData);
+                            }}>
+                                Continuer l'aventure
+                            </button>
+                        )}
+                        {combatManager.defeated && (
+                            <>
+                                <p>Tu as été vaincu. Tu peux rejouer le combat ou continuer l'aventure.</p>
+                                <button onClick={onReplayCombat} style={{ marginTop: '10px' }}>
+                                    Rejouer le combat
+                                </button>
+                            </>
+                        )}
+                    </div>
+                );
+
+            case 'turn':
+            case 'executing-turn':
+            default:
+                return (
+                    <div className="combat-controls">
+                        <p>Le combat est en cours...</p>
+                    </div>
+                );
+        }
+    };
 
     return (
         <div className="combat-panel-container">
-            <CombatInitializer
-                combatPhase={combatManager.combatPhase}
-                encounterData={encounterData}
-                playerCharacter={playerCharacter}
-                playerCompanion={playerCompanion}
-                combatKey={combatKey}
-                setCombatEnemies={combatManager.setCombatEnemies}
-                setTurnOrder={combatManager.setTurnOrder}
-                initializeCombatPositions={combatManager.initializeCombatPositions}
-                addCombatMessage={addCombatMessage}
-            />
-            
+            {/* Turn Manager - handles automatic turn progression */}
             <CombatTurnManager
                 combatPhase={combatManager.combatPhase}
                 setCombatPhase={combatManager.setCombatPhase}
@@ -195,83 +263,27 @@ const CombatPanel = ({
                 companionAttack={companionAttack}
             />
 
-            <CombatGrid
-                playerCharacter={playerCharacter}
-                playerCompanion={combatManager.companionCharacter}
-                combatEnemies={combatManager.combatEnemies}
-                onSelectTarget={handleTargetSelection}
-                selectedTargets={combatManager.actionTargets}
-                currentTurnIndex={combatManager.currentTurnIndex}
-                turnOrder={combatManager.turnOrder}
-                onMoveCharacter={combatManager.handleMoveCharacter}
-                combatPositions={combatManager.combatPositions}
-                showMovementFor={combatManager.showMovementFor}
-                showTargetingFor={combatManager.showTargetingFor}
-                selectedAoESquares={combatManager.selectedAoESquares}
-                aoeCenter={combatManager.aoeCenter}
-            />
+            {/* Combat Grid - shows after initialization */}
+            {combatManager.isInitialized && (
+                <CombatGrid
+                    playerCharacter={playerCharacter}
+                    playerCompanion={combatManager.companionCharacter}
+                    combatEnemies={combatManager.combatEnemies}
+                    onSelectTarget={handleTargetSelection}
+                    selectedTargets={combatManager.actionTargets}
+                    currentTurnIndex={combatManager.currentTurnIndex}
+                    turnOrder={combatManager.turnOrder}
+                    onMoveCharacter={combatManager.handleMoveCharacter}
+                    combatPositions={combatManager.combatPositions}
+                    showMovementFor={combatManager.showMovementFor}
+                    showTargetingFor={combatManager.showTargetingFor}
+                    selectedAoESquares={combatManager.selectedAoESquares}
+                    aoeCenter={combatManager.aoeCenter}
+                />
+            )}
 
-            <div className="combat-controls">
-                {combatManager.combatPhase === 'initiative-roll' && (
-                    <InitiativePanel onStartCombat={() => combatManager.setCombatPhase('turn')} />
-                )}
-
-                {combatManager.combatPhase === 'player-movement' && (
-                    <div>
-                        <h3>Phase de Mouvement</h3>
-                        <p>Clique sur une case verte pour te déplacer (6 cases maximum).</p>
-                        <button onClick={() => {
-                            combatManager.setShowMovementFor(null);
-                            combatManager.setCombatPhase('player-action');
-                        }}>
-                            Passer le mouvement
-                        </button>
-                    </div>
-                )}
-
-                {combatManager.combatPhase === 'end' && (
-                    <>
-                        <CombatEndPanel
-                            onContinue={() => {
-                                setCombatLog([]);
-                                if (combatManager.victory) {
-                                    onCombatEnd(encounterData);
-                                } else {
-                                    onCombatEnd([]);
-                                }
-                            }}
-                            hasWon={combatManager.victory}
-                        />
-                        {combatManager.defeated && (
-                            <>
-                                <p>Tu as été vaincu. Tu peux rejouer le combat ou continuer l'aventure.</p>
-                                <button onClick={onReplayCombat} style={{ marginTop: '10px' }}>
-                                    Rejouer le combat
-                                </button>
-                            </>
-                        )}
-                    </>
-                )}
-
-                {combatManager.combatPhase === 'player-action' && (
-                    <PlayerTurnPanel
-                        playerCharacter={playerCharacter}
-                        onSelectSpell={(spell) => {
-                            combatManager.setPlayerAction(spell);
-                            combatManager.setShowTargetingFor('player');
-                        }}
-                        onPassTurn={() => {
-                            combatManager.setPlayerAction(null);
-                            combatManager.setShowTargetingFor(null);
-                            combatManager.handleNextTurn();
-                        }}
-                        selectedSpell={combatManager.playerAction}
-                        selectedTargets={combatManager.actionTargets}
-                    />
-                )}
-
-                {combatManager.combatPhase === 'turn' && <p>Le combat est en cours...</p>}
-            </div>
+            {/* Phase-specific controls */}
+            {renderCombatPhase()}
         </div>
     );
 };
