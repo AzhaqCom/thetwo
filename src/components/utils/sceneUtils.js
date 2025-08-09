@@ -15,10 +15,10 @@ export const processSceneAction = (action, handlers) => {
         switch (action.type) {
             case 'combat':
                 return { 
-                    ...action, 
+                    ...action,
+                    enemies: action.enemies,
+                    enemyPositions: action.enemyPositions,
                     next: action.next,
-                    // Pass enemyPositions through to the combat system
-                    enemyPositions: action.enemyPositions 
                 };
             case 'longRest':
                 handlers.startLongRest(action.nextScene);

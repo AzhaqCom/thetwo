@@ -40,9 +40,13 @@ export const useCombatManager = ({
     // Initialize combat when encounterData is available
     const initializeCombat = useCallback(() => {
         
+        // Extract enemyPositions from the encounter data structure
+        const customEnemyPositions = encounterData.enemyPositions || null;
+        console.log('🎯 Custom enemy positions:', customEnemyPositions);
         
         // Create enemies from encounter data
-        const initialCombatEnemies = encounterData.flatMap((encounter, encounterIndex) => {
+        const encounters = Array.isArray(encounterData) ? encounterData : encounterData.enemies || [];
+        const initialCombatEnemies = encounters.flatMap((encounter, encounterIndex) => {
             const template = enemyTemplates[encounter.type];
             if (!template) {
                
@@ -126,8 +130,6 @@ export const useCombatManager = ({
         setIsInitialized(true);
 
         // Initialize positions
-        // Extract enemyPositions from the scene action (passed via encounterData)
-        const customEnemyPositions = encounterData.enemyPositions || null;
         combatMovement.initializeCombatPositions(initialCombatEnemies, !!playerCompanion, customEnemyPositions);
 
         // Add combat messages
