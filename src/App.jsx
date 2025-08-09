@@ -159,10 +159,6 @@ function App() {
             </div>
             <div className="sidebar right-sidebar">
                 <CharacterSheet character={playerCharacter} />
-<<<<<<< HEAD
-             
-=======
->>>>>>> 43a2f4d0f44ba91f8ab59512ddba4eee000e9eb8
             </div>
         </div>
     );
