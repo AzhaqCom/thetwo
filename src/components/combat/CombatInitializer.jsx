@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { enemyTemplates } from '../../data/enemies';
 import { getModifier } from '../utils/utils';
 
