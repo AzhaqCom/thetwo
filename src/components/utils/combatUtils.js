@@ -200,25 +200,25 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     
     // Determine movement strategy based on enemy attacks
     const hasRangedAttack = enemy.attacks?.some(attack => 
-        attack.type === 'distance' || attack.range === 'ranged' || (typeof attack.range === 'number' && attack.range > 5)
+        attack.type === 'ranged' || (typeof attack.range === 'number' && attack.range > 1)
     );
     const hasMeleeAttack = enemy.attacks?.some(attack => 
-        attack.type === 'corps-à-corps' || attack.range === 'melee' || attack.range === 'touch' || attack.range === 5
+        attack.type === 'melee' || (typeof attack.range === 'number' && attack.range <= 1)
     );
     
     let idealDistance;
     if (hasMeleeAttack && !hasRangedAttack) {
         idealDistance = 1; // Get adjacent for melee
     } else if (hasRangedAttack && !hasMeleeAttack) {
-        idealDistance = 4; // Stay at range
+        idealDistance = Math.min(4, attack.range || 4); // Stay at range but respect max range
     } else {
-        idealDistance = 2; // Mixed, prefer medium range
+        idealDistance = 1; // Mixed, prefer melee range
     }
     
     console.log(`Attack analysis - Melee: ${hasMeleeAttack}, Ranged: ${hasRangedAttack}, Ideal distance: ${idealDistance}`);
     
     // If already at ideal distance, don't move
-    if (closestDistance === idealDistance) {
+    if (closestDistance <= idealDistance) {
         console.log('Already at ideal distance, no movement needed');
         return null;
     }

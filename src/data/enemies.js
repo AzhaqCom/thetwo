@@ -61,6 +61,7 @@ export const enemyTemplates = {
         currentHP: 5,
         ac: 12,
         xp: 25,
+        movement: 6,
         stats: {
             force: 8,
             dexterite: 15,
@@ -90,6 +91,7 @@ export const enemyTemplates = {
         currentHP: 22,
         ac: 12,
         xp: 200,
+        movement: 6,
         stats: {
             force: 13,
             dexterite: 15,
@@ -120,6 +122,7 @@ export const enemyTemplates = {
         currentHP: 13,
         ac: 13,
         xp: 50,
+        movement: 6,
         stats: {
             force: 10,
             dexterite: 14,
@@ -149,6 +152,7 @@ export const enemyTemplates = {
         currentHP: 10,
         ac: 13,
         xp: 200,
+        movement: 6,
         stats: {
             force: 6,
             dexterite: 17,
