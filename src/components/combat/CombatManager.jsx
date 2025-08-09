@@ -27,6 +27,16 @@ export const useCombatManager = ({
     // Track previous combatKey to detect actual changes
     const prevCombatKeyRef = useRef(undefined);
 
+    // Combat movement hook - must be declared before initializeCombat
+    const combatMovement = useCombatMovement(
+        playerCharacter,
+        companionCharacter,
+        combatEnemies,
+        addCombatMessage,
+        onPlayerTakeDamage,
+        onCompanionTakeDamage
+    );
+
     // Initialize combat when encounterData is available
     const initializeCombat = useCallback(() => {
         console.log('⚔️ Initializing combat with encounter:', encounterData);
@@ -129,16 +139,6 @@ export const useCombatManager = ({
         
         console.log('✅ Combat initialization complete');
     }, [encounterData, playerCharacter, playerCompanion, addCombatMessage, combatMovement]);
-
-    // Combat movement hook
-    const combatMovement = useCombatMovement(
-        playerCharacter,
-        companionCharacter,
-        combatEnemies,
-        addCombatMessage,
-        onPlayerTakeDamage,
-        onCompanionTakeDamage
-    );
 
     // Initialize combat when encounterData is available
     useEffect(() => {
