@@ -39,13 +39,13 @@ export const useCombatManager = ({
 
     // Initialize combat when encounterData is available
     const initializeCombat = useCallback(() => {
-        console.log('⚔️ Initializing combat with encounter:', encounterData);
+        
         
         // Create enemies from encounter data
         const initialCombatEnemies = encounterData.flatMap((encounter) => {
             const template = enemyTemplates[encounter.type];
             if (!template) {
-                console.error(`❌ Enemy template not found for type: ${encounter.type}`);
+               
                 return [];
             }
             return Array(encounter.count)
@@ -65,12 +65,12 @@ export const useCombatManager = ({
         });
 
         if (!initialCombatEnemies.length) {
-            console.error('❌ No enemies created from encounter data');
+         
             addCombatMessage("Erreur lors du chargement des ennemis. Le combat se termine.");
             return;
         }
 
-        console.log('👹 Created enemies:', initialCombatEnemies.map(e => e.name));
+       
 
         // Roll initiative for enemies
         const enemiesWithInitiative = initialCombatEnemies.map((enemy) => ({
@@ -118,7 +118,7 @@ export const useCombatManager = ({
             return b.initiative - a.initiative;
         });
 
-        console.log('🎲 Initiative order:', order.map(c => `${c.name}: ${c.initiative}`));
+       
 
         // Update state
         setCombatEnemies(enemiesWithInitiative);
@@ -137,12 +137,12 @@ export const useCombatManager = ({
         // Move to initiative display phase
         setCombatPhase('initiative-display');
         
-        console.log('✅ Combat initialization complete');
+     
     }, [encounterData, playerCharacter, playerCompanion, addCombatMessage, combatMovement]);
 
     // Initialize combat when encounterData is available
     useEffect(() => {
-        console.log('🎮 Combat initialization check:', { 
+         { 
             encounterData: !!encounterData, 
             isInitialized, 
             combatKey,
@@ -152,7 +152,7 @@ export const useCombatManager = ({
 
         // Reset on new combat (only when combatKey actually changes)
         if (combatKey !== undefined && combatKey !== prevCombatKeyRef.current) {
-            console.log('🔄 Resetting combat for key:', combatKey);
+         
             prevCombatKeyRef.current = combatKey;
             setIsInitialized(false);
             setDefeated(false);
@@ -174,7 +174,7 @@ export const useCombatManager = ({
 
         // Initialize combat if not already done and we have encounter data
         if (!isInitialized && encounterData && encounterData.length > 0) {
-            console.log('🚀 Starting combat initialization...');
+           
             initializeCombat();
         }
     }, [encounterData, combatKey, combatMovement, initializeCombat, isInitialized]);
@@ -197,7 +197,7 @@ export const useCombatManager = ({
         const allEnemiesDefeated = combatEnemies.every(enemy => enemy.currentHP <= 0);
         
         if (allEnemiesDefeated && combatPhase !== 'initializing') {
-            console.log('🏆 Victory achieved!');
+           
             setCombatPhase('end');
             setVictory(true);
             addCombatMessage("Victoire ! Les ennemis sont vaincus.", 'victory');
@@ -205,13 +205,13 @@ export const useCombatManager = ({
     }, [combatEnemies, combatPhase, addCombatMessage]);
 
     const startCombat = useCallback(() => {
-        console.log('🎯 Starting combat turns');
+     
         setCombatPhase('turn');
     }, []);
 
     const handleNextTurn = useCallback(() => {
         if (playerCharacter.currentHP <= 0) {
-            console.log('💀 Player defeated');
+            
             setCombatPhase('end');
             setDefeated(true);
             addCombatMessage("Défaite... Tu as perdu connaissance.", 'defeat');
@@ -235,11 +235,11 @@ export const useCombatManager = ({
         }
 
         if (safetyCounter >= turnOrder.length) {
-            console.log('⚠️ No valid characters left for turns');
+           
             return;
         }
 
-        console.log(`🔄 Next turn: ${turnOrder[nextIndex].name} (index: ${nextIndex})`);
+        
         setCurrentTurnIndex(nextIndex);
         setCombatPhase('turn');
         
