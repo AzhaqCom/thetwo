@@ -12,7 +12,7 @@ const ShortRestPanel = ({ playerCharacter, handleSpendHitDie, onEndRest }) => {
   }, [onEndRest]);
 
   return (
-    <div className="short-rest-panel">
+    <div className="short-rest-panel rest-panel-container">
       <h2>Repos court</h2>
       <p>
         Tu te reposes pendant une heure. Tu as actuellement {playerCharacter.currentHP} / {playerCharacter.maxHP} PV.

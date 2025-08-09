@@ -6,7 +6,7 @@ const LongRestPanel = ({ onRestComplete }) => {
   }, [onRestComplete]);
 
   return (
-    <div className="rest-panel">
+    <div className="rest-panel rest-panel-container">
       <h2>Repos Long</h2>
       <p>
         Tu te reposes pendant la nuit pour te remettre sur pied. 

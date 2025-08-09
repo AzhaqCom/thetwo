@@ -32,7 +32,7 @@ const Scene = ({ text, choices = [], onChoice }) => {
   ));
 
   return (
-    <div className="scene">
+    <div className="scene scene-container">
       <div 
         className="scene-text" 
         onClick={handleTextClick}
