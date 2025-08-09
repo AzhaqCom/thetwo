@@ -27,80 +27,7 @@ export const useCombatManager = ({
     // Track previous combatKey to detect actual changes
     const prevCombatKeyRef = useRef(undefined);
 
-    // Combat movement hook
-    const combatMovement = useCombatMovement(
-        playerCharacter,
-        companionCharacter,
-        combatEnemies,
-        addCombatMessage,
-        onPlayerTakeDamage,
-        onCompanionTakeDamage
-    );
-
     // Initialize combat when encounterData is available
-    useEffect(() => {
-        console.log('🎮 Combat initialization check:', { 
-            encounterData: !!encounterData, 
-            isInitialized, 
-            combatKey,
-            prevCombatKey: prevCombatKeyRef.current,
-            phase: combatPhase 
-        });
-
-        // Reset on new combat (only when combatKey actually changes)
-        if (combatKey !== undefined && combatKey !== prevCombatKeyRef.current) {
-            console.log('🔄 Resetting combat for key:', combatKey);
-            prevCombatKeyRef.current = combatKey;
-            setIsInitialized(false);
-            setDefeated(false);
-            setVictory(false);
-            setCombatPhase('initializing');
-            setCurrentTurnIndex(0);
-            setPlayerAction(null);
-            setActionTargets([]);
-            setCombatEnemies([]);
-            setTurnOrder([]);
-            combatMovement.setCombatPositions({});
-            combatMovement.setShowMovementFor(null);
-            combatMovement.setShowTargetingFor(null);
-            combatMovement.setHasMovedThisTurn(false);
-            combatMovement.setSelectedAoESquares([]);
-            combatMovement.setAoECenter(null);
-            return; // Exit early to let the reset take effect
-        }
-
-        // Initialize combat if not already done and we have encounter data
-        if (!isInitialized && encounterData && encounterData.length > 0) {
-            console.log('🚀 Starting combat initialization...');
-            initializeCombat();
-        }
-    }, [encounterData, combatKey, combatMovement, initializeCombat, isInitialized]);
-
-    // Update companion when playerCompanion changes
-    useEffect(() => {
-        if (playerCompanion) {
-            setCompanionCharacter({ ...playerCompanion });
-        } else {
-            setCompanionCharacter(null);
-        }
-    }, [playerCompanion]);
-
-    // Check for victory condition
-    useEffect(() => {
-        if (combatPhase === 'end' || combatEnemies.length === 0) {
-            return;
-        }
-
-        const allEnemiesDefeated = combatEnemies.every(enemy => enemy.currentHP <= 0);
-        
-        if (allEnemiesDefeated && combatPhase !== 'initializing') {
-            console.log('🏆 Victory achieved!');
-            setCombatPhase('end');
-            setVictory(true);
-            addCombatMessage("Victoire ! Les ennemis sont vaincus.", 'victory');
-        }
-    }, [combatEnemies, combatPhase, addCombatMessage]);
-
     const initializeCombat = useCallback(() => {
         console.log('⚔️ Initializing combat with encounter:', encounterData);
         
@@ -202,6 +129,80 @@ export const useCombatManager = ({
         
         console.log('✅ Combat initialization complete');
     }, [encounterData, playerCharacter, playerCompanion, addCombatMessage, combatMovement]);
+
+    // Combat movement hook
+    const combatMovement = useCombatMovement(
+        playerCharacter,
+        companionCharacter,
+        combatEnemies,
+        addCombatMessage,
+        onPlayerTakeDamage,
+        onCompanionTakeDamage
+    );
+
+    // Initialize combat when encounterData is available
+    useEffect(() => {
+        console.log('🎮 Combat initialization check:', { 
+            encounterData: !!encounterData, 
+            isInitialized, 
+            combatKey,
+            prevCombatKey: prevCombatKeyRef.current,
+            phase: combatPhase 
+        });
+
+        // Reset on new combat (only when combatKey actually changes)
+        if (combatKey !== undefined && combatKey !== prevCombatKeyRef.current) {
+            console.log('🔄 Resetting combat for key:', combatKey);
+            prevCombatKeyRef.current = combatKey;
+            setIsInitialized(false);
+            setDefeated(false);
+            setVictory(false);
+            setCombatPhase('initializing');
+            setCurrentTurnIndex(0);
+            setPlayerAction(null);
+            setActionTargets([]);
+            setCombatEnemies([]);
+            setTurnOrder([]);
+            combatMovement.setCombatPositions({});
+            combatMovement.setShowMovementFor(null);
+            combatMovement.setShowTargetingFor(null);
+            combatMovement.setHasMovedThisTurn(false);
+            combatMovement.setSelectedAoESquares([]);
+            combatMovement.setAoECenter(null);
+            return; // Exit early to let the reset take effect
+        }
+
+        // Initialize combat if not already done and we have encounter data
+        if (!isInitialized && encounterData && encounterData.length > 0) {
+            console.log('🚀 Starting combat initialization...');
+            initializeCombat();
+        }
+    }, [encounterData, combatKey, combatMovement, initializeCombat, isInitialized]);
+
+    // Update companion when playerCompanion changes
+    useEffect(() => {
+        if (playerCompanion) {
+            setCompanionCharacter({ ...playerCompanion });
+        } else {
+            setCompanionCharacter(null);
+        }
+    }, [playerCompanion]);
+
+    // Check for victory condition
+    useEffect(() => {
+        if (combatPhase === 'end' || combatEnemies.length === 0) {
+            return;
+        }
+
+        const allEnemiesDefeated = combatEnemies.every(enemy => enemy.currentHP <= 0);
+        
+        if (allEnemiesDefeated && combatPhase !== 'initializing') {
+            console.log('🏆 Victory achieved!');
+            setCombatPhase('end');
+            setVictory(true);
+            addCombatMessage("Victoire ! Les ennemis sont vaincus.", 'victory');
+        }
+    }, [combatEnemies, combatPhase, addCombatMessage]);
 
     const startCombat = useCallback(() => {
         console.log('🎯 Starting combat turns');
