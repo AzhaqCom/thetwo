@@ -142,7 +142,7 @@ export const useCombatManager = ({
 
     // Initialize combat when encounterData is available
     useEffect(() => {
-          
+          console.log('🎮 Combat initialization check:', { 
             encounterData: !!encounterData, 
             isInitialized, 
             combatKey,
