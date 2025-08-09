@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { getIconForType } from './Icons';
-import './CombatLog.css';
+import '../CombatLog.css';
 
 const CombatLogEntry = React.memo(({ entry, index }) => (
   <p key={index} className={entry.type}>
