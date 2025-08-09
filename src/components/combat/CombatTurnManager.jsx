@@ -14,11 +14,11 @@ const CombatTurnManager = ({
     enemyAttack,
     companionAttack
 }) => {
-    console.log('CombatTurnManager - Phase:', combatPhase, 'Current turn:', currentTurnIndex, 'Turn order length:', turnOrder.length);
+    console.log('CombatTurnManager - Phase:', combatPhase, 'Current turn:', currentTurnIndex, 'Turn order length:', turnOrder.length, 'Turn order:', turnOrder.map(t => ({ name: t.name, type: t.type })));
     
     // Handle turn progression
     useEffect(() => {
-        console.log('CombatTurnManager useEffect - Phase:', combatPhase, 'Turn order:', turnOrder.length);
+        console.log('CombatTurnManager useEffect - Phase:', combatPhase, 'Turn order length:', turnOrder.length, 'Turn order entities:', turnOrder.map(t => ({ name: t.name, type: t.type, initiative: t.initiative })));
         
         if (combatPhase === 'initiative-roll' || combatPhase === 'end' || !turnOrder.length) {
             console.log('CombatTurnManager - Skipping, phase:', combatPhase, 'turnOrder length:', turnOrder.length);

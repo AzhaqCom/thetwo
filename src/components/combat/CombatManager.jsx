@@ -37,30 +37,30 @@ export const useCombatManager = ({
     // Reset combat when combatKey changes
     useEffect(() => {
         console.log('Combat reset triggered - combatKey:', combatKey);
-        setCombatPhase('initiative-roll');
-        setDefeated(false);
-        setVictory(false);
         
-        // Only reset enemies if it's not the initial load
+        // Only reset on replay, not initial load
         if (combatKey > 0) {
+            console.log('Resetting combat for replay');
+            setCombatPhase('initiative-roll');
+            setDefeated(false);
+            setVictory(false);
             setCombatEnemies([]);
-        }
-        
-        setTurnOrder([]);
-        setCurrentTurnIndex(0);
-        setPlayerAction(null);
-        setActionTargets([]);
-        
-        // Only reset movement-related states, not positions
-        if (combatKey > 0) { // Don't reset on initial load
+            setTurnOrder([]);
+            setCurrentTurnIndex(0);
+            setPlayerAction(null);
+            setActionTargets([]);
             combatMovement.setCombatPositions({});
             combatMovement.setShowMovementFor(null);
             combatMovement.setShowTargetingFor(null);
             combatMovement.setHasMovedThisTurn(false);
             combatMovement.setSelectedAoESquares([]);
             combatMovement.setAoECenter(null);
+        } else {
+            console.log('Initial combat load - not resetting');
+            setCombatPhase('initiative-roll');
+            setDefeated(false);
+            setVictory(false);
         }
-        
     }, [combatKey, combatMovement.setCombatPositions, combatMovement.setShowMovementFor, combatMovement.setShowTargetingFor, combatMovement.setHasMovedThisTurn, combatMovement.setSelectedAoESquares, combatMovement.setAoECenter]);
 
     // Update companion character when playerCompanion changes
