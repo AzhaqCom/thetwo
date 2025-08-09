@@ -68,6 +68,16 @@ export const useCombatActions = ({
         return validTargets.sort((a, b) => a.priority - b.priority);
     }, [playerCharacter, companionCharacter, combatPositions]);
 
+    // Helper function to find valid targets within attack range for a specific enemy
+    const findTargetsInRangeForEnemy = useCallback((enemyData, enemyPos, attack) => {
+        const validTargets = findValidTargetsForEnemy();
+        
+        return validTargets.filter(target => {
+            if (!target.position || !enemyPos) return false;
+            return isInAttackRange(enemyPos, target.position, attack);
+        });
+    }, [findValidTargetsForEnemy, isInAttackRange]);
+
     // Helper function to find best target for companion (lowest HP enemy)
     const findBestTargetForCompanion = useCallback(() => {
         const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
@@ -119,9 +129,7 @@ export const useCombatActions = ({
         }
 
         // Check which targets are in attack range
-        const targetsInRange = validTargets.filter(target => 
-            attack.type === 'melee' || (attack.range && attack.range <= 1)
-        );
+        const targetsInRange = findTargetsInRangeForEnemy(enemyData, enemyPos, attack);
 
         // If no targets in range, try to move closer
         if (targetsInRange.length === 0) {
@@ -131,11 +139,8 @@ export const useCombatActions = ({
                 updateEnemyPosition(enemyData.name, newPosition);
                 addCombatMessage(`${enemyData.name} se déplace vers une meilleure position.`);
                 
-                // Recalculate targets after movement with updated position
-                const updatedValidTargets = findValidTargetsForEnemy();
-                const newTargetsInRange = updatedValidTargets.filter(target => 
-                    isInAttackRange(newPosition, target.position, attack)
-                );
+                // Recalculate targets in range after movement
+                const newTargetsInRange = findTargetsInRangeForEnemy(enemyData, newPosition, attack);
                 
                 // Execute attack if now in range
                 if (newTargetsInRange.length > 0) {
@@ -168,7 +173,8 @@ export const useCombatActions = ({
         calculateEnemyMovementPosition,
         updateEnemyPosition,
         isInAttackRange,
-        findValidTargetsForEnemy
+        findValidTargetsForEnemy,
+        findTargetsInRangeForEnemy
     ]);
 
     // Helper function to execute enemy attack
