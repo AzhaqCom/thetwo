@@ -141,8 +141,6 @@ export const useCombatActions = ({
             if (newPosition && (newPosition.x !== companionPos.x || newPosition.y !== companionPos.y)) {
                 updateEnemyPosition('companion', newPosition);
                 addCombatMessage(`${companionCharacter.name} se déplace vers une meilleure position.`);
-            } else {
-                addCombatMessage(`${companionCharacter.name} reste en position.`);
             }
         }
 
@@ -194,6 +192,7 @@ export const useCombatActions = ({
             addCombatMessage(`${companionCharacter.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
         }
 
+        console.log('CombatActions - Companion attack completed, calling handleNextTurn');
         handleNextTurn();
     }, [
         addCombatMessage,

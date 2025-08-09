@@ -77,14 +77,18 @@ const CombatTurnManager = ({
                 console.log('CombatTurnManager - Starting companion turn');
                 setCombatPhase('executing-turn');
                 addCombatMessage(`C'est le tour de ${currentTurnEntity.name}...`);
-                const timer = setTimeout(() => companionAttack(), 400);
-                return () => clearTimeout(timer);
+                setTimeout(() => {
+                    console.log('CombatTurnManager - Executing companion attack');
+                    companionAttack();
+                }, 400);
             } else if (isEnemyTurn) {
                 console.log('CombatTurnManager - Starting enemy turn');
                 setCombatPhase('executing-turn');
                 addCombatMessage(`C'est le tour de ${currentTurnEntity.name}...`);
-                const timer = setTimeout(() => enemyAttack(), 400);
-                return () => clearTimeout(timer);
+                setTimeout(() => {
+                    console.log('CombatTurnManager - Executing enemy attack');
+                    enemyAttack();
+                }, 400);
             }
         }
     }, [
