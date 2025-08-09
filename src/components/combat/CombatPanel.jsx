@@ -2,20 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { enemyTemplates } from '../../data/enemies';
 import { spells } from '../../data/spells';
 import { getModifier } from '../utils/utils';
+import { rollDice, calculateDamage } from '../utils/combatUtils';
 import InitiativePanel from './InitiativePanel';
 import CombatEndPanel from './CombatEndPanel';
 import PlayerTurnPanel from './PlayerTurnPanel';
 import EnemyDisplay from './EnemyDisplay';
-
-const rollDice = (diceString) => {
-    if (!diceString || !diceString.includes('d')) return 0;
-    const [num, size] = diceString.split('d').map(Number);
-    let totalDamage = 0;
-    for (let i = 0; i < num; i++) {
-        totalDamage += Math.floor(Math.random() * size) + 1;
-    }
-    return totalDamage;
-};
 
 const CombatPanel = ({
     playerCharacter,
@@ -94,18 +85,6 @@ const CombatPanel = ({
         setPlayerAction(null);
         setActionTargets([]);
     }, [currentTurnIndex, turnOrder, combatEnemies, addCombatMessage, playerCharacter.currentHP, companionCharacter]);
-
-    const calculateDamage = (attack) => {
-        let totalDamage = rollDice(attack.damageDice) + (attack.damageBonus || 0);
-        let message = `${totalDamage} dégâts ${attack.damageType}`;
-
-        if (attack.secondaryDamageDice) {
-            const secondaryDamage = rollDice(attack.secondaryDamageDice) + (attack.secondaryDamageBonus || 0);
-            totalDamage += secondaryDamage;
-            message += ` + ${secondaryDamage} dégâts ${attack.secondaryDamageType} (${totalDamage}dmg)`;
-        }
-        return { damage: totalDamage, message };
-    };
 
     const enemyAttack = useCallback(() => {
         const currentTurnEntity = turnOrder[currentTurnIndex];
