@@ -47,7 +47,8 @@ const CombatPanel = ({
         handleNextTurn: combatManager.handleNextTurn,
         updateEnemyPosition: combatManager.updateEnemyPosition,
         calculateEnemyMovementPosition: combatManager.calculateEnemyMovementPosition,
-        addCombatMessage,
+        addCombatMessage
+    });
     
     // Use spell handler hook
     const { handleCastSpellClick } = useCombatSpellHandler({
