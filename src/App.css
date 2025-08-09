@@ -56,11 +56,30 @@ p{
 }
 
 .combat-panel-container {
-    min-height: 600px;
+    min-height: 500px;
     display: flex;
     flex-direction: column;
     gap: 15px;
     overflow-y: auto;
+}
+
+.combat-controls {
+    flex-shrink: 0;
+    padding: 10px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+.combat-controls button {
+    margin: 5px;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.combat-controls p {
+    margin: 10px 0;
+    font-size: 14px;
 }
 
 .sidebar {
@@ -440,6 +459,7 @@ button:hover {
     display: flex;
     justify-content: center;
     flex-shrink: 0; /* Prevent grid from shrinking */
+    width: 100%;
 }
 
 .combat-grid {
@@ -450,13 +470,12 @@ button:hover {
     background-color: #333;
     padding: 5px;
     border-radius: 8px;
-    max-width: 480px; /* Reduced from 800px */
-    min-width: 400px;
     width: 100%;
+    max-width: 100%;
+    aspect-ratio: 8/6; /* Maintain 8:6 ratio */
 }
 
 .grid-square {
-    aspect-ratio: 1;
     background-color: #f5f5f5;
     border: 1px solid #ddd;
     display: flex;
@@ -464,10 +483,9 @@ button:hover {
     justify-content: center;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    min-height: 50px; /* Reduced from 80px */
-    max-height: 60px; /* Limit square height */
+    min-height: 60px;
     position: relative;
-    overflow: visible; /* Allow cards to extend beyond square */
+    overflow: hidden; /* Keep cards within bounds */
 }
 
 .grid-square:hover {
@@ -494,22 +512,29 @@ button:hover {
 
 /* Character Card Styles */
 .character-card {
-    width: 80px; /* Slightly wider than square */
-    min-height: 90px; /* Taller than square for tabletop token effect */
-    padding: 6px;
+    width: 100%; /* Fill the grid square */
+    height: 100%; /* Fill the grid square */
+    max-width: 100%; /* Ensure it doesn't exceed square width */
+    padding: 4px;
     text-align: center;
     border-radius: 6px;
     border: 2px solid transparent;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
     user-select: none;
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.2;
     background-color: #fff;
     color: #333;
-    position: relative;
-    z-index: 10; /* Ensure cards appear above grid */
-    transform: translateY(-10px); /* Lift cards slightly above grid */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
 }
 
 .character-card.current-turn {
@@ -544,40 +569,43 @@ button:hover {
 
 .character-name {
     font-weight: bold;
-    font-size: 10px;
-    margin-bottom: 2px;
+    font-size: 11px;
+    margin-bottom: 1px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.1;
 }
 
 .character-class {
-    font-size: 9px;
+    font-size: 10px;
     color: #666;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
+    line-height: 1.1;
 }
 
 .character-hp {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 9px;
-    margin-bottom: 2px;
+    font-size: 10px;
+    margin-bottom: 1px;
+    line-height: 1.1;
 }
 
 .character-hp .icon {
-    width: 10px;
-    height: 10px;
-    margin-right: 2px;
+    width: 12px;
+    height: 12px;
+    margin-right: 1px;
 }
 
 .character-hp-bar {
-    height: 6px;
+    height: 4px;
     width: 100%;
     background-color: #ddd;
     border-radius: 2px;
     overflow: hidden;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
 }
 
 .character-hp-bar-fill {
@@ -587,17 +615,19 @@ button:hover {
 }
 
 .character-ac {
-    font-size: 9px;
+    font-size: 10px;
     color: #666;
+    line-height: 1.1;
 }
 
 .enemy-image-small,
 .companion-image-small {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     object-fit: cover;
     border-radius: 3px;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
+    flex-shrink: 0;
 }
 
 .hp-bar-container {
