@@ -21,7 +21,13 @@ const CombatInitializer = ({
             console.log('Skipping initialization - combat ended');
             return;
         }
-        if (combatPhase !== 'initiative-roll' || !encounterData || !encounterData.length) {
+        
+        // Allow initialization on first load (combatKey === 0) regardless of phase
+        // Or when phase is specifically 'initiative-roll'
+        const shouldInitialize = (combatKey === 0 && encounterData && encounterData.length) || 
+                                (combatPhase === 'initiative-roll' && encounterData && encounterData.length);
+        
+        if (!shouldInitialize) {
             console.log('Skipping initialization - wrong phase or no encounter data');
             return;
         }
