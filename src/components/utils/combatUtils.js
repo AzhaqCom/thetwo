@@ -54,6 +54,83 @@ export const GRID_WIDTH = 8;
 export const GRID_HEIGHT = 6;
 
 /**
+ * Gets valid targets within range for an attack
+ * @param {Object} attacker - The attacking character/enemy
+ * @param {Object} attackerPos - Attacker's position {x, y}
+ * @param {Object} attack - Attack object with range information
+ * @param {Object} combatState - Combat state with all characters
+ * @returns {Array} Array of valid targets
+ */
+export const getTargetsInRange = (attacker, attackerPos, attack, combatState) => {
+    const { playerCharacter, companionCharacter, combatEnemies, combatPositions } = combatState;
+    const targets = [];
+    
+    if (!attackerPos) return targets;
+    
+    // Determine attack range
+    let maxRange = 1; // Default melee range
+    if (attack.type === 'distance' || attack.range === 'ranged') {
+        maxRange = 12; // 60 feet = 12 squares
+    } else if (typeof attack.range === 'number') {
+        maxRange = Math.floor(attack.range / 5); // Convert feet to squares
+    }
+    
+    // Check player as target (if attacker is enemy)
+    if (attacker.type === 'enemy' && playerCharacter && playerCharacter.currentHP > 0) {
+        const playerPos = combatPositions.player;
+        if (playerPos) {
+            const distance = Math.abs(attackerPos.x - playerPos.x) + Math.abs(attackerPos.y - playerPos.y);
+            if (distance <= maxRange) {
+                targets.push({
+                    ...playerCharacter,
+                    type: 'player',
+                    name: playerCharacter.name,
+                    ac: playerCharacter.ac
+                });
+            }
+        }
+    }
+    
+    // Check companion as target (if attacker is enemy)
+    if (attacker.type === 'enemy' && companionCharacter && companionCharacter.currentHP > 0) {
+        const companionPos = combatPositions.companion;
+        if (companionPos) {
+            const distance = Math.abs(attackerPos.x - companionPos.x) + Math.abs(attackerPos.y - companionPos.y);
+            if (distance <= maxRange) {
+                targets.push({
+                    ...companionCharacter,
+                    type: 'companion',
+                    name: companionCharacter.name,
+                    ac: companionCharacter.ac
+                });
+            }
+        }
+    }
+    
+    // Check enemies as targets (if attacker is player/companion)
+    if (attacker.type !== 'enemy') {
+        combatEnemies.forEach(enemy => {
+            if (enemy.currentHP > 0) {
+                const enemyPos = combatPositions[enemy.name];
+                if (enemyPos) {
+                    const distance = Math.abs(attackerPos.x - enemyPos.x) + Math.abs(attackerPos.y - enemyPos.y);
+                    if (distance <= maxRange) {
+                        targets.push({
+                            ...enemy,
+                            type: 'enemy',
+                            name: enemy.name,
+                            ac: enemy.ac
+                        });
+                    }
+                }
+            }
+        });
+    }
+    
+    return targets;
+};
+
+/**
  * Calculates the best movement position for an enemy
  * @param {Object} enemy - The enemy data
  * @param {Object} currentPos - Current position {x, y}
