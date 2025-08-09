@@ -1,4 +1,4 @@
-import React from 'react';
+import { useCallback } from 'react';
 import { spells } from '../../data/spells';
 import { getModifier } from '../utils/utils';
 import { rollDice, calculateDamage, getTargetsInRange } from '../utils/combatUtils';
@@ -18,7 +18,7 @@ export const useCombatActions = ({
     updateEnemyPosition,
     calculateEnemyMovementPosition
 }) => {
-    const enemyAttack = React.useCallback(() => {
+    const enemyAttack = useCallback(() => {
         const currentTurnEntity = turnOrder[currentTurnIndex];
         const enemyData = combatEnemies.find(e => e.name === currentTurnEntity.name);
 
@@ -108,7 +108,7 @@ export const useCombatActions = ({
         updateEnemyPosition
     ]);
 
-    const companionAttack = React.useCallback(() => {
+    const companionAttack = useCallback(() => {
         if (!companionCharacter) {
             addCombatMessage("Aucun compagnon disponible pour attaquer.");
             handleNextTurn();

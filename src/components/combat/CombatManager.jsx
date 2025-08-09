@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { enemyTemplates } from '../../data/enemies';
 import { getModifier } from '../utils/utils';
 import { useCombatMovement } from '../../hooks/useCombatMovement';

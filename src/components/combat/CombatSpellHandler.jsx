@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { spells } from '../../data/spells';
 import { getModifier } from '../utils/utils';
 import { rollDice } from '../utils/combatUtils';
