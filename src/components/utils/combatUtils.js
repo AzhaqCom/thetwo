@@ -75,19 +75,21 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
         maxRange = Math.floor(attack.range / 5); // Convert feet to squares
     }
     
+    console.log(`${attacker.name || attacker.type} targeting - Attack type: ${attack.type}, Max range: ${maxRange}`);
+    
     // Check player as target (if attacker is enemy)
-    if (attacker.type === 'enemy' && playerCharacter && playerCharacter.currentHP > 0) {
+    if (attacker.type === 'enemy' && playerCharacter && playerCharacter.currentHP > 0 && combatPositions.player) {
         const playerPos = combatPositions.player;
-        if (playerPos) {
-            const distance = Math.abs(attackerPos.x - playerPos.x) + Math.abs(attackerPos.y - playerPos.y);
-            if (distance <= maxRange) {
-                targets.push({
-                    ...playerCharacter,
-                    type: 'player',
-                    name: playerCharacter.name,
-                    ac: playerCharacter.ac
-                });
-            }
+        const distance = Math.abs(attackerPos.x - playerPos.x) + Math.abs(attackerPos.y - playerPos.y);
+        console.log(`Distance to player: ${distance}, Player pos:`, playerPos);
+        if (distance <= maxRange) {
+            targets.push({
+                ...playerCharacter,
+                type: 'player',
+                name: playerCharacter.name,
+                ac: playerCharacter.ac
+            });
+            console.log(`Added player as target`);
         }
     }
     
@@ -95,6 +97,7 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
     if (attacker.type === 'enemy' && companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
         const companionPos = combatPositions.companion;
         const distance = Math.abs(attackerPos.x - companionPos.x) + Math.abs(attackerPos.y - companionPos.y);
+        console.log(`Distance to companion: ${distance}, Companion pos:`, companionPos);
         if (distance <= maxRange) {
             targets.push({
                 ...companionCharacter,
@@ -102,16 +105,18 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
                 name: companionCharacter.name,
                 ac: companionCharacter.ac
             });
+            console.log(`Added companion as target`);
         }
     }
     
     // Check enemies as targets (if attacker is player/companion)
-    if (attacker.type !== 'enemy') {
+    if (attacker.type === 'player' || attacker.type === 'companion') {
         combatEnemies.forEach(enemy => {
             if (enemy.currentHP > 0) {
                 const enemyPos = combatPositions[enemy.name];
                 if (enemyPos) {
                     const distance = Math.abs(attackerPos.x - enemyPos.x) + Math.abs(attackerPos.y - enemyPos.y);
+                    console.log(`Distance to ${enemy.name}: ${distance}, Enemy pos:`, enemyPos);
                     if (distance <= maxRange) {
                         targets.push({
                             ...enemy,
@@ -119,12 +124,14 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
                             name: enemy.name,
                             ac: enemy.ac
                         });
+                        console.log(`Added ${enemy.name} as target`);
                     }
                 }
             }
         });
     }
     
+    console.log(`Final targets for ${attacker.name || attacker.type}:`, targets);
     return targets;
 };
 
