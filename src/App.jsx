@@ -151,6 +151,7 @@ function App() {
                     character={playerCharacter}
                     onCastSpell={spellActions.handleCastSpellOutOfCombat}
                     onPrepareSpell={spellActions.handlePrepareSpell}
+                    onUnprepareSpell={spellActions.handleUnprepareSpell}
                 />
             </div>
             <div className="main-content">

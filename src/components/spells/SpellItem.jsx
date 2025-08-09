@@ -24,7 +24,8 @@ export const SpellItem = React.memo(({
   }, [onCastSpell, spellName]);
 
   const renderActionButton = () => {
-    if (showCastButton && spell.castableOutOfCombat) {
+    // For cantrips, always show cast button if showCastButton is true
+    if (showCastButton && (spell.level === 0 || spell.castableOutOfCombat)) {
       if (isSpellActive) {
         return (
           <span className="ml-4 px-3 py-1 bg-gray-500 text-white rounded-md shadow-lg">
@@ -42,7 +43,8 @@ export const SpellItem = React.memo(({
       );
     }
 
-    if (showPrepareButton) {
+    // Only show prepare button for non-cantrips
+    if (showPrepareButton && spell.level > 0) {
       return (
         <button
           onClick={handlePrepare}

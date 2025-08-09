@@ -10,13 +10,24 @@ const SpellcastingPanel = ({ character, onCastSpell, onPrepareSpell }) => {
     saveDC: 8 + getModifier(character.stats[character.spellcasting.ability]) + character.proficiencyBonus
   }), [character]);
 
-  const { knownSpells, preparedSpells } = useMemo(() => {
+  const { knownSpells, preparedSpells, cantrips, maxPreparedSpells } = useMemo(() => {
     const prepared = character.spellcasting.preparedSpells || [];
     const known = character.spellcasting.knownSpells || [];
+    const cantrips = character.spellcasting.cantrips || [];
+    
+    // Calculate max prepared spells
+    const intModifier = getModifier(character.stats.intelligence);
+    const maxPrepared = intModifier + character.level;
     
     return {
-      knownSpells: known.filter(spellName => !prepared.includes(spellName)),
-      preparedSpells: prepared
+      // Filter out cantrips from known spells and exclude already prepared spells
+      knownSpells: known.filter(spellName => {
+        const spell = spells[spellName];
+        return spell && spell.level > 0 && !prepared.includes(spellName);
+      }),
+      preparedSpells: prepared,
+      cantrips: cantrips,
+      maxPreparedSpells: maxPrepared
     };
   }, [character.spellcasting]);
 
@@ -27,6 +38,14 @@ const SpellcastingPanel = ({ character, onCastSpell, onPrepareSpell }) => {
       <SpellSlots spellSlots={character.spellcasting.spellSlots} />
       
       <SpellList
+        title="Cantrips"
+        spells={cantrips}
+        character={character}
+        onCastSpell={onCastSpell}
+        showCastButton={true}
+      />
+      
+      <SpellList
         title="Grimoire"
         spells={knownSpells}
         character={character}
@@ -35,7 +54,7 @@ const SpellcastingPanel = ({ character, onCastSpell, onPrepareSpell }) => {
       />
       
       <SpellList
-        title="Sorts Préparés"
+        title={`Sorts Préparés (${preparedSpells.length}/${maxPreparedSpells})`}
         spells={preparedSpells}
         character={character}
         onCastSpell={onCastSpell}
