@@ -167,18 +167,19 @@ const CombatPanel = ({
             // Now handle attacks with updated position
             const updatedEnemyPos = combatPositions[enemyData.name];
             
-            // Debug: Log enemy position and available targets
-            console.log(`${enemyData.name} position:`, updatedEnemyPos);
-            console.log('Player position:', combatPositions.player);
-            console.log('Companion position:', combatPositions.companion);
-            console.log('Companion character:', companionCharacter);
-            
             for (const attack of attackSet.attacks) {
                 const attackRoll = Math.floor(Math.random() * 20) + 1 + (attack.attackBonus || 0);
+                
+                // Ensure attack has proper type for range calculation
+                const attackWithType = {
+                    ...attack,
+                    type: attack.type || 'corps-à-corps' // Default to melee if not specified
+                };
+                
                 const availableTargets = getTargetsInRange(
                     { ...enemyData, type: 'enemy' }, 
                     updatedEnemyPos, 
-                    attack, 
+                    attackWithType, 
                     {
                         playerCharacter,
                         companionCharacter,
@@ -186,9 +187,6 @@ const CombatPanel = ({
                         combatPositions
                     }
                 );
-                
-                // Debug: Log available targets
-                console.log(`${enemyData.name} available targets:`, availableTargets);
                 
                 if (availableTargets.length === 0) {
                     addCombatMessage(`${currentTurnEntity.name} n'a pas de cible à portée pour attaquer.`);
