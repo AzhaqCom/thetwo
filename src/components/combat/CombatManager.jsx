@@ -181,6 +181,13 @@ export const useCombatManager = ({
         }
     }, [encounterData, combatKey, combatMovement, initializeCombat, isInitialized]);
 
+    // Debug: Log enemy positions when they change
+    useEffect(() => {
+        if (encounterData && encounterData.enemyPositions) {
+            console.log('🎯 Enemy positions from scene:', encounterData.enemyPositions);
+        }
+    }, [encounterData]);
+
     // Update companion when playerCompanion changes
     useEffect(() => {
         if (playerCompanion) {
