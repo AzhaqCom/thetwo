@@ -43,6 +43,8 @@ const CombatPanel = ({
         currentTurnIndex: combatManager.currentTurnIndex,
         combatPositions: combatManager.combatPositions,
         addCombatMessage,
+    });
+    
     // Use spell handler hook
     const { handleCastSpellClick } = useCombatSpellHandler({
         playerCharacter,
