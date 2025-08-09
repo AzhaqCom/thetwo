@@ -18,9 +18,7 @@ const CompanionCard = ({ companion, isCurrentTurn, isSelected }) => {
       <div className="character-name">
         {companion.name}
       </div>
-      <div className="character-class">
-        {companion.class}
-      </div>
+   
       <div className="character-hp">
         <HeartIcon />
         <span>{Math.max(0, companion.currentHP)} PV</span>
