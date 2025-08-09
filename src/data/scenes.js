@@ -156,6 +156,10 @@ Récemment, tu as entendu des murmures concernant une ancienne prophétie liée 
                     enemies: [
                         { type: 'squelette', count: 2 }
                     ],
+                    enemyPositions: [
+                        { x: 6, y: 1 },  // Premier squelette
+                        { x: 7, y: 2 }   // Deuxième squelette
+                    ],
                     next: 'scene11'
                 }
             }
@@ -238,6 +242,10 @@ Récemment, tu as entendu des murmures concernant une ancienne prophétie liée 
                 action: {
                     type: 'combat',
                     enemies: [{ type: 'diablotin', count: 2 }],
+                    enemyPositions: [
+                        { x: 5, y: 0 },  // Premier diablotin
+                        { x: 6, y: 1 }   // Deuxième diablotin
+                    ],
                     next: 'scene15'
                 }
             }

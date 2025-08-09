@@ -18,7 +18,7 @@ export const useCombatMovement = (
     const [aoeCenter, setAoECenter] = useState(null);
 
     // Initialize combat positions when enemies are set up
-    const initializeCombatPositions = useCallback((enemies, hasCompanion) => {
+    const initializeCombatPositions = useCallback((enemies, hasCompanion, customEnemyPositions = null) => {
         const positions = {};
         
         // Place player at bottom-left
@@ -29,12 +29,38 @@ export const useCombatMovement = (
             positions.companion = { x: 1, y: 5 };
         }
         
-        // Place enemies at the top, spread out
-        enemies.forEach((enemy, index) => {
-            const x = 6 + (index % 2); // Start from right side
-            const y = Math.floor(index / 2); // Stack vertically if more than 2
-            positions[enemy.name] = { x, y };
-        });
+        // Place enemies using custom positions or default logic
+        if (customEnemyPositions && Array.isArray(customEnemyPositions)) {
+            enemies.forEach((enemy, index) => {
+                if (index < customEnemyPositions.length) {
+                    // Use custom position if available
+                    const customPos = customEnemyPositions[index];
+                    if (customPos && typeof customPos.x === 'number' && typeof customPos.y === 'number') {
+                        // Validate position is within grid bounds
+                        const x = Math.max(0, Math.min(7, customPos.x)); // Clamp to 0-7
+                        const y = Math.max(0, Math.min(5, customPos.y)); // Clamp to 0-5
+                        positions[enemy.name] = { x, y };
+                    } else {
+                        // Fallback to default if custom position is invalid
+                        const x = 6 + (index % 2);
+                        const y = Math.floor(index / 2);
+                        positions[enemy.name] = { x, y };
+                    }
+                } else {
+                    // Fallback to default if not enough custom positions
+                    const x = 6 + (index % 2);
+                    const y = Math.floor(index / 2);
+                    positions[enemy.name] = { x, y };
+                }
+            });
+        } else {
+            // Default placement logic
+            enemies.forEach((enemy, index) => {
+                const x = 6 + (index % 2); // Start from right side
+                const y = Math.floor(index / 2); // Stack vertically if more than 2
+                positions[enemy.name] = { x, y };
+            });
+        }
         
         setCombatPositions(positions);
     }, []);

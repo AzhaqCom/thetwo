@@ -126,7 +126,8 @@ export const useCombatManager = ({
         setIsInitialized(true);
 
         // Initialize positions
-        combatMovement.initializeCombatPositions(initialCombatEnemies, !!playerCompanion);
+        const customEnemyPositions = encounterData[0]?.enemyPositions || null;
+        combatMovement.initializeCombatPositions(initialCombatEnemies, !!playerCompanion, customEnemyPositions);
 
         // Add combat messages
         addCombatMessage('Un combat commence !');
@@ -188,7 +189,7 @@ export const useCombatManager = ({
         }
     }, [playerCompanion]);
 
-    // Check for victory condition
+    const initializeCombatPositions = useCallback((enemies, hasCompanion, customEnemyPositions = null) => {
     useEffect(() => {
         if (combatPhase === 'end' || combatEnemies.length === 0) {
             return;
@@ -199,12 +200,38 @@ export const useCombatManager = ({
         if (allEnemiesDefeated && combatPhase !== 'initializing') {
            
             setCombatPhase('end');
-            setVictory(true);
-            addCombatMessage("Victoire ! Les ennemis sont vaincus.", 'victory');
+        // Place enemies using custom positions or default logic
+        if (customEnemyPositions && Array.isArray(customEnemyPositions)) {
+            enemies.forEach((enemy, index) => {
+                if (index < customEnemyPositions.length) {
+                    // Use custom position if available
+                    const customPos = customEnemyPositions[index];
+                    if (customPos && typeof customPos.x === 'number' && typeof customPos.y === 'number') {
+                        // Validate position is within grid bounds
+                        const x = Math.max(0, Math.min(7, customPos.x)); // Clamp to 0-7
+                        const y = Math.max(0, Math.min(5, customPos.y)); // Clamp to 0-5
+                        positions[enemy.name] = { x, y };
+                    } else {
+                        // Fallback to default if custom position is invalid
+                        const x = 6 + (index % 2);
+                        const y = Math.floor(index / 2);
+                        positions[enemy.name] = { x, y };
+                    }
+                } else {
+                    // Fallback to default if not enough custom positions
+                    const x = 6 + (index % 2);
+                    const y = Math.floor(index / 2);
+                    positions[enemy.name] = { x, y };
+                }
+            });
+        } else {
+            // Default placement logic
+            enemies.forEach((enemy, index) => {
+                const x = 6 + (index % 2); // Start from right side
+                const y = Math.floor(index / 2); // Stack vertically if more than 2
+                positions[enemy.name] = { x, y };
+            });
         }
-    }, [combatEnemies, combatPhase, addCombatMessage]);
-
-    const startCombat = useCallback(() => {
      
         setCombatPhase('turn');
     }, []);
