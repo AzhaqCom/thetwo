@@ -189,7 +189,7 @@ const CombatPanel = ({
                         <p>Clique sur une case verte pour te déplacer (6 cases maximum).</p>
                         <button onClick={() => {
                             combatManager.setShowMovementFor(null);
-                            combatManager.setCombatPhase('player-action');
+                            onCombatEnd(encounterData?.enemies || encounterData);
                         }}>
                             Passer le mouvement
                         </button>

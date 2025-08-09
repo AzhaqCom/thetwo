@@ -103,7 +103,7 @@ function App() {
                     onCombatEnd={combatActions.handleCombatVictory}
                     addCombatMessage={addCombatMessage}
                     setCombatLog={setCombatLog}
-                    encounterData={currentScene.enemies}
+                    encounterData={currentScene}
                     onPlayerCastSpell={spellActions.handlePlayerCastSpell}
                     onReplayCombat={combatActions.handleReplayCombat}
                     combatKey={combatKey}

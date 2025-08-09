@@ -41,11 +41,11 @@ export const useCombatManager = ({
     const initializeCombat = useCallback(() => {
         
         // Extract enemyPositions from the encounter data structure
-        const customEnemyPositions = encounterData.enemyPositions || null;
+        const customEnemyPositions = encounterData?.enemyPositions || null;
         console.log('🎯 Custom enemy positions:', customEnemyPositions);
         
         // Create enemies from encounter data
-        const encounters = Array.isArray(encounterData) ? encounterData : encounterData.enemies || [];
+        const encounters = Array.isArray(encounterData) ? encounterData : encounterData?.enemies || [];
         const initialCombatEnemies = encounters.flatMap((encounter, encounterIndex) => {
             const template = enemyTemplates[encounter.type];
             if (!template) {
