@@ -42,8 +42,12 @@ const CombatPanel = ({
         turnOrder: combatManager.turnOrder,
         currentTurnIndex: combatManager.currentTurnIndex,
         combatPositions: combatManager.combatPositions,
+        onPlayerTakeDamage,
+        onCompanionTakeDamage,
+        handleNextTurn: combatManager.handleNextTurn,
+        updateEnemyPosition: combatManager.updateEnemyPosition,
+        calculateEnemyMovementPosition: combatManager.calculateEnemyMovementPosition,
         addCombatMessage,
-    });
     
     // Use spell handler hook
     const { handleCastSpellClick } = useCombatSpellHandler({
