@@ -166,7 +166,7 @@ export const useCombatMovement = (
             console.log('Calculating companion movement from:', currentPos);
             console.log('Available enemies:', combatEnemies.filter(e => e.currentHP > 0).map(e => ({ name: e.name, pos: combatPositions[e.name] })));
             
-            return calculateEnemyMovement(enemy, companionPos, {
+            return calculateEnemyMovement(enemy, currentPos, {
                 combatPositions,
                 playerCharacter,
                 companionCharacter,
