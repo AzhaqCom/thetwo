@@ -39,6 +39,7 @@ export const useCombatActions = ({
         }
 
         // Handle attacks with delay to ensure position updates
+        setTimeout(() => {
             const attackSet = enemyData.attackSets?.[Math.floor(Math.random() * enemyData.attackSets.length)] || {
                 name: enemyData.attacks?.[0]?.name,
                 attacks: [enemyData.attacks?.[0]]
@@ -70,6 +71,8 @@ export const useCombatActions = ({
                         combatEnemies,
                         combatPositions
                     }
+                );
+                
                 if (availableTargets.length === 0) {
                     addCombatMessage(`${currentTurnEntity.name} n'a pas de cible à portée pour attaquer.`);
                     continue;
@@ -87,6 +90,7 @@ export const useCombatActions = ({
                 } else {
                     addCombatMessage(`${currentTurnEntity.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
                 }
+            }
             handleNextTurn();
         }, 100);
     }, [
@@ -145,6 +149,8 @@ export const useCombatActions = ({
             addCombatMessage(`${companionCharacter.name} n'a pas d'attaque définie.`);
             handleNextTurn();
             return;
+        }
+        
         const updatedCompanionPos = combatPositions.companion;
         const availableTargets = getTargetsInRange(
             { ...companionCharacter, type: 'companion' }, 
@@ -156,6 +162,8 @@ export const useCombatActions = ({
                 combatEnemies,
                 combatPositions
             }
+        );
+        
         if (availableTargets.length === 0) {
             addCombatMessage(`${companionCharacter.name} n'a pas de cible à portée pour attaquer.`);
             handleNextTurn();
