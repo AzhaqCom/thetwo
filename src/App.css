@@ -56,11 +56,10 @@ p{
 }
 
 .combat-panel-container {
-    min-height: 500px;
     display: flex;
     flex-direction: column;
     gap: 15px;
-    overflow-y: auto;
+   
 }
 
 .combat-controls {
