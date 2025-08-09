@@ -134,6 +134,11 @@ const CombatGrid = ({
       return pos && pos.x === x && pos.y === y;
     });
 
+    // Debug log for character rendering
+    if (characterId) {
+      console.log(`Rendering character ${characterId} at position (${x}, ${y})`);
+    }
+
     if (!characterId) return null;
 
     const isCurrentTurn = turnOrder[currentTurnIndex]?.name === characterId || 
@@ -165,6 +170,9 @@ const CombatGrid = ({
       );
     } else {
       const enemy = combatEnemies.find(e => e.name === characterId);
+      console.log(`Looking for enemy with name: ${characterId}`, enemy);
+      console.log('Available enemies:', combatEnemies.map(e => e.name));
+      
       if (enemy) {
         return (
           <EnemyCard 

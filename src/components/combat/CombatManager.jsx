@@ -40,7 +40,12 @@ export const useCombatManager = ({
         setCombatPhase('initiative-roll');
         setDefeated(false);
         setVictory(false);
-        setCombatEnemies([]);
+        
+        // Only reset enemies if it's not the initial load
+        if (combatKey > 0) {
+            setCombatEnemies([]);
+        }
+        
         setTurnOrder([]);
         setCurrentTurnIndex(0);
         setPlayerAction(null);
@@ -56,7 +61,7 @@ export const useCombatManager = ({
             combatMovement.setAoECenter(null);
         }
         
-    }, [combatKey]);
+    }, [combatKey, combatMovement]);
 
     // Update companion character when playerCompanion changes
     useEffect(() => {
@@ -74,11 +79,15 @@ export const useCombatManager = ({
 
     // Check for victory condition
     useEffect(() => {
+        console.log('Victory check - combatPhase:', combatPhase, 'enemies:', combatEnemies.length);
+        
         if (combatPhase === 'end' || combatEnemies.length === 0) {
             return;
         }
 
         const allEnemiesDefeated = combatEnemies.every(enemy => enemy.currentHP <= 0);
+        console.log('All enemies defeated?', allEnemiesDefeated);
+        
         if (allEnemiesDefeated) {
             setCombatPhase('end');
             setVictory(true);

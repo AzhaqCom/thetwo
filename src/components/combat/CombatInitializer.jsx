@@ -15,16 +15,25 @@ const CombatInitializer = ({
 }) => {
     // Initialize combat when phase is 'initiative-roll'
     useEffect(() => {
+        console.log('CombatInitializer useEffect triggered:', {
+            combatPhase,
+            encounterData,
+            combatKey
+        });
+        
         if (combatPhase === 'end') {
+            console.log('Combat phase is end, skipping initialization');
             return;
         }
         if (combatPhase !== 'initiative-roll' || !encounterData || !encounterData.length) {
+            console.log('Skipping initialization - wrong phase or no encounter data');
             return;
         }
 
         const initialCombatEnemies = encounterData.flatMap((encounter) => {
             const template = enemyTemplates[encounter.type];
             if (!template) {
+                console.error(`Enemy template not found for type: ${encounter.type}`);
                 return [];
             }
             return Array(encounter.count)
@@ -42,6 +51,8 @@ const CombatInitializer = ({
                 }));
         });
 
+        console.log('Initial combat enemies created:', initialCombatEnemies);
+        
         if (!initialCombatEnemies.length) {
             addCombatMessage("Erreur lors du chargement des ennemis. Le combat se termine.");
             return;
@@ -53,6 +64,8 @@ const CombatInitializer = ({
             type: 'enemy',
         }));
 
+        console.log('Enemies with initiative:', enemiesWithInitiative);
+        
         addCombatMessage('Un combat commence !');
 
         const playerDexMod = getModifier(playerCharacter.stats.dexterite);
@@ -89,18 +102,17 @@ const CombatInitializer = ({
             return b.initiative - a.initiative;
         });
 
+        console.log('Setting combat enemies:', enemiesWithInitiative);
+        console.log('Setting turn order:', order);
+        
         setCombatEnemies(enemiesWithInitiative);
         setTurnOrder(order);
         
         // Initialize positions after a small delay to ensure state is ready
         setTimeout(() => {
+            console.log('Initializing positions with enemies:', initialCombatEnemies.map(e => e.name));
             initializeCombatPositions(initialCombatEnemies, !!playerCompanion);
         }, 10);
-        
-        console.log('Combat initialized with positions:', {
-            enemies: enemiesWithInitiative.map(e => e.name),
-            hasCompanion: !!playerCompanion
-        });
 
         order.forEach((entity) => {
             addCombatMessage(`${entity.name} a lancé l'initiative et a obtenu ${entity.initiative}.`, 'initiative');
