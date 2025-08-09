@@ -204,6 +204,7 @@ export const useCombatManager = ({
            
             setCombatPhase('end');
         }
+      console.log(customEnemyPositions);
         // Place enemies using custom positions or default logic
         if (customEnemyPositions && Array.isArray(customEnemyPositions)) {
             enemies.forEach((enemy, index) => {
