@@ -29,21 +29,13 @@ const SpellcastingPanel = ({ character, onCastSpell, onPrepareSpell }) => {
       cantrips: cantrips,
       maxPreparedSpells: maxPrepared
     };
-  }, [character.spellcasting]);
+  }, [character.spellcasting, character.stats.intelligence, character.level]);
 
   return (
     <div className="spellcasting">
       <h4 className="text-xl font-bold mb-4">Sorts de Magicien</h4>
       
       <SpellSlots spellSlots={character.spellcasting.spellSlots} />
-      
-      <SpellList
-        title="Cantrips"
-        spells={cantrips}
-        character={character}
-        onCastSpell={onCastSpell}
-        showCastButton={true}
-      />
       
       <SpellList
         title="Grimoire"
