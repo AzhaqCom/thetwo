@@ -212,25 +212,31 @@ const CombatPanel = ({
             return;
         }
 
-        // First, handle companion movement
+        // Always attempt companion movement each turn
         const companionPos = combatPositions.companion;
-        if (companionPos) {
-            const newPosition = calculateEnemyMovementPosition({ 
-                ...companionCharacter, 
-                type: 'companion',
-                movement: 6 // Standard movement for companions
-            });
-            if (newPosition && (newPosition.x !== companionPos.x || newPosition.y !== companionPos.y)) {
-                updateEnemyPosition('companion', newPosition);
-                addCombatMessage(`${companionCharacter.name} se déplace vers une meilleure position.`);
-            }
-        }
-
         const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
+        
         if (livingEnemies.length === 0) {
             addCombatMessage("Il n'y a plus d'ennemis à attaquer.");
             handleNextTurn();
             return;
+        }
+        
+        if (companionPos) {
+            // Calculate movement toward closest enemy
+            const newPosition = calculateEnemyMovementPosition({ 
+                ...companionCharacter, 
+                type: 'companion',
+                movement: 6,
+                attacks: companionCharacter.attacks // Ensure attacks are passed for range calculation
+            });
+            
+            if (newPosition && (newPosition.x !== companionPos.x || newPosition.y !== companionPos.y)) {
+                updateEnemyPosition('companion', newPosition);
+                addCombatMessage(`${companionCharacter.name} se déplace vers une meilleure position.`);
+            } else {
+                addCombatMessage(`${companionCharacter.name} reste en position.`);
+            }
         }
 
         const attack = companionCharacter.attacks?.[0];
@@ -240,12 +246,12 @@ const CombatPanel = ({
             return;
         }
 
-        // Now handle attacks with updated position
+        // Handle attacks with updated position
         const updatedCompanionPos = combatPositions.companion;
         const availableTargets = getTargetsInRange(
             { ...companionCharacter, type: 'companion' }, 
             updatedCompanionPos, 
-            attack, 
+            { ...attack, type: 'corps-à-corps' }, // Ensure attack type is set for range calculation
             {
                 playerCharacter,
                 companionCharacter,
@@ -283,7 +289,7 @@ const CombatPanel = ({
         }
 
         handleNextTurn();
-    }, [addCombatMessage, handleNextTurn, combatEnemies, companionCharacter, combatPositions, calculateEnemyMovementPosition, updateEnemyPosition, playerCharacter]);
+    }, [addCombatMessage, handleNextTurn, combatEnemies, companionCharacter, combatPositions, calculateEnemyMovementPosition, updateEnemyPosition, playerCharacter, getTargetsInRange, calculateDamage, getModifier]);
 
     const handleTargetSelection = useCallback(
         (enemy) => {

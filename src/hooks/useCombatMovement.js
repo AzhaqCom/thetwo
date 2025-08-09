@@ -155,11 +155,17 @@ export const useCombatMovement = (
     }, [playerCharacter, companionCharacter, addCombatMessage, onPlayerTakeDamage, onCompanionTakeDamage]);
 
     const calculateEnemyMovementPosition = useCallback((enemy) => {
-        const enemyPos = combatPositions[enemy.name];
+        let currentPos;
+        
         // Handle companion positioning
         if (enemy.type === 'companion') {
-            const companionPos = combatPositions.companion;
-            if (!companionPos) return null;
+            currentPos = combatPositions.companion;
+            if (!currentPos) return null;
+            
+            // Debug: Log companion movement calculation
+            console.log('Calculating companion movement from:', currentPos);
+            console.log('Available enemies:', combatEnemies.filter(e => e.currentHP > 0).map(e => ({ name: e.name, pos: combatPositions[e.name] })));
+            
             return calculateEnemyMovement(enemy, companionPos, {
                 combatPositions,
                 playerCharacter,
@@ -169,9 +175,10 @@ export const useCombatMovement = (
         }
         
         // Handle enemy positioning
-        if (!enemyPos) return null;
+        currentPos = combatPositions[enemy.name];
+        if (!currentPos) return null;
         
-        return calculateEnemyMovement(enemy, enemyPos, {
+        return calculateEnemyMovement(enemy, currentPos, {
             combatPositions,
             playerCharacter,
             companionCharacter,

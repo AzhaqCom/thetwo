@@ -142,6 +142,14 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     
     if (!currentPos || !combatPositions) return null;
     
+    // Debug logging
+    console.log(`Calculating movement for ${enemy.name || enemy.type}:`, {
+        currentPos,
+        enemyType: enemy.type,
+        hasAttacks: !!enemy.attacks,
+        movement: enemy.movement
+    });
+    
     // Find potential targets
     const targets = [];
     
@@ -165,6 +173,8 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
         });
     }
     
+    console.log(`Found ${targets.length} potential targets:`, targets);
+    
     if (targets.length === 0) return null;
     
     // Find closest target
@@ -181,12 +191,14 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     
     if (!closestTarget) return null;
     
+    console.log(`Closest target at distance ${closestDistance}:`, closestTarget);
+    
     // Determine movement strategy based on enemy attacks
     const hasRangedAttack = enemy.attacks?.some(attack => 
-        attack.range === 'ranged' || (typeof attack.range === 'number' && attack.range > 5)
+        attack.type === 'distance' || attack.range === 'ranged' || (typeof attack.range === 'number' && attack.range > 5)
     );
     const hasMeleeAttack = enemy.attacks?.some(attack => 
-        attack.range === 'melee' || attack.range === 'touch' || attack.range === 5
+        attack.type === 'corps-à-corps' || attack.range === 'melee' || attack.range === 'touch' || attack.range === 5
     );
     
     let idealDistance;
@@ -198,13 +210,20 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
         idealDistance = 2; // Mixed, prefer medium range
     }
     
+    console.log(`Attack analysis - Melee: ${hasMeleeAttack}, Ranged: ${hasRangedAttack}, Ideal distance: ${idealDistance}`);
+    
     // If already at ideal distance, don't move
-    if (closestDistance === idealDistance) return null;
+    if (closestDistance === idealDistance) {
+        console.log('Already at ideal distance, no movement needed');
+        return null;
+    }
     
     // Calculate movement (up to 6 squares)
     const maxMovement = enemy.movement || 6;
     let bestPosition = null;
     let bestScore = -1;
+    
+    console.log(`Calculating movement with max range: ${maxMovement}`);
     
     // Check all positions within movement range
     for (let dx = -maxMovement; dx <= maxMovement; dx++) {
@@ -235,6 +254,7 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
         }
     }
     
+    console.log(`Best position found:`, bestPosition, `with score:`, bestScore);
     return bestPosition;
 };
 
