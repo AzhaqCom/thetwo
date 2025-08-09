@@ -32,6 +32,9 @@ const CombatPanel = ({
     const [combatPositions, setCombatPositions] = useState({});
     const [showMovementFor, setShowMovementFor] = useState(null);
     const [showTargetingFor, setShowTargetingFor] = useState(null);
+    const [hasMovedThisTurn, setHasMovedThisTurn] = useState(false);
+    const [selectedAoESquares, setSelectedAoESquares] = useState([]);
+    const [aoeCenter, setAoECenter] = useState(null);
     // Les états `defeated` et `victory` sont maintenant gérés par la logique de fin de combat dans le parent.
     // Cependant, nous les conservons ici pour le rendu du CombatEndPanel
     const [defeated, setDefeated] = useState(false);
@@ -51,6 +54,9 @@ const CombatPanel = ({
         setCombatPositions({});
         setShowMovementFor(null);
         setShowTargetingFor(null);
+        setHasMovedThisTurn(false);
+        setSelectedAoESquares([]);
+        setAoECenter(null);
     }, [combatKey]);
 
 
@@ -81,15 +87,77 @@ const CombatPanel = ({
     }, []);
 
     const handleMoveCharacter = useCallback((characterId, newPosition) => {
+        const oldPosition = combatPositions[characterId];
+        
+        // Check for opportunity attacks
+        if (characterId === 'player' || characterId === 'companion') {
+            const opportunityAttacks = checkOpportunityAttacks(characterId, oldPosition, newPosition);
+            opportunityAttacks.forEach(attack => {
+                executeOpportunityAttack(attack.attacker, attack.target);
+            });
+        }
+        
         setCombatPositions(prev => ({
             ...prev,
             [characterId]: newPosition
         }));
         setShowMovementFor(null);
+        setHasMovedThisTurn(true);
         
-        // After moving, continue to next turn or action selection
-        handleNextTurn();
-    }, []);
+        // After moving, go to action phase
+        setCombatPhase('player-action');
+    }, [combatPositions]);
+
+    const checkOpportunityAttacks = useCallback((movingCharacterId, oldPos, newPos) => {
+        if (!oldPos || !newPos) return [];
+        
+        const attacks = [];
+        const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
+        
+        livingEnemies.forEach(enemy => {
+            const enemyPos = combatPositions[enemy.name];
+            if (!enemyPos) return;
+            
+            // Check if moving character was adjacent to this enemy
+            const wasAdjacent = Math.abs(oldPos.x - enemyPos.x) <= 1 && Math.abs(oldPos.y - enemyPos.y) <= 1;
+            const isStillAdjacent = Math.abs(newPos.x - enemyPos.x) <= 1 && Math.abs(newPos.y - enemyPos.y) <= 1;
+            
+            // Opportunity attack if was adjacent but no longer is
+            if (wasAdjacent && !isStillAdjacent) {
+                attacks.push({
+                    attacker: enemy,
+                    target: movingCharacterId
+                });
+            }
+        });
+        
+        return attacks;
+    }, [combatEnemies, combatPositions]);
+
+    const executeOpportunityAttack = useCallback((attacker, targetId) => {
+        const attack = attacker.attacks?.[0];
+        if (!attack) return;
+        
+        const attackBonus = attack.attackBonus || 0;
+        const attackRoll = Math.floor(Math.random() * 20) + 1 + attackBonus;
+        
+        let targetAC = 10;
+        if (targetId === 'player') targetAC = playerCharacter.ac;
+        else if (targetId === 'companion' && companionCharacter) targetAC = companionCharacter.ac;
+        
+        if (attackRoll >= targetAC) {
+            const { damage, message } = calculateDamage(attack);
+            addCombatMessage(`Attaque d'opportunité ! ${attacker.name} touche avec ${attack.name} et inflige ${message}.`, 'enemy-damage');
+            
+            if (targetId === 'player') {
+                onPlayerTakeDamage(damage, `Attaque d'opportunité de ${attacker.name} !`);
+            } else if (targetId === 'companion') {
+                onCompanionTakeDamage(damage, `Attaque d'opportunité de ${attacker.name} sur ${companionCharacter.name} !`);
+            }
+        } else {
+            addCombatMessage(`Attaque d'opportunité ! ${attacker.name} rate son attaque.`, 'miss');
+        }
+    }, [playerCharacter, companionCharacter, addCombatMessage, onPlayerTakeDamage, onCompanionTakeDamage]);
 
 
     const handleNextTurn = useCallback(() => {
@@ -122,8 +190,11 @@ const CombatPanel = ({
         setCombatPhase('turn');
         setPlayerAction(null);
         setActionTargets([]);
+        setSelectedAoESquares([]);
+        setAoECenter(null);
         setShowMovementFor(null);
         setShowTargetingFor(null);
+        setHasMovedThisTurn(false);
     }, [currentTurnIndex, turnOrder, combatEnemies, addCombatMessage, playerCharacter.currentHP, companionCharacter]);
 
     const enemyAttack = useCallback(() => {
@@ -226,19 +297,133 @@ const CombatPanel = ({
 
     const handleTargetSelection = useCallback(
         (enemy) => {
-            const maxTargets = playerAction?.projectiles || 1;
-            setActionTargets((prevTargets) => {
-                const newTargets = [...prevTargets, enemy];
-                return newTargets;
-            });
+            if (playerAction?.areaOfEffect) {
+                // Handle AoE spell targeting
+                const centerPos = combatPositions[enemy.name] || findPositionByCharacter(enemy);
+                if (centerPos) {
+                    setAoECenter(centerPos);
+                    const affectedSquares = calculateAoESquares(centerPos, playerAction.areaOfEffect);
+                    setSelectedAoESquares(affectedSquares);
+                    
+                    // Find all targets in affected squares
+                    const targets = [];
+                    affectedSquares.forEach(square => {
+                        const targetAtSquare = findCharacterAtPosition(square.x, square.y);
+                        if (targetAtSquare && targetAtSquare.currentHP > 0) {
+                            targets.push(targetAtSquare);
+                        }
+                    });
+                    setActionTargets(targets);
+                }
+            } else {
+                // Handle single target or projectile spells
+                const maxTargets = playerAction?.projectiles || 1;
+                setActionTargets((prevTargets) => {
+                    const newTargets = [...prevTargets, enemy];
+                    return newTargets;
+                });
+            }
         },
-        [playerAction]
+        [playerAction, combatPositions]
     );
+
+    const calculateAoESquares = useCallback((center, aoeType) => {
+        const squares = [];
+        
+        switch (aoeType.shape) {
+            case 'sphere':
+                const radius = Math.floor(aoeType.radius / 5); // Convert feet to squares
+                for (let x = center.x - radius; x <= center.x + radius; x++) {
+                    for (let y = center.y - radius; y <= center.y + radius; y++) {
+                        if (x >= 0 && x < 8 && y >= 0 && y < 6) {
+                            const distance = Math.sqrt(Math.pow(x - center.x, 2) + Math.pow(y - center.y, 2));
+                            if (distance <= radius) {
+                                squares.push({ x, y });
+                            }
+                        }
+                    }
+                }
+                break;
+            case 'cube':
+                const size = Math.floor(aoeType.size / 5); // Convert feet to squares
+                for (let x = center.x; x < center.x + size && x < 8; x++) {
+                    for (let y = center.y; y < center.y + size && y < 6; y++) {
+                        if (x >= 0 && y >= 0) {
+                            squares.push({ x, y });
+                        }
+                    }
+                }
+                break;
+        }
+        
+        return squares;
+    }, []);
+
+    const findCharacterAtPosition = useCallback((x, y) => {
+        // Check player
+        if (combatPositions.player && combatPositions.player.x === x && combatPositions.player.y === y) {
+            return { ...playerCharacter, id: 'player', name: playerCharacter.name };
+        }
+        
+        // Check companion
+        if (combatPositions.companion && combatPositions.companion.x === x && combatPositions.companion.y === y && companionCharacter) {
+            return { ...companionCharacter, id: 'companion', name: companionCharacter.name };
+        }
+        
+        // Check enemies
+        for (const enemy of combatEnemies) {
+            const enemyPos = combatPositions[enemy.name];
+            if (enemyPos && enemyPos.x === x && enemyPos.y === y) {
+                return enemy;
+            }
+        }
+        
+        return null;
+    }, [combatPositions, playerCharacter, companionCharacter, combatEnemies]);
+
+    const findPositionByCharacter = useCallback((character) => {
+        if (character.id === 'player') return combatPositions.player;
+        if (character.id === 'companion') return combatPositions.companion;
+        return combatPositions[character.name];
+    }, [combatPositions]);
+
+    const calculateDistance = useCallback((pos1, pos2) => {
+        if (!pos1 || !pos2) return Infinity;
+        return Math.abs(pos1.x - pos2.x) + Math.abs(pos1.y - pos2.y); // Manhattan distance
+    }, []);
+
+    const isInRange = useCallback((casterPos, targetPos, spell) => {
+        const distance = calculateDistance(casterPos, targetPos);
+        
+        if (spell.range === 'touch' || spell.range === 'melee') {
+            return distance <= 1; // Adjacent squares only
+        } else if (spell.range === 'ranged' || typeof spell.range === 'number') {
+            return distance <= 12; // Assume 60 feet = 12 squares for most ranged spells
+        }
+        
+        return true; // Unlimited range
+    }, [calculateDistance]);
 
     const handleCastSpellClick = useCallback(() => {
         const spell = playerAction;
         const targets = actionTargets;
 
+        // Validate range for all targets
+        const playerPos = combatPositions.player;
+        const invalidTargets = targets.filter(target => {
+            const targetPos = findPositionByCharacter(target);
+            return !isInRange(playerPos, targetPos, spell);
+        });
+        
+        if (invalidTargets.length > 0) {
+            addCombatMessage(`Certaines cibles sont hors de portée du sort.`, 'miss');
+            setPlayerAction(null);
+            setActionTargets([]);
+            setSelectedAoESquares([]);
+            setAoECenter(null);
+            setShowTargetingFor(null);
+            return;
+        }
         const spellUsedSuccessfully = onPlayerCastSpell(spell);
         if (!spellUsedSuccessfully) {
             setPlayerAction(null);
@@ -282,9 +467,11 @@ const CombatPanel = ({
         setCombatEnemies(updatedEnemies);
         setPlayerAction(null);
         setActionTargets([]);
+        setSelectedAoESquares([]);
+        setAoECenter(null);
         setShowTargetingFor(null);
         handleNextTurn();
-    }, [playerAction, actionTargets, onPlayerCastSpell, combatEnemies, playerCharacter, addCombatMessage, handleNextTurn]);
+    }, [playerAction, actionTargets, onPlayerCastSpell, combatEnemies, playerCharacter, addCombatMessage, handleNextTurn, combatPositions, findPositionByCharacter, isInRange]);
 
     useEffect(() => {
         if (playerAction && actionTargets.length === (playerAction.projectiles || 1)) {
@@ -429,11 +616,10 @@ const CombatPanel = ({
                     setDefeated(true);
                     return;
                 }
-                setCombatPhase('player-action');
+                // Start with movement phase
+                setCombatPhase('player-movement');
                 addCombatMessage("C'est ton tour !");
-                
-                // For now, skip movement phase and go directly to action
-                // Later we can add a movement phase here
+                setShowMovementFor('player');
             } else if (isCompanionTurn) {
                 addCombatMessage(`C'est le tour de ${currentTurnEntity.name}...`);
                 const timer = setTimeout(() => companionAttack(), 400);
@@ -459,11 +645,26 @@ const CombatPanel = ({
                 onMoveCharacter={handleMoveCharacter}
                 combatPositions={combatPositions}
                 showMovementFor={showMovementFor}
-                showTargetingFor={playerAction ? 'player' : null}
+                showTargetingFor={showTargetingFor}
+                selectedAoESquares={selectedAoESquares}
+                aoeCenter={aoeCenter}
             />
 
             <div className="combat-controls">
                 {combatPhase === 'initiative-roll' && <InitiativePanel onStartCombat={() => setCombatPhase('turn')} />}
+
+                {combatPhase === 'player-movement' && (
+                    <div>
+                        <h3>Phase de Mouvement</h3>
+                        <p>Clique sur une case verte pour te déplacer (6 cases maximum).</p>
+                        <button onClick={() => {
+                            setShowMovementFor(null);
+                            setCombatPhase('player-action');
+                        }}>
+                            Passer le mouvement
+                        </button>
+                    </div>
+                )}
 
                 {combatPhase === 'end' && (
                     <>

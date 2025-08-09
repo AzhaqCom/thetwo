@@ -37,6 +37,19 @@ export const spells = {
         castableOutOfCombat: false // Ajouté pour la clarté
     },
 
+    "Boule de Feu": {
+        name: "Boule de Feu",
+        level: 3,
+        school: "Évocation",
+        castingTime: "1 action",
+        range: "45 mètres",
+        description: "Une boule de feu explose dans une sphère de 6 mètres de rayon centrée sur un point à portée. Chaque créature dans la zone doit faire un jet de sauvegarde de Dextérité. En cas d'échec, elle subit 8d6 dégâts de feu, ou la moitié en cas de réussite.",
+        damage: { dice: "8d6", bonus: 0, type: "feu" },
+        areaOfEffect: { shape: "sphere", radius: 20 }, // 20 feet = 4 squares radius
+        savingThrow: { ability: "dexterite", dc: "spell" },
+        requiresAttackRoll: false,
+        castableOutOfCombat: false
+    },
     "Armure du Mage": {
         name: "Armure du Mage",
         level: 1,

@@ -15,7 +15,9 @@ const CombatGrid = ({
   onMoveCharacter,
   combatPositions,
   showMovementFor = null,
-  showTargetingFor = null
+  showTargetingFor = null,
+  selectedAoESquares = [],
+  aoeCenter = null
 }) => {
   const GRID_WIDTH = 8;
   const GRID_HEIGHT = 6;
@@ -59,6 +61,12 @@ const CombatGrid = ({
           if (distance === 1) {
             validSquares.add(`${x},${y}`);
           }
+        } else if (targetingRange === 'ranged') {
+          // Ranged attacks - limited range but not adjacent
+          const distance = Math.abs(x - startX) + Math.abs(y - startY);
+          if (distance > 1 && distance <= 12) { // 60 feet = 12 squares
+            validSquares.add(`${x},${y}`);
+          }
         } else {
           // Ranged or unlimited - can target any square except own position
           if (!(x === startX && y === startY)) {
@@ -78,7 +86,10 @@ const CombatGrid = ({
 
   const validTargetSquares = useMemo(() => {
     if (!showTargetingFor || !combatPositions[showTargetingFor]) return new Set();
-    return getValidTargetSquares(combatPositions[showTargetingFor], 'unlimited'); // Default to ranged
+    // Determine range based on current spell or action
+    let range = 'unlimited';
+    // This would be passed from parent component based on selected spell
+    return getValidTargetSquares(combatPositions[showTargetingFor], range);
   }, [showTargetingFor, combatPositions, getValidTargetSquares]);
 
   const handleSquareClick = useCallback((x, y) => {
@@ -179,6 +190,16 @@ const CombatGrid = ({
     
     if (validTargetSquares.has(squareKey)) {
       classes.push('valid-target');
+    }
+    
+    // Check if this square is part of an AoE effect
+    if (selectedAoESquares.some(square => square.x === x && square.y === y)) {
+      classes.push('aoe-target');
+    }
+    
+    // Check if this is the AoE center
+    if (aoeCenter && aoeCenter.x === x && aoeCenter.y === y) {
+      classes.push('aoe-center');
     }
     
     return classes.join(' ');
