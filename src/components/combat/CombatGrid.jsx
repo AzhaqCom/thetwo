@@ -3,9 +3,6 @@ import GridSquare from './GridSquare';
 import PlayerCard from './PlayerCard';
 import CompanionCard from './CompanionCard';
 import EnemyCard from './EnemyCard';
-import PlayerCard from './PlayerCard';
-import CompanionCard from './CompanionCard';
-import EnemyCard from './EnemyCard';
 
 const CombatGrid = ({ 
   playerCharacter, 
