@@ -37,7 +37,10 @@ export const useCombatManager = ({
     // Reset combat when combatKey changes
     useEffect(() => {
         console.log('Combat reset triggered - combatKey:', combatKey);
-        setCombatPhase('initiative-roll');
+        // Use setTimeout to ensure the reset happens after other state updates
+        setTimeout(() => {
+            setCombatPhase('initiative-roll');
+        }, 0);
         setDefeated(false);
         setVictory(false);
         setCombatEnemies([]);
