@@ -29,7 +29,7 @@ const skillToStat = {
 };
 
 export const useGameState = () => {
-    const [currentScene, setCurrentScene] = useState("scene1");
+    const [currentScene, setCurrentScene] = useState("scene8");
     const [playerCharacter, setPlayerCharacter] = useState(initialCharacter);
     const [playerCompanion, setPlayerCompanion] = useState(null);
     const [combatLog, setCombatLog] = useState([]);
