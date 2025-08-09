@@ -112,27 +112,57 @@ const CombatPanel = ({
         if (!oldPos || !newPos) return [];
         
         const attacks = [];
-        const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
         
-        livingEnemies.forEach(enemy => {
-            const enemyPos = combatPositions[enemy.name];
-            if (!enemyPos) return;
+        if (movingCharacterId === 'player' || movingCharacterId === 'companion') {
+            // Player/companion moving - check for enemy opportunity attacks
+            const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
             
-            // Check if moving character was adjacent to this enemy
-            const wasAdjacent = Math.abs(oldPos.x - enemyPos.x) <= 1 && Math.abs(oldPos.y - enemyPos.y) <= 1;
-            const isStillAdjacent = Math.abs(newPos.x - enemyPos.x) <= 1 && Math.abs(newPos.y - enemyPos.y) <= 1;
+            livingEnemies.forEach(enemy => {
+                const enemyPos = combatPositions[enemy.name];
+                if (!enemyPos) return;
+                
+                const wasAdjacent = Math.abs(oldPos.x - enemyPos.x) <= 1 && Math.abs(oldPos.y - enemyPos.y) <= 1;
+                const isStillAdjacent = Math.abs(newPos.x - enemyPos.x) <= 1 && Math.abs(newPos.y - enemyPos.y) <= 1;
+                
+                if (wasAdjacent && !isStillAdjacent) {
+                    attacks.push({
+                        attacker: enemy,
+                        target: movingCharacterId
+                    });
+                }
+            });
+        } else {
+            // Enemy moving - check for player/companion opportunity attacks
+            const playerPos = combatPositions.player;
+            const companionPos = combatPositions.companion;
             
-            // Opportunity attack if was adjacent but no longer is
-            if (wasAdjacent && !isStillAdjacent) {
-                attacks.push({
-                    attacker: enemy,
-                    target: movingCharacterId
-                });
+            if (playerPos && playerCharacter.currentHP > 0) {
+                const wasAdjacent = Math.abs(oldPos.x - playerPos.x) <= 1 && Math.abs(oldPos.y - playerPos.y) <= 1;
+                const isStillAdjacent = Math.abs(newPos.x - playerPos.x) <= 1 && Math.abs(newPos.y - playerPos.y) <= 1;
+                
+                if (wasAdjacent && !isStillAdjacent) {
+                    attacks.push({
+                        attacker: 'player',
+                        target: movingCharacterId
+                    });
+                }
             }
-        });
+            
+            if (companionPos && companionCharacter && companionCharacter.currentHP > 0) {
+                const wasAdjacent = Math.abs(oldPos.x - companionPos.x) <= 1 && Math.abs(oldPos.y - companionPos.y) <= 1;
+                const isStillAdjacent = Math.abs(newPos.x - companionPos.x) <= 1 && Math.abs(newPos.y - companionPos.y) <= 1;
+                
+                if (wasAdjacent && !isStillAdjacent) {
+                    attacks.push({
+                        attacker: 'companion',
+                        target: movingCharacterId
+                    });
+                }
+            }
+        }
         
         return attacks;
-    }, [combatEnemies, combatPositions]);
+    }, [combatEnemies, combatPositions, playerCharacter, companionCharacter]);
 
     const executeOpportunityAttack = useCallback((attacker, targetId) => {
         const attack = attacker.attacks?.[0];
