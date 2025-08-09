@@ -326,7 +326,7 @@ Récemment, tu as entendu des murmures concernant une ancienne prophétie liée 
     "scene24": {
         text: `Tu te retrouves enfin aux portes de Meresnya. La cité s'étend devant toi, une métropole bouillonnante de vie. Des marchands crient leurs offres, des mages échangent des secrets, et l'architecture grandiose témoigne de la richesse et du savoir qui s'y trouvent. Le symbole sur ta main t'indique que tu es au bon endroit. Ta quête pour percer son mystère peut enfin commencer.`,
         choices: [
-            { text: "Chercher un érudit pour t'aider", next: "scene25" }
+            { text: "Chercher un érudit pour t'aider", next: "scene1" }
         ]
     }
 };

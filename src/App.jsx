@@ -88,21 +88,15 @@ function App() {
         }));
     }, [playerCharacter.level]);
     const handleCombatEnd = useCallback((hasWon) => {
-        // Logique pour mettre fin au combat, quel que soit le résultat
-        // Gère la victoire (gain d'XP) ou la défaite (pas d'XP)
-        // Puis passe à la scène suivante
-        // Cette fonction pourrait être plus complexe selon tes besoins
+
         if (hasWon) {
-            // Logique de victoire
-            // ...
+        
             const nextScene = scenes[currentScene].next || "sceneFallback";
             setCurrentScene(nextScene);
         } else {
-            // Logique de défaite
-            // Tu peux choisir une scène de game over, ou rien.
-            // C'est ici que tu peux afficher le bouton pour rejouer.
+          
             addCombatMessage("Défaite... Tu as perdu connaissance.", 'defeat');
-            // Tu peux introduire une nouvelle phase ou un nouveau state ici si nécessaire
+           
         }
     }, [currentScene, addCombatMessage, scenes]);
 
@@ -138,16 +132,14 @@ function App() {
         setCurrentScene(nextScene);
     }, [currentScene, playerCharacter, addCombatMessage]);
 
-    // 👈 CORRECTION ICI
+   
     const handlePlayerTakeDamage = useCallback((damage, message) => {
         addCombatMessage(message, 'enemy-damage');
         setPlayerCharacter(prev => {
             const newHP = Math.max(0, prev.currentHP - damage);
             if (newHP <= 0) {
-                // Le joueur est vaincu, on appelle la fonction de fin de combat
-                // Note: Tu devras peut-être introduire un state 'isCombatOver'
-                // pour empêcher le combat de continuer après la défaite.
-                handleCombatEnd(false); // Le joueur n'a pas gagné
+         
+                handleCombatEnd(false); 
             }
             return { ...prev, currentHP: newHP };
         });
