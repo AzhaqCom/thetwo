@@ -142,7 +142,7 @@ export const useCombatManager = ({
 
     // Initialize combat when encounterData is available
     useEffect(() => {
-         { 
+          
             encounterData: !!encounterData, 
             isInitialized, 
             combatKey,
