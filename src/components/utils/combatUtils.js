@@ -48,3 +48,134 @@ export const rollD20WithModifier = (modifier = 0) => {
 export const doesAttackHit = (attackRoll, targetAC) => {
     return attackRoll >= targetAC;
 };
+
+// Grid constants
+export const GRID_WIDTH = 8;
+export const GRID_HEIGHT = 6;
+
+/**
+ * Calculates the best movement position for an enemy
+ * @param {Object} enemy - The enemy data
+ * @param {Object} currentPos - Current position {x, y}
+ * @param {Object} combatState - Combat state with positions and characters
+ * @returns {Object|null} New position {x, y} or null if no movement needed
+ */
+export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
+    const { combatPositions, playerCharacter, companionCharacter, combatEnemies } = combatState;
+    
+    if (!currentPos || !combatPositions) return null;
+    
+    // Find potential targets
+    const targets = [];
+    if (playerCharacter && playerCharacter.currentHP > 0 && combatPositions.player) {
+        targets.push({ pos: combatPositions.player, type: 'player' });
+    }
+    if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
+        targets.push({ pos: combatPositions.companion, type: 'companion' });
+    }
+    
+    if (targets.length === 0) return null;
+    
+    // Find closest target
+    let closestTarget = null;
+    let closestDistance = Infinity;
+    
+    targets.forEach(target => {
+        const distance = Math.abs(currentPos.x - target.pos.x) + Math.abs(currentPos.y - target.pos.y);
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestTarget = target;
+        }
+    });
+    
+    if (!closestTarget) return null;
+    
+    // Determine movement strategy based on enemy attacks
+    const hasRangedAttack = enemy.attacks?.some(attack => 
+        attack.range === 'ranged' || (typeof attack.range === 'number' && attack.range > 5)
+    );
+    const hasMeleeAttack = enemy.attacks?.some(attack => 
+        attack.range === 'melee' || attack.range === 'touch' || attack.range === 5
+    );
+    
+    let idealDistance;
+    if (hasMeleeAttack && !hasRangedAttack) {
+        idealDistance = 1; // Get adjacent for melee
+    } else if (hasRangedAttack && !hasMeleeAttack) {
+        idealDistance = 4; // Stay at range
+    } else {
+        idealDistance = 2; // Mixed, prefer medium range
+    }
+    
+    // If already at ideal distance, don't move
+    if (closestDistance === idealDistance) return null;
+    
+    // Calculate movement (up to 6 squares)
+    const maxMovement = enemy.movement || 6;
+    let bestPosition = null;
+    let bestScore = -1;
+    
+    // Check all positions within movement range
+    for (let dx = -maxMovement; dx <= maxMovement; dx++) {
+        for (let dy = -maxMovement; dy <= maxMovement; dy++) {
+            const manhattanDistance = Math.abs(dx) + Math.abs(dy);
+            if (manhattanDistance === 0 || manhattanDistance > maxMovement) continue;
+            
+            const newX = currentPos.x + dx;
+            const newY = currentPos.y + dy;
+            
+            // Check bounds
+            if (newX < 0 || newX >= GRID_WIDTH || newY < 0 || newY >= GRID_HEIGHT) continue;
+            
+            // Check if position is occupied
+            if (isPositionOccupied(newX, newY, combatPositions, combatEnemies, enemy.name)) continue;
+            
+            // Calculate distance to target from this position
+            const distanceToTarget = Math.abs(newX - closestTarget.pos.x) + Math.abs(newY - closestTarget.pos.y);
+            
+            // Score this position (prefer positions closer to ideal distance)
+            const distanceFromIdeal = Math.abs(distanceToTarget - idealDistance);
+            const score = 100 - distanceFromIdeal - manhattanDistance * 0.1; // Slight preference for less movement
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestPosition = { x: newX, y: newY };
+            }
+        }
+    }
+    
+    return bestPosition;
+};
+
+/**
+ * Checks if a position is occupied by any character
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {Object} combatPositions - All character positions
+ * @param {Array} combatEnemies - Array of enemies
+ * @param {string} excludeEnemyName - Enemy name to exclude from check
+ * @returns {boolean} True if position is occupied
+ */
+const isPositionOccupied = (x, y, combatPositions, combatEnemies, excludeEnemyName) => {
+    // Check player
+    if (combatPositions.player && combatPositions.player.x === x && combatPositions.player.y === y) {
+        return true;
+    }
+    
+    // Check companion
+    if (combatPositions.companion && combatPositions.companion.x === x && combatPositions.companion.y === y) {
+        return true;
+    }
+    
+    // Check other enemies
+    for (const enemy of combatEnemies) {
+        if (enemy.name !== excludeEnemyName && enemy.currentHP > 0) {
+            const enemyPos = combatPositions[enemy.name];
+            if (enemyPos && enemyPos.x === x && enemyPos.y === y) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+};

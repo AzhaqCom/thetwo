@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { enemyTemplates } from '../../data/enemies';
 import { spells } from '../../data/spells';
 import { getModifier } from '../utils/utils';
-import { rollDice, calculateDamage } from '../utils/combatUtils';
+import { rollDice, calculateDamage, calculateEnemyMovement, GRID_WIDTH, GRID_HEIGHT } from '../utils/combatUtils';
 import InitiativePanel from './InitiativePanel';
 import CombatEndPanel from './CombatEndPanel';
 import PlayerTurnPanel from './PlayerTurnPanel';
@@ -240,7 +240,12 @@ const CombatPanel = ({
         // First, handle enemy movement
         const enemyPos = combatPositions[enemyData.name];
         if (enemyPos) {
-            const newPosition = calculateEnemyMovement(enemyData, enemyPos);
+            const newPosition = calculateEnemyMovement(enemyData, enemyPos, {
+                combatPositions,
+                playerCharacter,
+                companionCharacter,
+                combatEnemies
+            });
             if (newPosition && (newPosition.x !== enemyPos.x || newPosition.y !== enemyPos.y)) {
                 // Check for opportunity attacks when enemy moves
                 const opportunityAttacks = checkOpportunityAttacks(enemyData.name, enemyPos, newPosition);
