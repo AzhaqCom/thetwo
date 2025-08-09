@@ -160,7 +160,7 @@ function App() {
             </div>
             <div className="sidebar right-sidebar">
                 <CharacterSheet character={playerCharacter} />
-                {playerCompanion && <CompanionSheet companion={playerCompanion} />}
+             
             </div>
         </div>
     );
