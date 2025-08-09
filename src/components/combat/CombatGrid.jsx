@@ -131,7 +131,7 @@ const CombatGrid = ({
     // Find which character is at this position
     const characterId = Object.keys(combatPositions).find(id => {
       const pos = combatPositions[id];
-      return pos.x === x && pos.y === y;
+      return pos && pos.x === x && pos.y === y;
     });
 
     if (!characterId) return null;

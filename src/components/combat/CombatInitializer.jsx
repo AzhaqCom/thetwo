@@ -92,6 +92,11 @@ const CombatInitializer = ({
         setCombatEnemies(enemiesWithInitiative);
         setTurnOrder(order);
         initializeCombatPositions(initialCombatEnemies, !!playerCompanion);
+        
+        console.log('Combat initialized with positions:', {
+            enemies: enemiesWithInitiative.map(e => e.name),
+            hasCompanion: !!playerCompanion
+        });
 
         order.forEach((entity) => {
             addCombatMessage(`${entity.name} a lancé l'initiative et a obtenu ${entity.initiative}.`, 'initiative');

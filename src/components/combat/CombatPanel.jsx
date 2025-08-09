@@ -159,6 +159,14 @@ const CombatPanel = ({
         if (character.id === 'companion') return combatManager.combatPositions.companion;
         return combatManager.combatPositions[character.name];
     }, [combatManager.combatPositions]);
+    
+    // Debug: Log combat state
+    console.log('CombatPanel render:', {
+        phase: combatManager.combatPhase,
+        positions: combatManager.combatPositions,
+        enemies: combatManager.combatEnemies.length,
+        companion: !!combatManager.companionCharacter
+    });
 
     return (
         <div className="combat-panel-container">

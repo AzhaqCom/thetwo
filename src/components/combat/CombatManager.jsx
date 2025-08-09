@@ -50,6 +50,8 @@ export const useCombatManager = ({
         combatMovement.setHasMovedThisTurn(false);
         combatMovement.setSelectedAoESquares([]);
         combatMovement.setAoECenter(null);
+        
+        console.log('Combat reset - combatKey:', combatKey);
     }, [combatKey]);
 
     // Update companion character when playerCompanion changes

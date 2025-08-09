@@ -36,6 +36,7 @@ export const useCombatMovement = (
             positions[enemy.name] = { x, y };
         });
         
+        console.log('Initialized combat positions:', positions);
         setCombatPositions(positions);
     }, []);
 
