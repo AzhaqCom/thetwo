@@ -92,18 +92,16 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
     }
     
     // Check companion as target (if attacker is enemy)
-    if (attacker.type === 'enemy' && companionCharacter && companionCharacter.currentHP > 0) {
+    if (attacker.type === 'enemy' && companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
         const companionPos = combatPositions.companion;
-        if (companionPos) {
-            const distance = Math.abs(attackerPos.x - companionPos.x) + Math.abs(attackerPos.y - companionPos.y);
-            if (distance <= maxRange) {
-                targets.push({
-                    ...companionCharacter,
-                    type: 'companion',
-                    name: companionCharacter.name,
-                    ac: companionCharacter.ac
-                });
-            }
+        const distance = Math.abs(attackerPos.x - companionPos.x) + Math.abs(attackerPos.y - companionPos.y);
+        if (distance <= maxRange) {
+            targets.push({
+                ...companionCharacter,
+                type: 'companion',
+                name: companionCharacter.name,
+                ac: companionCharacter.ac
+            });
         }
     }
     
