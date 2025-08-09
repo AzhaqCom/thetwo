@@ -156,6 +156,19 @@ export const useCombatMovement = (
 
     const calculateEnemyMovementPosition = useCallback((enemy) => {
         const enemyPos = combatPositions[enemy.name];
+        // Handle companion positioning
+        if (enemy.type === 'companion') {
+            const companionPos = combatPositions.companion;
+            if (!companionPos) return null;
+            return calculateEnemyMovement(enemy, companionPos, {
+                combatPositions,
+                playerCharacter,
+                companionCharacter,
+                combatEnemies
+            });
+        }
+        
+        // Handle enemy positioning
         if (!enemyPos) return null;
         
         return calculateEnemyMovement(enemy, enemyPos, {

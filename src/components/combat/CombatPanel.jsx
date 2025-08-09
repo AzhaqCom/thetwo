@@ -212,6 +212,20 @@ const CombatPanel = ({
             return;
         }
 
+        // First, handle companion movement
+        const companionPos = combatPositions.companion;
+        if (companionPos) {
+            const newPosition = calculateEnemyMovementPosition({ 
+                ...companionCharacter, 
+                type: 'companion',
+                movement: 6 // Standard movement for companions
+            });
+            if (newPosition && (newPosition.x !== companionPos.x || newPosition.y !== companionPos.y)) {
+                updateEnemyPosition('companion', newPosition);
+                addCombatMessage(`${companionCharacter.name} se déplace vers une meilleure position.`);
+            }
+        }
+
         const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
         if (livingEnemies.length === 0) {
             addCombatMessage("Il n'y a plus d'ennemis à attaquer.");
@@ -226,12 +240,32 @@ const CombatPanel = ({
             return;
         }
 
-        const target = livingEnemies[Math.floor(Math.random() * livingEnemies.length)];
+        // Now handle attacks with updated position
+        const updatedCompanionPos = combatPositions.companion;
+        const availableTargets = getTargetsInRange(
+            { ...companionCharacter, type: 'companion' }, 
+            updatedCompanionPos, 
+            attack, 
+            {
+                playerCharacter,
+                companionCharacter,
+                combatEnemies,
+                combatPositions
+            }
+        );
+        
+        if (availableTargets.length === 0) {
+            addCombatMessage(`${companionCharacter.name} n'a pas de cible à portée pour attaquer.`);
+            handleNextTurn();
+            return;
+        }
+        
+        const target = availableTargets[Math.floor(Math.random() * availableTargets.length)];
         const attackBonus = getModifier(companionCharacter.stats.force || companionCharacter.stats.dexterite);
         const attackRoll = Math.floor(Math.random() * 20) + 1 + attackBonus;
+        
         if (attackRoll >= target.ac) {
             const { damage, message } = calculateDamage(attack);
-
             const updatedEnemies = combatEnemies.map(enemy => {
                 if (enemy.name === target.name) {
                     const newHP = Math.max(0, enemy.currentHP - damage);
@@ -249,7 +283,7 @@ const CombatPanel = ({
         }
 
         handleNextTurn();
-    }, [addCombatMessage, handleNextTurn, combatEnemies, companionCharacter]);
+    }, [addCombatMessage, handleNextTurn, combatEnemies, companionCharacter, combatPositions, calculateEnemyMovementPosition, updateEnemyPosition, playerCharacter]);
 
     const handleTargetSelection = useCallback(
         (enemy) => {

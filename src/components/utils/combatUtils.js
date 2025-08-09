@@ -144,11 +144,25 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     
     // Find potential targets
     const targets = [];
-    if (playerCharacter && playerCharacter.currentHP > 0 && combatPositions.player) {
-        targets.push({ pos: combatPositions.player, type: 'player' });
-    }
-    if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
-        targets.push({ pos: combatPositions.companion, type: 'companion' });
+    
+    if (enemy.type === 'enemy') {
+        // Enemies target player and companion
+        if (playerCharacter && playerCharacter.currentHP > 0 && combatPositions.player) {
+            targets.push({ pos: combatPositions.player, type: 'player' });
+        }
+        if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
+            targets.push({ pos: combatPositions.companion, type: 'companion' });
+        }
+    } else if (enemy.type === 'companion') {
+        // Companions target enemies
+        combatEnemies.forEach(combatEnemy => {
+            if (combatEnemy.currentHP > 0) {
+                const enemyPos = combatPositions[combatEnemy.name];
+                if (enemyPos) {
+                    targets.push({ pos: enemyPos, type: 'enemy', name: combatEnemy.name });
+                }
+            }
+        });
     }
     
     if (targets.length === 0) return null;
