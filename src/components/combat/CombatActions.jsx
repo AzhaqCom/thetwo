@@ -26,14 +26,14 @@ export const useCombatActions = ({
     const isInAttackRange = useCallback((attackerPos, targetPos, attack) => {
         const distance = calculateDistance(attackerPos, targetPos);
         
-        if (attack.type === 'corps-à-corps' || attack.type === 'melee') {
-            return distance <= 1; // Adjacent squares only
-        } else if (attack.type === 'distance' || attack.type === 'ranged') {
-            return distance <= 12; // 60 feet = 12 squares
+        if (attack.type === 'melee') {
+            return distance <= (attack.range || 1);
+        } else if (attack.type === 'ranged') {
+            return distance <= (attack.range || 6);
         }
         
         // Default to melee range
-        return distance <= 1;
+        return distance <= (attack.range || 1);
     }, [calculateDistance]);
 
     // Helper function to find valid targets for enemies
@@ -120,7 +120,7 @@ export const useCombatActions = ({
 
         // Check which targets are in attack range
         const targetsInRange = validTargets.filter(target => 
-            isInAttackRange(enemyPos, target.position, attack)
+            attack.type === 'melee' || (attack.range && attack.range <= 1)
         );
 
         // If no targets in range, try to move closer
@@ -225,7 +225,7 @@ export const useCombatActions = ({
 
         // Check if best target is in range
         const bestTargetPos = combatPositions[bestTarget.name];
-        const isTargetInRange = bestTargetPos && isInAttackRange(companionPos, bestTargetPos, { ...attack, type: 'corps-à-corps' });
+        const isTargetInRange = bestTargetPos && isInAttackRange(companionPos, bestTargetPos, attack);
 
         if (!isTargetInRange) {
             addCombatMessage(`${companionCharacter.name} n'est pas à portée de sa cible prioritaire (${bestTarget.name}), il se déplace.`);
@@ -240,7 +240,7 @@ export const useCombatActions = ({
                 addCombatMessage(`${companionCharacter.name} se déplace vers une meilleure position.`);
                 
                 // Check if now in range of best target after movement
-                if (bestTargetPos && isInAttackRange(newPosition, bestTargetPos, { ...attack, type: 'corps-à-corps' })) {
+                if (bestTargetPos && isInAttackRange(newPosition, bestTargetPos, attack)) {
                     executeCompanionAttack(bestTarget, attack);
                 } else {
                     addCombatMessage(`${companionCharacter.name} ne peut toujours pas atteindre sa cible après son déplacement.`);

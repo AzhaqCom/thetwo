@@ -68,11 +68,11 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
     if (!attackerPos) return targets;
     
     // Determine attack range
-    let maxRange = 1; // Default melee range
-    if (attack.type === 'distance' || attack.range === 'ranged') {
-        maxRange = 12; // 60 feet = 12 squares
-    } else if (typeof attack.range === 'number') {
-        maxRange = Math.floor(attack.range / 5); // Convert feet to squares
+    let maxRange = attack.range || 1; // Use attack.range or default to 1
+    if (attack.type === 'ranged') {
+        maxRange = attack.range || 6; // Default ranged range
+    } else if (attack.type === 'melee') {
+        maxRange = attack.range || 1; // Default melee range
     }
     
     console.log(`${attacker.name || attacker.type} targeting - Attack type: ${attack.type}, Max range: ${maxRange}`);

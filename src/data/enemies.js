@@ -16,9 +16,9 @@ export const enemyTemplates = {
         attacks: [
             {
                 name: "son Cimeterre",
-                type: "corps-à-corps",
+                type: "melee",
                 attackBonus: 4,
-                reach: 1.5,
+                range: 1,
                 targets: 1,
                 damageDice: "1d6",
                 damageBonus: 2,
@@ -43,9 +43,9 @@ export const enemyTemplates = {
         attacks: [
             {
                 name: "Poing",
-                type: "corps-à-corps",
+                type: "melee",
                 attackBonus: 3,
-                reach: 1.5,
+                range: 1,
                 targets: 1,
                 damageDice: "1d6",
                 damageBonus: 1,
@@ -72,9 +72,9 @@ export const enemyTemplates = {
         attacks: [
             {
                 name: "sa Dague",
-                type: "corps-à-corps",
+                type: "melee",
                 attackBonus: 4,
-                reach: 1,
+                range: 1,
                 targets: 1,
                 damageDice: "1d4",
                 damageBonus: 2,
@@ -101,9 +101,9 @@ export const enemyTemplates = {
         attacks: [
             {
                 name: "Griffes",
-                type: "corps-à-corps",
+                type: "melee",
                 attackBonus: 4,
-                reach: 1.5,
+                range: 1,
                 targets: 1,
                 damageDice: "2d4",
                 damageBonus: 2,
@@ -130,10 +130,10 @@ export const enemyTemplates = {
         },
         attacks: [
             {
-                name: "son Epee courte",
-                type: "corps-à-corps",
+                name: "son Épée courte",
+                type: "melee",
                 attackBonus: 4,
-                reach: 1,
+                range: 1,
                 targets: 1,
                 damageDice: "1d6",
                 damageBonus: 2,
@@ -161,9 +161,9 @@ export const enemyTemplates = {
             {
 
                 name: "Dard",
-                type: "corps-à-corps",
+                type: "melee",
                 attackBonus: 5,
-                reach: 1,
+                range: 1,
                 targets: 1,
                 damageDice: "1d4",
                 damageBonus: 3,
@@ -196,8 +196,9 @@ export const enemyTemplates = {
                 attacks: [
                     {
                         name: "Morsure",
-                        type: "corps-à-corps",
+                        type: "melee",
                         attackBonus: 2,
+                        range: 1,
                         damageDice: "2d4",
                         damageBonus: 0,
                         damageType: "tranchants",
@@ -205,8 +206,9 @@ export const enemyTemplates = {
                     },
                     {
                         name: "Fourche",
-                        type: "corps-à-corps",
+                        type: "melee",
                         attackBonus: 2,
+                        range: 1,
                         damageDice: "1d6",
                         damageBonus: 0, // D'après la fiche, pas de bonus de dégâts
                         damageType: "perforants",
@@ -219,8 +221,9 @@ export const enemyTemplates = {
                 attacks: [
                     {
                         name: "Épine caudale",
-                        type: "distance",
+                        type: "ranged",
                         attackBonus: 4,
+                        range: 6,
                         damageDice: "1d4",
                         damageBonus: 2,
                         damageType: "perforants",
@@ -231,8 +234,9 @@ export const enemyTemplates = {
                     },
                     {
                         name: "Épine caudale", // Une deuxième épine
-                        type: "distance",
+                        type: "ranged",
                         attackBonus: 4,
+                        range: 6,
                         damageDice: "1d4",
                         damageBonus: 2,
                         damageType: "perforants",
