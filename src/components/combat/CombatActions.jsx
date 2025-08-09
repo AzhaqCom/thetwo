@@ -18,6 +18,24 @@ export const useCombatActions = ({
     updateEnemyPosition,
     calculateEnemyMovementPosition
 }) => {
+    const calculateDistance = useCallback((pos1, pos2) => {
+        if (!pos1 || !pos2) return Infinity;
+        return Math.abs(pos1.x - pos2.x) + Math.abs(pos1.y - pos2.y);
+    }, []);
+
+    const isInAttackRange = useCallback((attackerPos, targetPos, attack) => {
+        const distance = calculateDistance(attackerPos, targetPos);
+        
+        if (attack.type === 'corps-à-corps' || attack.type === 'melee') {
+            return distance <= 1; // Adjacent squares only
+        } else if (attack.type === 'distance' || attack.type === 'ranged') {
+            return distance <= 12; // 60 feet = 12 squares
+        }
+        
+        // Default to melee range
+        return distance <= 1;
+    }, [calculateDistance]);
+
     const enemyAttack = useCallback(() => {
         const currentTurnEntity = turnOrder[currentTurnIndex];
         const enemyData = combatEnemies.find(e => e.name === currentTurnEntity.name);
@@ -28,71 +46,88 @@ export const useCombatActions = ({
             return;
         }
 
-        // Handle enemy movement
         const enemyPos = combatPositions[enemyData.name];
-        if (enemyPos) {
+        if (!enemyPos) {
+            addCombatMessage(`${currentTurnEntity.name} n'a pas de position définie.`);
+            handleNextTurn();
+            return;
+        }
+
+        // Find potential targets
+        const availableTargets = getTargetsInRange(
+            { ...enemyData, type: 'enemy' }, 
+            enemyPos, 
+            { type: 'corps-à-corps' }, // Check melee range first
+            {
+                playerCharacter,
+                companionCharacter,
+                combatEnemies,
+                combatPositions
+            }
+        );
+
+        // Check if already in attack range
+        const attack = enemyData.attacks?.[0];
+        if (!attack) {
+            addCombatMessage(`${currentTurnEntity.name} n'a pas d'attaque définie.`);
+            handleNextTurn();
+            return;
+        }
+
+        let targetsInRange = [];
+        if (playerCharacter.currentHP > 0 && combatPositions.player) {
+            if (isInAttackRange(enemyPos, combatPositions.player, attack)) {
+                targetsInRange.push({ ...playerCharacter, type: 'player', name: playerCharacter.name, ac: playerCharacter.ac });
+            }
+        }
+        if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
+            if (isInAttackRange(enemyPos, combatPositions.companion, attack)) {
+                targetsInRange.push({ ...companionCharacter, type: 'companion', name: companionCharacter.name, ac: companionCharacter.ac });
+            }
+        }
+
+        // If no targets in range, try to move closer
+        if (targetsInRange.length === 0) {
             const newPosition = calculateEnemyMovementPosition(enemyData);
             if (newPosition && (newPosition.x !== enemyPos.x || newPosition.y !== enemyPos.y)) {
                 updateEnemyPosition(enemyData.name, newPosition);
                 addCombatMessage(`${enemyData.name} se déplace vers une meilleure position.`);
+                
+                // Recalculate targets after movement
+                const newEnemyPos = newPosition;
+                if (playerCharacter.currentHP > 0 && combatPositions.player) {
+                    if (isInAttackRange(newEnemyPos, combatPositions.player, attack)) {
+                        targetsInRange.push({ ...playerCharacter, type: 'player', name: playerCharacter.name, ac: playerCharacter.ac });
+                    }
+                }
+                if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
+                    if (isInAttackRange(newEnemyPos, combatPositions.companion, attack)) {
+                        targetsInRange.push({ ...companionCharacter, type: 'companion', name: companionCharacter.name, ac: companionCharacter.ac });
+                    }
+                }
             }
         }
 
-        // Handle attacks with delay to ensure position updates
-        setTimeout(() => {
-            const attackSet = enemyData.attackSets?.[Math.floor(Math.random() * enemyData.attackSets.length)] || {
-                name: enemyData.attacks?.[0]?.name,
-                attacks: [enemyData.attacks?.[0]]
-            };
+        // Execute attack if targets are in range
+        if (targetsInRange.length > 0) {
+            const randomTarget = targetsInRange[Math.floor(Math.random() * targetsInRange.length)];
+            const attackRoll = Math.floor(Math.random() * 20) + 1 + (attack.attackBonus || 0);
 
-            if (!attackSet.attacks[0]) {
-                addCombatMessage(`${currentTurnEntity.name} n'a pas d'attaque définie.`);
-                handleNextTurn();
-                return;
-            }
-
-            const updatedEnemyPos = combatPositions[enemyData.name];
-            
-            for (const attack of attackSet.attacks) {
-                const attackRoll = Math.floor(Math.random() * 20) + 1 + (attack.attackBonus || 0);
-                
-                const attackWithType = {
-                    ...attack,
-                    type: attack.type || 'corps-à-corps'
-                };
-                
-                const availableTargets = getTargetsInRange(
-                    { ...enemyData, type: 'enemy' }, 
-                    updatedEnemyPos, 
-                    attackWithType, 
-                    {
-                        playerCharacter,
-                        companionCharacter,
-                        combatEnemies,
-                        combatPositions
-                    }
-                );
-                
-                if (availableTargets.length === 0) {
-                    addCombatMessage(`${currentTurnEntity.name} n'a pas de cible à portée pour attaquer.`);
-                    continue;
+            if (attackRoll >= randomTarget.ac) {
+                const { damage, message } = calculateDamage(attack);
+                if (randomTarget.type === 'player') {
+                    onPlayerTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
+                } else if (randomTarget.type === 'companion') {
+                    onCompanionTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
                 }
-                
-                const randomTarget = availableTargets[Math.floor(Math.random() * availableTargets.length)];
-
-                if (attackRoll >= randomTarget.ac) {
-                    const { damage, message } = calculateDamage(attack);
-                    if (randomTarget.type === 'player') {
-                        onPlayerTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
-                    } else if (randomTarget.type === 'companion') {
-                        onCompanionTakeDamage(damage, `${currentTurnEntity.name} touche ${randomTarget.name} avec ${attack.name} ! Il inflige ${message}.`);
-                    }
-                } else {
-                    addCombatMessage(`${currentTurnEntity.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
-                }
+            } else {
+                addCombatMessage(`${currentTurnEntity.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
             }
-            handleNextTurn();
-        }, 100);
+        } else {
+            addCombatMessage(`${currentTurnEntity.name} n'a pas de cible à portée pour attaquer.`);
+        }
+
+        handleNextTurn();
     }, [
         addCombatMessage,
         handleNextTurn,
@@ -105,7 +140,8 @@ export const useCombatActions = ({
         onCompanionTakeDamage,
         combatPositions,
         calculateEnemyMovementPosition,
-        updateEnemyPosition
+        updateEnemyPosition,
+        isInAttackRange
     ]);
 
     const companionAttack = useCallback(() => {
@@ -122,6 +158,12 @@ export const useCombatActions = ({
         }
 
         const companionPos = combatPositions.companion;
+        if (!companionPos) {
+            addCombatMessage(`${companionCharacter.name} n'a pas de position définie.`);
+            handleNextTurn();
+            return;
+        }
+
         const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
         
         if (livingEnemies.length === 0) {
@@ -130,7 +172,24 @@ export const useCombatActions = ({
             return;
         }
         
-        if (companionPos) {
+        const attack = companionCharacter.attacks?.[0];
+        if (!attack) {
+            addCombatMessage(`${companionCharacter.name} n'a pas d'attaque définie.`);
+            handleNextTurn();
+            return;
+        }
+
+        // Check if already in attack range of any enemy
+        let targetsInRange = [];
+        livingEnemies.forEach(enemy => {
+            const enemyPos = combatPositions[enemy.name];
+            if (enemyPos && isInAttackRange(companionPos, enemyPos, { ...attack, type: 'corps-à-corps' })) {
+                targetsInRange.push(enemy);
+            }
+        });
+
+        // If no targets in range, try to move closer
+        if (targetsInRange.length === 0) {
             const newPosition = calculateEnemyMovementPosition({ 
                 ...companionCharacter, 
                 type: 'companion',
@@ -141,55 +200,42 @@ export const useCombatActions = ({
             if (newPosition && (newPosition.x !== companionPos.x || newPosition.y !== companionPos.y)) {
                 updateEnemyPosition('companion', newPosition);
                 addCombatMessage(`${companionCharacter.name} se déplace vers une meilleure position.`);
+                
+                // Recalculate targets after movement
+                livingEnemies.forEach(enemy => {
+                    const enemyPos = combatPositions[enemy.name];
+                    if (enemyPos && isInAttackRange(newPosition, enemyPos, { ...attack, type: 'corps-à-corps' })) {
+                        targetsInRange.push(enemy);
+                    }
+                });
             }
         }
 
-        const attack = companionCharacter.attacks?.[0];
-        if (!attack) {
-            addCombatMessage(`${companionCharacter.name} n'a pas d'attaque définie.`);
-            handleNextTurn();
-            return;
-        }
-        
-        const updatedCompanionPos = combatPositions.companion;
-        const availableTargets = getTargetsInRange(
-            { ...companionCharacter, type: 'companion' }, 
-            updatedCompanionPos, 
-            { ...attack, type: 'corps-à-corps' },
-            {
-                playerCharacter,
-                companionCharacter,
-                combatEnemies,
-                combatPositions
-            }
-        );
-        
-        if (availableTargets.length === 0) {
-            addCombatMessage(`${companionCharacter.name} n'a pas de cible à portée pour attaquer.`);
-            handleNextTurn();
-            return;
-        }
-        
-        const target = availableTargets[Math.floor(Math.random() * availableTargets.length)];
-        const attackBonus = getModifier(companionCharacter.stats.force || companionCharacter.stats.dexterite);
-        const attackRoll = Math.floor(Math.random() * 20) + 1 + attackBonus;
-        
-        if (attackRoll >= target.ac) {
-            const { damage, message } = calculateDamage(attack);
-            const updatedEnemies = combatEnemies.map(enemy => {
-                if (enemy.name === target.name) {
-                    const newHP = Math.max(0, enemy.currentHP - damage);
-                    return { ...enemy, currentHP: newHP };
+        // Execute attack if targets are in range
+        if (targetsInRange.length > 0) {
+            const target = targetsInRange[Math.floor(Math.random() * targetsInRange.length)];
+            const attackBonus = getModifier(companionCharacter.stats.force || companionCharacter.stats.dexterite);
+            const attackRoll = Math.floor(Math.random() * 20) + 1 + attackBonus;
+            
+            if (attackRoll >= target.ac) {
+                const { damage, message } = calculateDamage(attack);
+                const updatedEnemies = combatEnemies.map(enemy => {
+                    if (enemy.name === target.name) {
+                        const newHP = Math.max(0, enemy.currentHP - damage);
+                        return { ...enemy, currentHP: newHP };
+                    }
+                    return enemy;
+                });
+                setCombatEnemies(updatedEnemies);
+                addCombatMessage(`${companionCharacter.name} touche ${target.name} avec ${attack.name} ! Il inflige ${message}.`, 'player-damage');
+                if (updatedEnemies.find(e => e.name === target.name).currentHP <= 0) {
+                    addCombatMessage(`${target.name} a été vaincu !`);
                 }
-                return enemy;
-            });
-            setCombatEnemies(updatedEnemies);
-            addCombatMessage(`${companionCharacter.name} touche ${target.name} avec ${attack.name} ! Il inflige ${message}.`, 'player-damage');
-            if (updatedEnemies.find(e => e.name === target.name).currentHP <= 0) {
-                addCombatMessage(`${target.name} a été vaincu !`);
+            } else {
+                addCombatMessage(`${companionCharacter.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
             }
         } else {
-            addCombatMessage(`${companionCharacter.name} tente d'attaquer avec ${attack.name}, mais rate son attaque.`, 'miss');
+            addCombatMessage(`${companionCharacter.name} n'a pas de cible à portée pour attaquer.`);
         }
 
         handleNextTurn();
@@ -202,7 +248,8 @@ export const useCombatActions = ({
         calculateEnemyMovementPosition,
         updateEnemyPosition,
         playerCharacter,
-        setCombatEnemies
+        setCombatEnemies,
+        isInAttackRange
     ]);
 
     return {
