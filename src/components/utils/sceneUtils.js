@@ -14,7 +14,12 @@ export const processSceneAction = (action, handlers) => {
     if (typeof action === 'object') {
         switch (action.type) {
             case 'combat':
-                return { ...action, next: action.next };
+                return { 
+                    ...action, 
+                    next: action.next,
+                    // Pass enemyPositions through to the combat system
+                    enemyPositions: action.enemyPositions 
+                };
             case 'longRest':
                 handlers.startLongRest(action.nextScene);
                 return null;

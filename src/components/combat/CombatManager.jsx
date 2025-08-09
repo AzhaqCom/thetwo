@@ -42,7 +42,7 @@ export const useCombatManager = ({
         
         
         // Create enemies from encounter data
-        const initialCombatEnemies = encounterData.flatMap((encounter) => {
+        const initialCombatEnemies = encounterData.flatMap((encounter, encounterIndex) => {
             const template = enemyTemplates[encounter.type];
             if (!template) {
                
@@ -126,7 +126,8 @@ export const useCombatManager = ({
         setIsInitialized(true);
 
         // Initialize positions
-        const customEnemyPositions = encounterData[0]?.enemyPositions || null;
+        // Extract enemyPositions from the scene action (passed via encounterData)
+        const customEnemyPositions = encounterData.enemyPositions || null;
         combatMovement.initializeCombatPositions(initialCombatEnemies, !!playerCompanion, customEnemyPositions);
 
         // Add combat messages
