@@ -53,15 +53,15 @@ export const useCombatManager = ({
         
         // Only reset movement-related states, not positions
         if (combatKey > 0) { // Don't reset on initial load
-            combatMovement.setCombatPositions({});
-            combatMovement.setShowMovementFor(null);
-            combatMovement.setShowTargetingFor(null);
-            combatMovement.setHasMovedThisTurn(false);
-            combatMovement.setSelectedAoESquares([]);
-            combatMovement.setAoECenter(null);
+            setCombatPositions({});
+            setShowMovementFor(null);
+            setShowTargetingFor(null);
+            setHasMovedThisTurn(false);
+            setSelectedAoESquares([]);
+            setAoECenter(null);
         }
         
-    }, [combatKey, combatMovement]);
+    }, [combatKey, setCombatPositions, setShowMovementFor, setShowTargetingFor, setHasMovedThisTurn, setSelectedAoESquares, setAoECenter]);
 
     // Update companion character when playerCompanion changes
     useEffect(() => {
