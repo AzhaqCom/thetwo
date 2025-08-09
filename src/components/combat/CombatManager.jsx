@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { enemyTemplates } from '../../data/enemies';
 import { getModifier } from '../utils/utils';
 import { useCombatMovement } from '../../hooks/useCombatMovement';
@@ -24,6 +24,9 @@ export const useCombatManager = ({
     const [victory, setVictory] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
 
+    // Track previous combatKey to detect actual changes
+    const prevCombatKeyRef = useRef(undefined);
+
     // Combat movement hook
     const combatMovement = useCombatMovement(
         playerCharacter,
@@ -40,12 +43,14 @@ export const useCombatManager = ({
             encounterData: !!encounterData, 
             isInitialized, 
             combatKey,
+            prevCombatKey: prevCombatKeyRef.current,
             phase: combatPhase 
         });
 
-        // Reset on new combat (combatKey change)
-        if (combatKey !== undefined) {
+        // Reset on new combat (only when combatKey actually changes)
+        if (combatKey !== undefined && combatKey !== prevCombatKeyRef.current) {
             console.log('🔄 Resetting combat for key:', combatKey);
+            prevCombatKeyRef.current = combatKey;
             setIsInitialized(false);
             setDefeated(false);
             setVictory(false);
@@ -61,6 +66,7 @@ export const useCombatManager = ({
             combatMovement.setHasMovedThisTurn(false);
             combatMovement.setSelectedAoESquares([]);
             combatMovement.setAoECenter(null);
+            return; // Exit early to let the reset take effect
         }
 
         // Initialize combat if not already done and we have encounter data
@@ -68,7 +74,7 @@ export const useCombatManager = ({
             console.log('🚀 Starting combat initialization...');
             initializeCombat();
         }
-    }, [encounterData, combatKey, isInitialized]);
+    }, [encounterData, combatKey, combatMovement, initializeCombat, isInitialized]);
 
     // Update companion when playerCompanion changes
     useEffect(() => {
