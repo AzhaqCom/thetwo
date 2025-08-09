@@ -283,6 +283,11 @@ export const useCombatManager = ({
         combatMovement.setHasMovedThisTurn(false);
     }, [currentTurnIndex, turnOrder, combatEnemies, addCombatMessage, playerCharacter.currentHP, companionCharacter, combatMovement]);
 
+    const startCombat = useCallback(() => {
+        setCombatPhase('turn');
+        setCurrentTurnIndex(0);
+    }, []);
+
     return {
         // State
         combatEnemies,
