@@ -4,6 +4,7 @@ import { useCombatActions } from './CombatActions';
 import { useCombatSpellHandler } from './CombatSpellHandler';
 import CombatTurnManager from './CombatTurnManager';
 import CombatGrid from './CombatGrid';
+import PlayerTurnPanel from './PlayerTurnPanel';
 
 const CombatPanel = ({
     playerCharacter,
@@ -197,18 +198,20 @@ const CombatPanel = ({
 
             case 'player-action':
                 return (
-                    <div className="combat-controls">
-                        <h3>Phase d'Action</h3>
-                        <p>C'est ton tour ! Quel sort veux-tu lancer ?</p>
-                        {/* Player action UI would go here */}
-                        <button onClick={() => {
+                    <PlayerTurnPanel
+                        playerCharacter={playerCharacter}
+                        onSelectSpell={(spell) => {
+                            combatManager.setPlayerAction(spell);
+                            combatManager.setShowTargetingFor('player');
+                        }}
+                        onPassTurn={() => {
                             combatManager.setPlayerAction(null);
                             combatManager.setShowTargetingFor(null);
                             combatManager.handleNextTurn();
-                        }}>
-                            Passer le tour
-                        </button>
-                    </div>
+                        }}
+                        selectedSpell={combatManager.playerAction}
+                        selectedTargets={combatManager.actionTargets}
+                    />
                 );
 
             case 'end':
