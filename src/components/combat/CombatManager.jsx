@@ -149,7 +149,7 @@ export const useCombatManager = ({
             combatKey,
             prevCombatKey: prevCombatKeyRef.current,
             phase: combatPhase 
-        });
+                  }          );
 
         // Reset on new combat (only when combatKey actually changes)
         if (combatKey !== undefined && combatKey !== prevCombatKeyRef.current) {
@@ -190,6 +190,8 @@ export const useCombatManager = ({
     }, [playerCompanion]);
 
     const initializeCombatPositions = useCallback((enemies, hasCompanion, customEnemyPositions = null) => {
+    }
+    )
     useEffect(() => {
         if (combatPhase === 'end' || combatEnemies.length === 0) {
             return;
@@ -200,6 +202,7 @@ export const useCombatManager = ({
         if (allEnemiesDefeated && combatPhase !== 'initializing') {
            
             setCombatPhase('end');
+        }
         // Place enemies using custom positions or default logic
         if (customEnemyPositions && Array.isArray(customEnemyPositions)) {
             enemies.forEach((enemy, index) => {
