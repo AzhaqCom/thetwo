@@ -190,7 +190,7 @@ export const useCombatManager = ({
         }
 
         // Initialize combat if not already done and we have encounter data
-        if (!isInitialized && encounterData && encounterData.length > 0) {
+        if (!isInitialized && encounterData && encounterData.enemies && encounterData.enemies.length > 0) {
            
             initializeCombat();
         }
