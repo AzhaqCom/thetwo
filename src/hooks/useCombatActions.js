@@ -23,7 +23,7 @@ export const useCombatActions = (
     }, [currentScene, addCombatMessage, setCurrentScene]);
 
     const handleCombatVictory = useCallback((defeatedEncounterData) => {
-        const totalXPGained = defeatedEncounterData.reduce((sum, encounter) => {
+        const totalXPGained = (defeatedEncounterData.enemies || defeatedEncounterData).reduce((sum, encounter) => {
             const enemyTemplate = enemyTemplates[encounter.type];
             if (enemyTemplate) {
                 return sum + (enemyTemplate.xp * encounter.count);
