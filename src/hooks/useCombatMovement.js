@@ -19,6 +19,7 @@ export const useCombatMovement = (
 
     // Initialize combat positions when enemies are set up
     const initializeCombatPositions = useCallback((enemies, hasCompanion) => {
+        console.log('Initializing positions for enemies:', enemies.map(e => e.name));
         const positions = {};
         
         // Place player at bottom-left

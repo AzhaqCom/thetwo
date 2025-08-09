@@ -91,7 +91,11 @@ const CombatInitializer = ({
 
         setCombatEnemies(enemiesWithInitiative);
         setTurnOrder(order);
-        initializeCombatPositions(initialCombatEnemies, !!playerCompanion);
+        
+        // Initialize positions after a small delay to ensure state is ready
+        setTimeout(() => {
+            initializeCombatPositions(initialCombatEnemies, !!playerCompanion);
+        }, 10);
         
         console.log('Combat initialized with positions:', {
             enemies: enemiesWithInitiative.map(e => e.name),
