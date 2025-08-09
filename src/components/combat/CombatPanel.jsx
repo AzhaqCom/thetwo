@@ -133,7 +133,13 @@ const CombatPanel = ({
     }, [addCombatMessage, handleNextTurn, onPlayerTakeDamage, playerCharacter, turnOrder, currentTurnIndex, combatEnemies, companionCharacter, onCompanionTakeDamage]);
 
     const companionAttack = useCallback(() => {
-        if (!companionCharacter || companionCharacter.currentHP <= 0) {
+        if (!companionCharacter) {
+            addCombatMessage("Aucun compagnon disponible pour attaquer.");
+            handleNextTurn();
+            return;
+        }
+
+        if (companionCharacter.currentHP <= 0) {
             addCombatMessage("Le compagnon est déjà vaincu et ne peut pas agir.");
             handleNextTurn();
             return;
@@ -247,6 +253,21 @@ const CombatPanel = ({
 
 
     useEffect(() => {
+        // Update companion character state when playerCompanion changes
+        if (playerCompanion) {
+            setCompanionCharacter(prev => {
+                if (!prev || prev.name !== playerCompanion.name) {
+                    return { ...playerCompanion };
+                }
+                // Update HP but keep other combat state
+                return { ...prev, currentHP: playerCompanion.currentHP, maxHP: playerCompanion.maxHP };
+            });
+        } else {
+            setCompanionCharacter(null);
+        }
+    }, [playerCompanion]);
+
+    useEffect(() => {
         if (combatPhase === 'end' || combatEnemies.length === 0) {
             return;
         }
@@ -348,7 +369,11 @@ const CombatPanel = ({
             entityInState = combatEnemies.find((e) => e.name === currentTurnEntity.name);
         }
         if (entityInState && entityInState.currentHP <= 0) {
-            addCombatMessage(`${currentTurnEntity.name} est déjà vaincu. On passe au suivant.`);
+            if (isCompanionTurn) {
+                addCombatMessage(`${currentTurnEntity.name} est vaincu et ne peut pas agir.`);
+            } else {
+                addCombatMessage(`${currentTurnEntity.name} est déjà vaincu. On passe au suivant.`);
+            }
             handleNextTurn();
             return;
         }
@@ -377,7 +402,7 @@ const CombatPanel = ({
     }, [currentTurnIndex, combatPhase, turnOrder, addCombatMessage, enemyAttack, companionAttack, combatEnemies, handleNextTurn, playerCharacter, companionCharacter]);
 
     return (
-        <div>
+        <div className="combat-panel-container">
             <EnemyDisplay
                 combatEnemies={combatEnemies}
                 onSelectTarget={playerAction ? handleTargetSelection : null}

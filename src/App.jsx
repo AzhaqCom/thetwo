@@ -1,7 +1,6 @@
 import React from 'react';
 import { scenes } from './data/scenes';
 import CharacterSheet from './components/character/CharacterSheet';
-import CompanionSheet from './components/character/CompanionSheet';
 import InventoryPanel from './components/inventory/InventoryPanel';
 import SpellcastingPanel from './components/spells/SpellcastingPanel';
 import CombatLog from './components/ui/CombatLog';
@@ -160,7 +159,6 @@ function App() {
             </div>
             <div className="sidebar right-sidebar">
                 <CharacterSheet character={playerCharacter} />
-                {playerCompanion && <CompanionSheet companion={playerCompanion} />}
             </div>
         </div>
     );

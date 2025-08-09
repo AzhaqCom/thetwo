@@ -32,6 +32,32 @@ p{
     color: #eee;
     overflow-y: auto; /* Permet le défilement pour le contenu principal */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    min-height: 600px; /* Ensure consistent minimum height */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Scene component styling for consistent heights */
+.scene-container {
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.rest-panel-container {
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.combat-panel-container {
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar {
