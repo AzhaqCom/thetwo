@@ -232,7 +232,6 @@ export const useCombatActions = ({
             const newPosition = calculateEnemyMovementPosition({ 
                 ...companionCharacter, 
                 type: 'companion',
-                movement: 6,
                 attacks: companionCharacter.attacks
             });
             

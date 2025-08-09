@@ -24,6 +24,7 @@ export const companions = {
             sagesse: 10,
             charisme: 12
         },
+        movement: 6,
         image: tyrionImage, 
         attacks: [
             {
