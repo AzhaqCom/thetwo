@@ -108,14 +108,16 @@ const CombatPanel = ({
                             targets.push(targetAtSquare);
                         }
                     });
-                    combatManager.setActionTargets(targets);
                     
                     console.log('AoE Targets found:', targets);
+                    
+                    // Set targets BEFORE executing
+                    combatManager.setActionTargets(targets);
                     
                     // Auto-execute AoE spell immediately after target selection
                     setTimeout(() => {
                         handleExecuteAction();
-                    }, 100);
+                    }, 200); // Increased delay to ensure state update
                 }
             } else {
                 // Handle single target or projectile spells

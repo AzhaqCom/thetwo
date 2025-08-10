@@ -177,7 +177,7 @@ export const useCombatActionHandler = ({
         const action = playerAction;
         const targets = actionTargets;
 
-        console.log('Executing action:', action?.name, 'with targets:', targets);
+        console.log('Executing action:', action?.name, 'with targets:', targets, 'targets length:', targets?.length);
 
         if (!action) {
             console.log('No action to execute');
@@ -185,7 +185,7 @@ export const useCombatActionHandler = ({
         }
 
         if (targets.length === 0) {
-            console.log('No targets for action');
+            console.log('No targets for action - actionTargets:', actionTargets);
             addCombatMessage(`Aucune cible trouvée pour ${action.name}.`, 'miss');
             setPlayerAction(null);
             setActionTargets([]);
