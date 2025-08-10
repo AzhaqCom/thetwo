@@ -634,6 +634,212 @@ button:hover {
     line-height: 1.1;
 }
 
+/* Character Selection Styles */
+.character-selection-screen {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.selection-header {
+    text-align: center;
+    margin-bottom: 40px;
+    max-width: 800px;
+}
+
+.selection-header h1 {
+    font-size: 3rem;
+    color: #e0d0b8;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.selection-header p {
+    font-size: 1.2rem;
+    color: #ccc;
+    line-height: 1.6;
+}
+
+.character-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    width: 100%;
+    margin-bottom: 40px;
+}
+
+.character-selection-card {
+    background: #2a2a2a;
+    border: 2px solid #444;
+    border-radius: 15px;
+    padding: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.character-selection-card:hover {
+    border-color: #666;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.character-selection-card.selected {
+    border-color: #4caf50;
+    background: #2d3a2d;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+}
+
+.character-portrait {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.character-avatar {
+    font-size: 4rem;
+    margin-bottom: 10px;
+}
+
+.character-info h3 {
+    color: #e0d0b8;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.character-class-race {
+    color: #aaa;
+    font-size: 1.1rem;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.character-background {
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.character-stats-preview {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 15px;
+}
+
+.stat-preview {
+    background: #333;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #ddd;
+}
+
+.character-specialties {
+    text-align: center;
+}
+
+.specialty {
+    background: #444;
+    color: #e0d0b8;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.character-details {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 15px;
+    padding: 30px;
+    max-width: 800px;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.character-details h3 {
+    color: #e0d0b8;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.character-details p {
+    color: #ccc;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.character-stats-detailed {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.stats-column h4,
+.equipment-column h4 {
+    color: #e0d0b8;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #555;
+    padding-bottom: 8px;
+}
+
+.stats-column ul,
+.equipment-column ul {
+    list-style: none;
+    padding: 0;
+}
+
+.stats-column li,
+.equipment-column li {
+    color: #ddd;
+    padding: 5px 0;
+    border-bottom: 1px solid #333;
+}
+
+.confirm-selection-btn {
+    width: 100%;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    background: linear-gradient(135deg, #4caf50, #45a049);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.confirm-selection-btn:hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
+}
+
+@media (max-width: 768px) {
+    .character-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .character-stats-detailed {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .selection-header h1 {
+        font-size: 2rem;
+    }
+}
+
 .enemy-image-small,
 .companion-image-small {
     width: 20px;

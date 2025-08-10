@@ -30,8 +30,9 @@ const skillToStat = {
 };
 
 export const useGameState = () => {
-    const [currentScene, setCurrentScene] = useState("scene8");
-    const [playerCharacter, setPlayerCharacter] = useState(characterTemplates.warrior);
+    const [gamePhase, setGamePhase] = useState('character-selection');
+    const [currentScene, setCurrentScene] = useState("scene1");
+    const [playerCharacter, setPlayerCharacter] = useState(null);
 
     const [playerCompanion, setPlayerCompanion] = useState(null);
     const [combatLog, setCombatLog] = useState([]);
@@ -108,6 +109,8 @@ export const useGameState = () => {
 
     return {
         // State
+        gamePhase,
+        setGamePhase,
         currentScene,
         setCurrentScene,
         playerCharacter,

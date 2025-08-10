@@ -1,6 +1,7 @@
 import React from 'react';
 import { scenes } from './data/scenes';
 import CharacterSheet from './components/character/CharacterSheet';
+import CharacterSelection from './components/character/CharacterSelection';
 import InventoryPanel from './components/inventory/InventoryPanel';
 import SpellcastingPanel from './components/spells/SpellcastingPanel';
 import CombatLog from './components/ui/CombatLog';
@@ -21,6 +22,8 @@ function App() {
     // Use custom hooks for state management
     const gameState = useGameState();
     const {
+        gamePhase,
+        setGamePhase,
         currentScene,
         setCurrentScene,
         playerCharacter,
@@ -74,6 +77,27 @@ function App() {
         setCurrentScene,
         nextSceneAfterRest
     );
+
+    const handleCharacterSelect = (selectedCharacter) => {
+        setPlayerCharacter(selectedCharacter);
+        setGamePhase('game');
+    };
+
+    // Show character selection if no character is selected
+    if (gamePhase === 'character-selection') {
+        return <CharacterSelection onCharacterSelect={handleCharacterSelect} />;
+    }
+
+    // Show loading if character is being set up
+    if (!playerCharacter) {
+        return (
+            <div className="game-container">
+                <div className="main-content">
+                    <p>Chargement de ton personnage...</p>
+                </div>
+            </div>
+        );
+    }
 
     const renderCurrentScene = () => {
         if (isLongResting) {
