@@ -19,7 +19,8 @@
   border-radius: var(--radius-lg);
   border: 2px solid var(--color-border-primary);
   box-shadow: var(--shadow-large);
-  max-height: 50vh;
+  max-height: 35vh;
+  min-height: 280px;
 }
 
 .combat-grid {
@@ -31,8 +32,9 @@
   padding: var(--spacing-sm);
   border-radius: var(--radius-md);
   width: 100%;
-  max-width: 800px;
-  height: 400px;
+  max-width: 640px;
+  height: 280px;
+  aspect-ratio: 8/6;
 }
 
 .grid-square {
@@ -43,7 +45,7 @@
   justify-content: center;
   cursor: pointer;
   transition: var(--transition-fast);
-  min-height: 60px;
+  min-height: 45px;
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-sm);
