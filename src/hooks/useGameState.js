@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { character as initialCharacter, spellSlotsByLevel } from '../data/character';
+import characterTemplates from '../data/characterTemplates';
 import { items } from '../data/items';
 import { levels } from '../data/levels';
 import { enemyTemplates } from '../data/enemies';
