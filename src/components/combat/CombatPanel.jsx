@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { useCombatManager } from './CombatManager';
 import { useCombatActions } from './CombatActions';
-import { useCombatSpellHandler } from './CombatSpellHandler';
+import { useCombatActionHandler } from './CombatActionHandler';
 import CombatTurnManager from './CombatTurnManager';
 import CombatGrid from './CombatGrid';
 import PlayerTurnPanel from './PlayerTurnPanel';
@@ -47,8 +47,8 @@ const CombatPanel = ({
         addCombatMessage
     });
     
-    // Use spell handler hook
-    const { handleCastSpellClick } = useCombatSpellHandler({
+    // Use action handler hook
+    const { handleExecuteAction } = useCombatActionHandler({
         playerCharacter,
         playerAction: combatManager.playerAction,
         actionTargets: combatManager.actionTargets,
@@ -200,8 +200,8 @@ const CombatPanel = ({
                 return (
                     <PlayerTurnPanel
                         playerCharacter={playerCharacter}
-                        onSelectSpell={(spell) => {
-                            combatManager.setPlayerAction(spell);
+                        onSelectAction={(action) => {
+                            combatManager.setPlayerAction(action);
                             combatManager.setShowTargetingFor('player');
                         }}
                         onPassTurn={() => {
@@ -209,7 +209,7 @@ const CombatPanel = ({
                             combatManager.setShowTargetingFor(null);
                             combatManager.handleNextTurn();
                         }}
-                        selectedSpell={combatManager.playerAction}
+                        selectedAction={combatManager.playerAction}
                         selectedTargets={combatManager.actionTargets}
                     />
                 );
