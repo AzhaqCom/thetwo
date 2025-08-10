@@ -4,7 +4,7 @@ import { spells } from '../../data/spells';
 import { SpellSlots } from './SpellSlots';
 import { SpellList } from './SpellList';
 
-const SpellcastingPanel = ({ character, onCastSpell, onPrepareSpell }) => {
+const SpellcastingPanel = ({ character, onCastSpell, onPrepareSpell, onUnprepareSpell }) => {
   // Don't render if character doesn't have spellcasting
   if (!character.spellcasting) {
     return null;
@@ -21,8 +21,9 @@ const SpellcastingPanel = ({ character, onCastSpell, onPrepareSpell }) => {
     const cantrips = character.spellcasting.cantrips || [];
     
     // Calculate max prepared spells
-    const intModifier = getModifier(character.stats.intelligence);
-    const maxPrepared = intModifier + character.level;
+    const spellcastingAbility = character.spellcasting.ability || 'intelligence';
+    const abilityModifier = getModifier(character.stats[spellcastingAbility]);
+    const maxPrepared = abilityModifier + character.level;
     
     return {
       // Filter out cantrips from known spells and exclude already prepared spells
@@ -34,11 +35,11 @@ const SpellcastingPanel = ({ character, onCastSpell, onPrepareSpell }) => {
       cantrips: cantrips,
       maxPreparedSpells: maxPrepared
     };
-  }, [character.spellcasting, character.stats.intelligence, character.level]);
+  }, [character.spellcasting, character.stats, character.level]);
 
   return (
     <div className="spellcasting">
-      <h4 className="text-xl font-bold mb-4">Sorts de Magicien</h4>
+      <h4 className="text-xl font-bold mb-4">Sorts de {character.class}</h4>
       
       <SpellSlots spellSlots={character.spellcasting.spellSlots} />
       
@@ -55,7 +56,9 @@ const SpellcastingPanel = ({ character, onCastSpell, onPrepareSpell }) => {
         spells={preparedSpells}
         character={character}
         onCastSpell={onCastSpell}
+        onUnprepareSpell={onUnprepareSpell}
         showCastButton={true}
+        showUnprepareButton={true}
       />
     </div>
   );

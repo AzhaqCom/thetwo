@@ -166,13 +166,17 @@ function App() {
 
         return <p>Fin du jeu</p>;
     };
+    // Determine which panels to show based on character class and abilities
+    const shouldShowSpellcasting = playerCharacter?.spellcasting;
+    const shouldShowWeapons = playerCharacter?.weapons && playerCharacter.weapons.length > 0;
+    const shouldShowSpecialAbilities = playerCharacter?.specialAbilities;
 
     return (
         <div className="game-container">
             <div className="sidebar left-sidebar">
                 {playerCompanion && <CompanionDisplay companion={playerCompanion} />}
                 <InventoryPanel characterInventory={playerCharacter.inventory} onUseItem={inventoryActions.handleUseItem} />
-                {playerCharacter.spellcasting && (
+                {shouldShowSpellcasting && (
                     <SpellcastingPanel
                         character={playerCharacter}
                         onCastSpell={spellActions.handleCastSpellOutOfCombat}
@@ -180,8 +184,11 @@ function App() {
                         onUnprepareSpell={spellActions.handleUnprepareSpell}
                     />
                 )}
-                {playerCharacter.weapons && (
+                {shouldShowWeapons && (
                     <WeaponPanel character={playerCharacter} />
+                )}
+                {shouldShowSpecialAbilities && (
+                    <SpecialAbilitiesPanel character={playerCharacter} />
                 )}
             </div>
             <div className="main-content">

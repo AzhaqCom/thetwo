@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { character as initialCharacter, spellSlotsByLevel } from '../data/character';
+import { getPrimaryCombatStat, getSpellcastingAbility } from '../components/utils/actionUtils';
 
 import { items } from '../data/items';
 import { levels } from '../data/levels';
@@ -51,8 +52,40 @@ export const useGameState = () => {
             return;
         }
 
-        const getSpellSlotsForLevel = (level) => {
-            const slots = spellSlotsByLevel[level];
+        const getSpellSlotsForLevel = (level, characterClass) => {
+            // Different classes get spells at different levels
+            let effectiveLevel = level;
+            
+            switch (characterClass) {
+                case 'Magicien':
+                    // Full caster - gets spells at level 1
+                    break;
+                case 'Paladin':
+                case 'Rôdeur':
+                    // Half caster - gets spells at level 2, progresses slower
+                    effectiveLevel = Math.max(0, Math.floor((level - 1) / 2));
+                    break;
+                case 'Guerrier':
+                    // Eldritch Knight gets spells at level 3
+                    if (level >= 3) {
+                        effectiveLevel = Math.max(0, Math.floor((level - 2) / 3));
+                    } else {
+                        return {};
+                    }
+                    break;
+                case 'Roublard':
+                    // Arcane Trickster gets spells at level 3
+                    if (level >= 3) {
+                        effectiveLevel = Math.max(0, Math.floor((level - 2) / 3));
+                    } else {
+                        return {};
+                    }
+                    break;
+                default:
+                    return {};
+            }
+            
+            const slots = spellSlotsByLevel[effectiveLevel];
             if (!slots) {
                 return {};
             }
@@ -64,11 +97,27 @@ export const useGameState = () => {
             return newSlots;
         };
 
-        const getKnownSpells = (level) => {
-            const slots = spellSlotsByLevel[level];
+        const getKnownSpells = (level, characterClass) => {
+            const slots = getSpellSlotsForLevel(level, characterClass);
             const maxSpellLevel = slots ? Math.max(...Object.keys(slots).map(Number)) : 0;
-            const cantrips = Object.values(spells).filter(spell => spell.level === 0).map(spell => spell.name);
-            const leveledSpells = Object.values(spells)
+            
+            // Filter spells by class
+            const availableSpells = Object.values(spells).filter(spell => {
+                // Add spell school restrictions based on class
+                switch (characterClass) {
+                    case 'Magicien':
+                        return true; // Wizards can learn all spells
+                    case 'Guerrier': // Eldritch Knight
+                        return spell.school === 'Abjuration' || spell.school === 'Évocation' || spell.level === 0;
+                    case 'Roublard': // Arcane Trickster
+                        return spell.school === 'Enchantement' || spell.school === 'Illusion' || spell.level === 0;
+                    default:
+                        return false;
+                }
+            });
+            
+            const cantrips = availableSpells.filter(spell => spell.level === 0).map(spell => spell.name);
+            const leveledSpells = availableSpells
                 .filter(spell => spell.level > 0 && spell.level <= maxSpellLevel)
                 .map(spell => spell.name);
             return [...cantrips, ...leveledSpells];
@@ -76,8 +125,8 @@ export const useGameState = () => {
 
         // Only update if the character has spellcasting abilities
         if (playerCharacter.spellcasting) {
-            const newSpellSlots = getSpellSlotsForLevel(playerCharacter.level);
-            const newKnownSpells = getKnownSpells(playerCharacter.level);
+            const newSpellSlots = getSpellSlotsForLevel(playerCharacter.level, playerCharacter.class);
+            const newKnownSpells = getKnownSpells(playerCharacter.level, playerCharacter.class);
             
             // Only update if there are actual changes to prevent infinite loops
             const currentSpellSlots = playerCharacter.spellcasting.spellSlots || {};

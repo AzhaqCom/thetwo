@@ -3,7 +3,7 @@ import { spells } from '../../data/spells';
 import { weapons } from '../../data/weapons';
 import { getModifier } from '../utils/utils';
 import { rollDice } from '../utils/combatUtils';
-import { calculateAttackBonus, calculateActionDamage, requiresAttackRoll } from '../utils/actionUtils';
+import { calculateAttackBonus, calculateActionDamage, requiresAttackRoll, getPrimaryCombatStat, getSpellcastingAbility } from '../utils/actionUtils';
 
 export const useCombatActionHandler = ({
     playerCharacter,
@@ -119,7 +119,8 @@ export const useCombatActionHandler = ({
 
                 if (spell.savingThrow) {
                     // Handle saving throw spells (like Fireball)
-                    const savingThrowDC = 8 + playerCharacter.proficiencyBonus + getModifier(playerCharacter.stats.intelligence);
+                    const spellcastingAbility = getSpellcastingAbility(playerCharacter);
+                    const savingThrowDC = 8 + playerCharacter.proficiencyBonus + getModifier(playerCharacter.stats[spellcastingAbility]);
                     const targetStat = spell.savingThrow.ability;
                     const targetModifier = getModifier(updatedEnemies[index].stats[targetStat]);
                     const savingThrow = Math.floor(Math.random() * 20) + 1 + targetModifier;
@@ -144,7 +145,8 @@ export const useCombatActionHandler = ({
                     updatedEnemies[index].currentHP = Math.max(0, updatedEnemies[index].currentHP - damage);
                 } else if (spell.requiresAttackRoll) {
                     // Handle attack roll spells
-                    const spellAttackBonus = playerCharacter.proficiencyBonus + getModifier(playerCharacter.stats.intelligence);
+                    const spellcastingAbility = getSpellcastingAbility(playerCharacter);
+                    const spellAttackBonus = playerCharacter.proficiencyBonus + getModifier(playerCharacter.stats[spellcastingAbility]);
                     const attackRoll = Math.floor(Math.random() * 20) + 1 + spellAttackBonus;
                     if (attackRoll >= updatedEnemies[index].ac) {
                         damage = rollDice(spell.damage.dice) + (spell.damage.bonus || 0);

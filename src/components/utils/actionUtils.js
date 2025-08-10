@@ -65,6 +65,48 @@ export const getOffensiveSpells = (character) => {
 };
 
 /**
+ * Gets the primary combat stat for a character class
+ */
+export const getPrimaryCombatStat = (character) => {
+    switch (character.class) {
+        case 'Roublard':
+            return 'dexterite';
+        case 'Magicien':
+            return 'intelligence'; // For spell attacks
+        case 'Guerrier':
+            return 'force';
+        default:
+            return 'force'; // Default fallback
+    }
+};
+
+/**
+ * Gets the spellcasting ability for a character class
+ */
+export const getSpellcastingAbility = (character) => {
+    if (!character.spellcasting) return null;
+    
+    return character.spellcasting.ability || (() => {
+        switch (character.class) {
+            case 'Magicien':
+                return 'intelligence';
+            case 'Clerc':
+                return 'sagesse';
+            case 'Barde':
+                return 'charisme';
+            case 'Rôdeur':
+            case 'Paladin':
+                return 'sagesse';
+            case 'Sorcier':
+            case 'Occultiste':
+                return 'charisme';
+            default:
+                return 'intelligence';
+        }
+    })();
+};
+
+/**
  * Calculates attack bonus for an action
  */
 export const calculateAttackBonus = (action, character) => {
@@ -72,7 +114,7 @@ export const calculateAttackBonus = (action, character) => {
 
     switch (action.actionType) {
         case 'spell':
-            const spellcastingAbility = character.spellcasting?.ability || 'intelligence';
+            const spellcastingAbility = getSpellcastingAbility(character);
             return getModifier(character.stats[spellcastingAbility]) + proficiencyBonus;
 
         case 'weapon':

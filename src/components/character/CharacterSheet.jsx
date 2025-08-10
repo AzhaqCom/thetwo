@@ -21,13 +21,12 @@ const CharacterSheet = ({ character }) => {
 
     // Calculate spell attack bonus only if character can cast spells
     const spellAttackBonus = character.spellcasting 
-      ? getModifier(character.stats[character.spellcasting.ability]) + character.proficiencyBonus
+      ? getModifier(character.stats[character.spellcasting.ability || 'intelligence']) + character.proficiencyBonus
       : null;
 
     // Calculate weapon attack bonus for non-casters
-    const weaponAttackBonus = !character.spellcasting 
-      ? getModifier(character.stats[character.class === 'Roublard' ? 'dexterite' : 'force']) + character.proficiencyBonus
-      : null;
+    const primaryWeaponStat = character.class === 'Roublard' ? 'dexterite' : 'force';
+    const weaponAttackBonus = getModifier(character.stats[primaryWeaponStat]) + character.proficiencyBonus;
 
     return {
       nextLevelXP,
@@ -71,9 +70,7 @@ const CharacterSheet = ({ character }) => {
         {characterStats.spellAttackBonus !== null && (
           <p>Bonus d'attaque (sorts) : <span className="font-semibold">+{characterStats.spellAttackBonus}</span></p>
         )}
-        {characterStats.weaponAttackBonus !== null && (
-          <p>Bonus d'attaque (armes) : <span className="font-semibold">+{characterStats.weaponAttackBonus}</span></p>
-        )}
+        <p>Bonus d'attaque (armes) : <span className="font-semibold">+{characterStats.weaponAttackBonus}</span></p>
       </div>
 
       <CollapsibleSection

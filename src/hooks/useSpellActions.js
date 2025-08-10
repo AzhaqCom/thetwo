@@ -8,9 +8,9 @@ export const useSpellActions = (
     addCombatMessage
 ) => {
     const handlePlayerCastSpell = useCallback((spell) => {
-        // Return false if character can't cast spells
+        // Check if character has spellcasting abilities
         if (!playerCharacter.spellcasting) {
-            addCombatMessage("Ce personnage ne peut pas lancer de sorts.", 'info');
+            addCombatMessage(`${playerCharacter.name} ne peut pas lancer de sorts.`, 'info');
             return false;
         }
 
@@ -26,7 +26,7 @@ export const useSpellActions = (
                 }));
                 return true;
             } else {
-                addCombatMessage(`Tu n'as plus d'emplacement de sort de niveau ${spell.level} disponible.`);
+                addCombatMessage(`${playerCharacter.name} n'a plus d'emplacement de sort de niveau ${spell.level} disponible.`);
                 return false;
             }
         }
@@ -34,9 +34,9 @@ export const useSpellActions = (
     }, [playerCharacter, addCombatMessage, setPlayerCharacter]);
 
     const handleCastSpellOutOfCombat = useCallback((spellName) => {
-        // Return early if character can't cast spells
+        // Check spellcasting ability
         if (!playerCharacter.spellcasting) {
-            addCombatMessage("Ce personnage ne peut pas lancer de sorts.", 'info');
+            addCombatMessage(`${playerCharacter.name} ne peut pas lancer de sorts.`, 'info');
             return;
         }
 
@@ -48,14 +48,14 @@ export const useSpellActions = (
         }
 
         if (!spell.castableOutOfCombat) {
-            addCombatMessage(`${spell.name} ne peut pas être lancé hors combat.`, 'info');
+            addCombatMessage(`${playerCharacter.name} ne peut pas lancer ${spell.name} hors combat.`, 'info');
             return;
         }
 
         if (spell.level > 0) {
             const spellSlots = playerCharacter.spellcasting.spellSlots[spell.level];
             if (!spellSlots || spellSlots.used >= spellSlots.total) {
-                addCombatMessage(`Tu n'as plus d'emplacement de sort de niveau ${spell.level} disponible pour lancer ${spell.name}.`, 'info');
+                addCombatMessage(`${playerCharacter.name} n'a plus d'emplacement de sort de niveau ${spell.level} disponible pour lancer ${spell.name}.`, 'info');
                 return;
             }
         }
@@ -65,13 +65,13 @@ export const useSpellActions = (
 
         switch (spellName) {
             case "Armure du Mage":
-                const dexModifier = Math.floor((playerCharacter.stats.dexterite - 10) / 2);
+                const dexModifier = getModifier(playerCharacter.stats.dexterite);
                 updatedCharacter.ac = 13 + dexModifier;
-                addCombatMessage(`Tu as lancé ${spell.name} ! Ta Classe d'Armure est maintenant de ${updatedCharacter.ac}.`, 'upgrade');
+                addCombatMessage(`${playerCharacter.name} a lancé ${spell.name} ! Sa Classe d'Armure est maintenant de ${updatedCharacter.ac}.`, 'upgrade');
                 updatedCharacter.activeSpells = { ...updatedCharacter.activeSpells, "Armure du Mage": true };
                 break;
             default:
-                addCombatMessage(`${spell.name} a été lancé. (Effet non implémenté hors combat)`, 'spell-cast');
+                addCombatMessage(`${playerCharacter.name} a lancé ${spell.name}. (Effet non implémenté hors combat)`, 'spell-cast');
                 break;
         }
 
@@ -91,9 +91,9 @@ export const useSpellActions = (
     }, [playerCharacter, addCombatMessage, setPlayerCharacter]);
 
     const handlePrepareSpell = useCallback((spellName) => {
-        // Return early if character can't cast spells
+        // Check spellcasting ability
         if (!playerCharacter.spellcasting) {
-            addCombatMessage("Ce personnage ne peut pas préparer de sorts.", 'info');
+            addCombatMessage(`${playerCharacter.name} ne peut pas préparer de sorts.`, 'info');
             return;
         }
 
@@ -109,14 +109,15 @@ export const useSpellActions = (
             return;
         }
 
-        // Calculate maximum prepared spells (Intelligence modifier + wizard level)
-        const intModifier = getModifier(playerCharacter.stats.intelligence);
+        // Calculate maximum prepared spells based on spellcasting ability
+        const spellcastingAbility = playerCharacter.spellcasting.ability || 'intelligence';
+        const abilityModifier = getModifier(playerCharacter.stats[spellcastingAbility]);
         const maxPreparedSpells = intModifier + playerCharacter.level;
         const currentPreparedCount = playerCharacter.spellcasting.preparedSpells.length;
 
         // Check if already at maximum
         if (currentPreparedCount >= maxPreparedSpells && !playerCharacter.spellcasting.preparedSpells.includes(spellName)) {
-            addCombatMessage(`Tu ne peux préparer que ${maxPreparedSpells} sorts (Intelligence + niveau). Tu en as déjà ${currentPreparedCount} préparés.`, 'info');
+            addCombatMessage(`${playerCharacter.name} ne peut préparer que ${maxPreparedSpells} sorts (${spellcastingAbility} + niveau). Il en a déjà ${currentPreparedCount} préparés.`, 'info');
             return;
         }
 
@@ -128,16 +129,16 @@ export const useSpellActions = (
                     preparedSpells: [...prev.spellcasting.preparedSpells, spellName]
                 }
             }));
-            addCombatMessage(`${spell.name} a été ajouté à tes sorts préparés. (${currentPreparedCount + 1}/${maxPreparedSpells})`, 'spell');
+            addCombatMessage(`${spell.name} a été ajouté aux sorts préparés de ${playerCharacter.name}. (${currentPreparedCount + 1}/${maxPreparedSpells})`, 'spell');
         } else {
             addCombatMessage(`${spell.name} est déjà préparé.`);
         }
     }, [playerCharacter, addCombatMessage, setPlayerCharacter]);
 
     const handleUnprepareSpell = useCallback((spellName) => {
-        // Return early if character can't cast spells
+        // Check spellcasting ability
         if (!playerCharacter.spellcasting) {
-            addCombatMessage("Ce personnage ne peut pas retirer de sorts préparés.", 'info');
+            addCombatMessage(`${playerCharacter.name} ne peut pas retirer de sorts préparés.`, 'info');
             return;
         }
 
@@ -155,10 +156,11 @@ export const useSpellActions = (
                     preparedSpells: prev.spellcasting.preparedSpells.filter(s => s !== spellName)
                 }
             }));
-            const intModifier = getModifier(playerCharacter.stats.intelligence);
+            const spellcastingAbility = playerCharacter.spellcasting.ability || 'intelligence';
+            const abilityModifier = getModifier(playerCharacter.stats[spellcastingAbility]);
             const maxPreparedSpells = intModifier + playerCharacter.level;
             const newCount = playerCharacter.spellcasting.preparedSpells.length - 1;
-            addCombatMessage(`${spell.name} a été retiré de tes sorts préparés. (${newCount}/${maxPreparedSpells})`, 'spell');
+            addCombatMessage(`${spell.name} a été retiré des sorts préparés de ${playerCharacter.name}. (${newCount}/${maxPreparedSpells})`, 'spell');
         } else {
             addCombatMessage(`${spell.name} n'est pas préparé.`);
         }
