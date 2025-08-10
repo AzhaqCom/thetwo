@@ -117,7 +117,31 @@ export const useCombatActionHandler = ({
             if (index !== -1 && updatedEnemies[index].currentHP > 0) {
                 let damage = 0;
 
-                if (spell.requiresAttackRoll) {
+                if (spell.savingThrow) {
+                    // Handle saving throw spells (like Fireball)
+                    const savingThrowDC = 8 + playerCharacter.proficiencyBonus + getModifier(playerCharacter.stats.intelligence);
+                    const targetStat = spell.savingThrow.ability;
+                    const targetModifier = getModifier(updatedEnemies[index].stats[targetStat]);
+                    const savingThrow = Math.floor(Math.random() * 20) + 1 + targetModifier;
+                    
+                    damage = rollDice(spell.damage.dice) + (spell.damage.bonus || 0);
+                    
+                    if (savingThrow >= savingThrowDC) {
+                        // Successful save - half damage
+                        damage = Math.floor(damage / 2);
+                        addCombatMessage(
+                            `${target.name} réussit son jet de sauvegarde de ${targetStat} (${savingThrow} vs DD ${savingThrowDC}) et ne subit que ${damage} dégâts de ${spell.damage.type} !`, 'player-damage'
+                        );
+                    } else {
+                        // Failed save - full damage
+                        addCombatMessage(
+                            `${target.name} rate son jet de sauvegarde de ${targetStat} (${savingThrow} vs DD ${savingThrowDC}) et subit ${damage} dégâts de ${spell.damage.type} !`, 'player-damage'
+                        );
+                    }
+                    
+                    updatedEnemies[index].currentHP = Math.max(0, updatedEnemies[index].currentHP - damage);
+                } else if (spell.requiresAttackRoll) {
+                    // Handle attack roll spells
                     const spellAttackBonus = playerCharacter.proficiencyBonus + getModifier(playerCharacter.stats.intelligence);
                     const attackRoll = Math.floor(Math.random() * 20) + 1 + spellAttackBonus;
                     if (attackRoll >= updatedEnemies[index].ac) {
@@ -130,6 +154,7 @@ export const useCombatActionHandler = ({
                         addCombatMessage(`Le sort "${spell.name}" rate ${target.name} (Jet d'attaque: ${attackRoll}).`, 'miss');
                     }
                 } else {
+                    // Handle automatic hit spells
                     damage = rollDice(spell.damage.dice) + (spell.damage.bonus || 0);
                     updatedEnemies[index].currentHP = Math.max(0, updatedEnemies[index].currentHP - damage);
                     addCombatMessage(`Le sort "${spell.name}" frappe ${target.name} et inflige ${damage} dégâts de ${spell.damage.type} !`, 'player-damage');

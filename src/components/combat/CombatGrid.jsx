@@ -103,26 +103,39 @@ const CombatGrid = ({
     
     // Handle targeting
     if (showTargetingFor && validTargetSquares.has(squareKey)) {
-      // Find character at this position
-      const targetId = Object.keys(combatPositions).find(id => {
-        const pos = combatPositions[id];
-        return pos.x === x && pos.y === y;
-      });
-      
-      if (targetId && onSelectTarget) {
-        // Find the actual character/enemy object
-        let target = null;
-        if (targetId === 'player') {
-          target = { ...playerCharacter, id: 'player' };
-        } else if (targetId === 'companion') {
-          target = { ...playerCompanion, id: 'companion' };
-        } else {
-          target = combatEnemies.find(enemy => enemy.name === targetId);
-        }
+      // For AoE spells, we can target empty squares too
+      const targetAtSquare = renderCharacterAtPosition(x, y);
+      if (targetAtSquare && onSelectTarget) {
+        // Find character at this position
+        const targetId = Object.keys(combatPositions).find(id => {
+          const pos = combatPositions[id];
+          return pos.x === x && pos.y === y;
+        });
         
-        if (target) {
-          onSelectTarget(target);
+        if (targetId) {
+          // Find the actual character/enemy object
+          let target = null;
+          if (targetId === 'player') {
+            target = { ...playerCharacter, id: 'player' };
+          } else if (targetId === 'companion') {
+            target = { ...playerCompanion, id: 'companion' };
+          } else {
+            target = combatEnemies.find(enemy => enemy.name === targetId);
+          }
+          
+          if (target) {
+            onSelectTarget(target);
+          }
         }
+      } else if (onSelectTarget) {
+        // For AoE spells, create a dummy target at the clicked position
+        const dummyTarget = {
+          name: `Position (${x},${y})`,
+          x: x,
+          y: y,
+          isPosition: true
+        };
+        onSelectTarget(dummyTarget);
       }
     }
   }, [showMovementFor, showTargetingFor, validMovementSquares, validTargetSquares, onMoveCharacter, onSelectTarget, combatPositions, playerCharacter, playerCompanion, combatEnemies]);

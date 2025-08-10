@@ -48,7 +48,8 @@ export const spells = {
         areaOfEffect: { shape: "sphere", radius: 20 }, // 20 feet = 4 squares radius
         savingThrow: { ability: "dexterite", dc: "spell" },
         requiresAttackRoll: false,
-        castableOutOfCombat: false
+        castableOutOfCombat: false,
+        projectiles: 1
     },
     "Armure du Mage": {
         name: "Armure du Mage",
