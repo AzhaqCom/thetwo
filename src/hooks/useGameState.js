@@ -47,6 +47,10 @@ export const useGameState = () => {
 
     // Update spell slots when level changes
     useEffect(() => {
+        if (!playerCharacter) {
+            return;
+        }
+
         const getSpellSlotsForLevel = (level) => {
             const slots = spellSlotsByLevel[level];
             if (!slots) {
@@ -70,15 +74,30 @@ export const useGameState = () => {
             return [...cantrips, ...leveledSpells];
         };
 
-        setPlayerCharacter(prev => ({
-            ...prev,
-            spellcasting: {
-                ...prev.spellcasting,
-                spellSlots: getSpellSlotsForLevel(prev.level),
-                knownSpells: getKnownSpells(prev.level)
+        // Only update if the character has spellcasting abilities
+        if (playerCharacter.spellcasting) {
+            const newSpellSlots = getSpellSlotsForLevel(playerCharacter.level);
+            const newKnownSpells = getKnownSpells(playerCharacter.level);
+            
+            // Only update if there are actual changes to prevent infinite loops
+            const currentSpellSlots = playerCharacter.spellcasting.spellSlots || {};
+            const currentKnownSpells = playerCharacter.spellcasting.knownSpells || [];
+            
+            const spellSlotsChanged = JSON.stringify(currentSpellSlots) !== JSON.stringify(newSpellSlots);
+            const knownSpellsChanged = JSON.stringify(currentKnownSpells) !== JSON.stringify(newKnownSpells);
+            
+            if (spellSlotsChanged || knownSpellsChanged) {
+                setPlayerCharacter(prev => ({
+                    ...prev,
+                    spellcasting: {
+                        ...prev.spellcasting,
+                        spellSlots: newSpellSlots,
+                        knownSpells: newKnownSpells
+                    }
+                }));
             }
-        }));
-    }, [playerCharacter.level]);
+        }
+    }, [playerCharacter, spellSlotsByLevel, spells]);
 
     const handleSkillCheck = useCallback((skill, dc, onSuccess, onPartialSuccess, onFailure) => {
         const statName = skillToStat[skill];
