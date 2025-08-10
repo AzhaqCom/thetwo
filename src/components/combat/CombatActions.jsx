@@ -106,7 +106,7 @@ export const useCombatActions = ({
                 onCompanionTakeDamage(damage, `${attacker.name} touche ${target.name} avec ${attack.name} ! Il inflige ${message}.`);
             }
         } else {
-            addCombatMessage(`${attacker.name} tente d'attaquer ${target.name} avec ${attack.name}, mais rate son attaque.`, 'miss');
+            addCombatMessage(`${attacker.name} tente d'attaquer ${target.name} avec ${attack.name} (Jet d'attaque: ${attackRoll}), mais rate son attaque.`, 'miss');
         }
     }, [onPlayerTakeDamage, onCompanionTakeDamage, addCombatMessage]);
   
