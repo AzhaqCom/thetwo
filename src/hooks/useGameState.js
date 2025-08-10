@@ -30,7 +30,8 @@ const skillToStat = {
 
 export const useGameState = () => {
     const [currentScene, setCurrentScene] = useState("scene8");
-    const [playerCharacter, setPlayerCharacter] = useState(initialCharacter);
+    const [playerCharacter, setPlayerCharacter] = useState(characterTemplates.warrior);
+
     const [playerCompanion, setPlayerCompanion] = useState(null);
     const [combatLog, setCombatLog] = useState([]);
     const [isShortResting, setIsShortResting] = useState(false);
