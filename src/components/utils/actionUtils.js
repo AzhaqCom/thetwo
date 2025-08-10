@@ -16,13 +16,13 @@ export const getAvailableActions = (character) => {
 
     // Add weapon actions
     if (character.weapons && character.weapons.length > 0) {
-        const weaponActions = character.weapons.map(weaponId => {
+        const weaponActions = character.weapons.map((weaponId, index) => {
             const weapon = weapons[weaponId];
             if (weapon) {
                 return {
                     ...weapon,
                     actionType: 'weapon',
-                    id: weaponId
+                    id: `${weaponId}-${index}`
                 };
             }
             return null;

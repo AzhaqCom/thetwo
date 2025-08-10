@@ -77,11 +77,15 @@ export const useCombatActions = (
 
     const resetCharacter = useCallback(() => {
         setPlayerCharacter(prev => {
-            const healedCharacter = {
+            const baseHealedCharacter = {
                 ...prev,
                 currentHP: prev.maxHP,
-                hitDice: prev.level,
-                spellcasting: {
+                hitDice: prev.level
+            };
+
+            // Only reset spellcasting if the character has spellcasting abilities
+            if (prev.spellcasting) {
+                baseHealedCharacter.spellcasting = {
                     ...prev.spellcasting,
                     spellSlots: Object.fromEntries(
                         Object.entries(prev.spellcasting.spellSlots).map(([level, slots]) => [
@@ -89,8 +93,10 @@ export const useCombatActions = (
                             { ...slots, used: 0 }
                         ])
                     )
-                }
-            };
+                };
+            }
+
+            const healedCharacter = baseHealedCharacter;
             return healedCharacter;
         });
 
