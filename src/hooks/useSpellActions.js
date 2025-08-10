@@ -8,6 +8,12 @@ export const useSpellActions = (
     addCombatMessage
 ) => {
     const handlePlayerCastSpell = useCallback((spell) => {
+        // Return false if character can't cast spells
+        if (!playerCharacter.spellcasting) {
+            addCombatMessage("Ce personnage ne peut pas lancer de sorts.", 'info');
+            return false;
+        }
+
         if (spell.level > 0) {
             const newSpellSlots = { ...playerCharacter.spellcasting.spellSlots };
             const spellSlots = newSpellSlots[spell.level];
@@ -28,6 +34,12 @@ export const useSpellActions = (
     }, [playerCharacter, addCombatMessage, setPlayerCharacter]);
 
     const handleCastSpellOutOfCombat = useCallback((spellName) => {
+        // Return early if character can't cast spells
+        if (!playerCharacter.spellcasting) {
+            addCombatMessage("Ce personnage ne peut pas lancer de sorts.", 'info');
+            return;
+        }
+
         const spell = spells[spellName];
 
         if (!spell) {
@@ -79,6 +91,12 @@ export const useSpellActions = (
     }, [playerCharacter, addCombatMessage, setPlayerCharacter]);
 
     const handlePrepareSpell = useCallback((spellName) => {
+        // Return early if character can't cast spells
+        if (!playerCharacter.spellcasting) {
+            addCombatMessage("Ce personnage ne peut pas préparer de sorts.", 'info');
+            return;
+        }
+
         const spell = spells[spellName];
         if (!spell) {
             addCombatMessage(`Sort "${spellName}" introuvable.`, 'error');
@@ -117,6 +135,12 @@ export const useSpellActions = (
     }, [playerCharacter, addCombatMessage, setPlayerCharacter]);
 
     const handleUnprepareSpell = useCallback((spellName) => {
+        // Return early if character can't cast spells
+        if (!playerCharacter.spellcasting) {
+            addCombatMessage("Ce personnage ne peut pas retirer de sorts préparés.", 'info');
+            return;
+        }
+
         const spell = spells[spellName];
         if (!spell) {
             addCombatMessage(`Sort "${spellName}" introuvable.`, 'error');

@@ -4,6 +4,7 @@ import CharacterSheet from './components/character/CharacterSheet';
 import CharacterSelection from './components/character/CharacterSelection';
 import InventoryPanel from './components/inventory/InventoryPanel';
 import SpellcastingPanel from './components/spells/SpellcastingPanel';
+import WeaponPanel from './components/inventory/WeaponPanel';
 import CombatLog from './components/ui/CombatLog';
 import Scene from './components/game/Scene';
 import CombatPanel from './components/combat/CombatPanel';
@@ -171,12 +172,17 @@ function App() {
             <div className="sidebar left-sidebar">
                 {playerCompanion && <CompanionDisplay companion={playerCompanion} />}
                 <InventoryPanel characterInventory={playerCharacter.inventory} onUseItem={inventoryActions.handleUseItem} />
-                <SpellcastingPanel
-                    character={playerCharacter}
-                    onCastSpell={spellActions.handleCastSpellOutOfCombat}
-                    onPrepareSpell={spellActions.handlePrepareSpell}
-                    onUnprepareSpell={spellActions.handleUnprepareSpell}
-                />
+                {playerCharacter.spellcasting && (
+                    <SpellcastingPanel
+                        character={playerCharacter}
+                        onCastSpell={spellActions.handleCastSpellOutOfCombat}
+                        onPrepareSpell={spellActions.handlePrepareSpell}
+                        onUnprepareSpell={spellActions.handleUnprepareSpell}
+                    />
+                )}
+                {playerCharacter.weapons && (
+                    <WeaponPanel character={playerCharacter} />
+                )}
             </div>
             <div className="main-content">
                 {renderCurrentScene()}

@@ -146,7 +146,8 @@ button:hover {
 
 /* Styles spécifiques pour les panneaux d'inventaire et de sorts */
 .inventory,
-.spellcasting {
+.spellcasting,
+.weapon-panel {
     background-color: #2a2a2a; /* Une couleur de fond légèrement différente pour les sous-panneaux */
     padding: 15px;
     border-radius: 5px;
@@ -155,7 +156,8 @@ button:hover {
 }
 
 .inventory h4,
-.spellcasting h4 {
+.spellcasting h4,
+.weapon-panel h4 {
     color: #fff;
     margin-top: 0;
     margin-bottom: 10px;
@@ -164,13 +166,15 @@ button:hover {
 }
 
 .inventory ul,
-.spellcasting ul {
+.spellcasting ul,
+.weapon-panel ul {
     list-style: none;
     padding: 0;
 }
 
 .inventory li,
-.spellcasting li {
+.spellcasting li,
+.weapon-panel li {
     margin-bottom: 8px;
     display: flex;
     flex-direction: column;
@@ -183,7 +187,8 @@ button:hover {
 }
 
 .inventory li strong,
-.spellcasting li strong {
+.spellcasting li strong,
+.weapon-panel li strong {
     color: #f0e6d3;
 }
 .inventory li strong {
@@ -199,7 +204,8 @@ button:hover {
     text-align: center;
 }
 .inventory button,
-.spellcasting button {
+.spellcasting button,
+.weapon-panel button {
     background-color: #555;
     color: white;
     border: none;
@@ -211,7 +217,8 @@ button:hover {
 }
 
 .inventory button:hover,
-.spellcasting button:hover {
+.spellcasting button:hover,
+.weapon-panel button:hover {
     background-color: #777;
 }
 

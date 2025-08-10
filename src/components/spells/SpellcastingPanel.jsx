@@ -5,6 +5,11 @@ import { SpellSlots } from './SpellSlots';
 import { SpellList } from './SpellList';
 
 const SpellcastingPanel = ({ character, onCastSpell, onPrepareSpell }) => {
+  // Don't render if character doesn't have spellcasting
+  if (!character.spellcasting) {
+    return null;
+  }
+
   const spellStats = useMemo(() => ({
     attackModifier: getModifier(character.stats[character.spellcasting.ability]) + character.proficiencyBonus,
     saveDC: 8 + getModifier(character.stats[character.spellcasting.ability]) + character.proficiencyBonus
