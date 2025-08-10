@@ -32,7 +32,7 @@ export const characterTemplates = {
             ability: "intelligence",
             spellSlots: {},
             knownSpells: [], 
-            cantrips: ["Projectile Magique", "Rayon de givre"],
+            cantrips: ["Projectile Magique", "Rayon de givre","Boule de Feu"],
             preparedSpells: ["Armure du Mage"],
             activeSpells: {}
         },
