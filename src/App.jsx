@@ -100,6 +100,12 @@ function App() {
         );
     }
 
+    // Determine if we're in combat mode
+    const isInCombat = typeof currentScene === 'object' && currentScene.type === 'combat';
+    const containerClass = `game-container ${isInCombat ? 'combat-mode' : ''}`;
+    const mainContentClass = `main-content ${isInCombat ? 'combat-mode' : ''}`;
+    const sidebarClass = `sidebar ${isInCombat ? 'combat-mode' : ''}`;
+
     const renderCurrentScene = () => {
         if (isLongResting) {
             return (
@@ -172,8 +178,8 @@ function App() {
     const shouldShowSpecialAbilities = playerCharacter?.specialAbilities;
 
     return (
-        <div className="game-container">
-            <div className="sidebar left-sidebar">
+        <div className={containerClass}>
+            <div className={`${sidebarClass} left-sidebar`}>
                 {playerCompanion && <CompanionDisplay companion={playerCompanion} />}
                 <InventoryPanel characterInventory={playerCharacter.inventory} onUseItem={inventoryActions.handleUseItem} />
                 {shouldShowSpellcasting && (
@@ -191,11 +197,11 @@ function App() {
                     <SpecialAbilitiesPanel character={playerCharacter} />
                 )}
             </div>
-            <div className="main-content">
+            <div className={mainContentClass}>
                 {renderCurrentScene()}
                 <CombatLog logMessages={combatLog} />
             </div>
-            <div className="sidebar right-sidebar">
+            <div className={`${sidebarClass} right-sidebar`}>
                 <CharacterSheet character={playerCharacter} />
             </div>
         </div>

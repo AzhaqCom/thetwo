@@ -1,0 +1,470 @@
+/* === INTERFACE DE COMBAT AMÉLIORÉE === */
+
+.combat-interface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: var(--spacing-md);
+}
+
+/* === GRILLE DE COMBAT === */
+.combat-grid-container {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 100%;
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border-primary);
+  box-shadow: var(--shadow-large);
+}
+
+.combat-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 2px;
+  background-color: var(--color-border-primary);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 8/6;
+}
+
+.grid-square {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  min-height: 70px;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.grid-square:hover {
+  background-color: var(--color-bg-quaternary);
+  border-color: var(--color-border-accent);
+}
+
+.grid-square.valid-movement {
+  background-color: var(--color-movement-valid);
+  border-color: var(--color-success);
+  box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.3);
+}
+
+.grid-square.valid-movement:hover {
+  background-color: var(--color-success);
+  transform: scale(1.05);
+}
+
+.grid-square.valid-target {
+  background-color: var(--color-target-valid);
+  border-color: var(--color-error);
+  box-shadow: inset 0 0 10px rgba(244, 67, 54, 0.3);
+}
+
+.grid-square.valid-target:hover {
+  background-color: var(--color-error);
+  transform: scale(1.05);
+}
+
+.grid-square.aoe-target {
+  background-color: var(--color-aoe-area);
+  border-color: var(--color-warning);
+  box-shadow: inset 0 0 8px rgba(255, 152, 0, 0.4);
+}
+
+.grid-square.aoe-center {
+  background-color: var(--color-aoe-center);
+  border-color: var(--color-warning);
+  box-shadow: 0 0 15px rgba(255, 204, 2, 0.8);
+  transform: scale(1.1);
+}
+
+/* === CARTES DE PERSONNAGES AMÉLIORÉES === */
+.character-card {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  padding: var(--spacing-xs);
+  text-align: center;
+  border-radius: var(--radius-md);
+  border: 3px solid transparent;
+  box-shadow: var(--shadow-medium);
+  transition: var(--transition-normal);
+  user-select: none;
+  font-size: 11px;
+  line-height: 1.2;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  backdrop-filter: blur(2px);
+}
+
+.character-card.current-turn {
+  border-color: var(--color-info);
+  box-shadow: 0 0 20px rgba(33, 150, 243, 0.8);
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+.character-card.selected {
+  border-color: var(--color-success);
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+  transform: scale(1.03);
+  z-index: 9;
+}
+
+.player-card {
+  background: linear-gradient(135deg, var(--color-combat-player), rgba(33, 150, 243, 0.8));
+  border-color: var(--color-combat-player);
+  color: white;
+  font-weight: bold;
+}
+
+.companion-card {
+  background: linear-gradient(135deg, var(--color-combat-companion), rgba(156, 39, 176, 0.8));
+  border-color: var(--color-combat-companion);
+  color: white;
+  font-weight: bold;
+}
+
+.enemy-card {
+  background: linear-gradient(135deg, var(--color-combat-enemy), rgba(244, 67, 54, 0.8));
+  border-color: var(--color-combat-enemy);
+  color: white;
+  font-weight: bold;
+}
+
+.enemy-card.not-targetable {
+  opacity: var(--opacity-disabled);
+  filter: grayscale(70%);
+  transform: scale(0.9);
+}
+
+.character-name {
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.character-class {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2px;
+  line-height: 1.1;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.character-hp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  margin-bottom: 2px;
+  line-height: 1.1;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.character-hp .icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.7));
+}
+
+.character-hp-bar {
+  height: 6px;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.character-hp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-health-full), var(--color-health-medium));
+  transition: var(--transition-normal);
+  border-radius: var(--radius-sm);
+}
+
+.character-ac {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.1;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+/* === AFFICHAGE DES ENNEMIS HORS GRILLE === */
+.enemy-display-container {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  margin: var(--spacing-md) 0;
+  flex-wrap: wrap;
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+}
+
+.enemy-card-display {
+  width: 160px;
+  padding: var(--spacing-md);
+  text-align: center;
+  border-radius: var(--radius-lg);
+  border: 3px solid var(--color-combat-enemy);
+  box-shadow: var(--shadow-medium);
+  transition: var(--transition-normal);
+  user-select: none;
+  background: linear-gradient(135deg, var(--color-bg-tertiary), var(--color-bg-secondary));
+  color: var(--color-text-primary);
+}
+
+.enemy-card-display.selected {
+  border-color: var(--color-success);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-5px);
+}
+
+.enemy-card-display.targetable {
+  cursor: pointer;
+  opacity: 1;
+}
+
+.enemy-card-display.targetable:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-large);
+}
+
+.enemy-card-display.not-targetable {
+  cursor: default;
+  opacity: var(--opacity-disabled);
+  filter: grayscale(50%);
+}
+
+.enemy-image {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-sm);
+  box-shadow: var(--shadow-small);
+  border: 2px solid var(--color-border-primary);
+}
+
+.enemy-name-initiative {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+  font-weight: bold;
+  font-size: 16px;
+  color: var(--color-text-primary);
+}
+
+.enemy-name {
+  user-select: none;
+  flex: 1;
+}
+
+.enemy-initiative {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: normal;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  user-select: none;
+  background: var(--color-bg-tertiary);
+}
+
+.enemy-hp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-health-critical);
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: var(--spacing-xs);
+  user-select: none;
+}
+
+.enemy-hp-bar {
+  height: 10px;
+  width: 100%;
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border-primary);
+}
+
+.enemy-hp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-health-critical), var(--color-health-medium));
+  transition: var(--transition-normal);
+}
+
+/* === CONTRÔLES DE COMBAT === */
+.combat-controls {
+  flex-shrink: 0;
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary));
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border-primary);
+  box-shadow: var(--shadow-medium);
+}
+
+.combat-controls h3 {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  text-align: center;
+  font-size: 1.2em;
+}
+
+.combat-controls button {
+  margin: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 14px;
+  background: linear-gradient(135deg, var(--color-info), rgba(33, 150, 243, 0.8));
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.combat-controls button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.9), var(--color-info));
+}
+
+.combat-controls p {
+  margin: var(--spacing-sm) 0;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+/* === ACTIONS DE COMBAT === */
+.action-group {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-primary);
+}
+
+.action-group h4 {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  font-size: 1.1em;
+  border-bottom: 1px solid var(--color-border-secondary);
+  padding-bottom: var(--spacing-xs);
+}
+
+.action-button {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  font-size: 13px;
+  text-align: left;
+}
+
+.action-button:hover {
+  background: var(--color-bg-quaternary);
+  border-color: var(--color-border-accent);
+  transform: translateX(5px);
+}
+
+.action-button.spell-action {
+  border-left: 4px solid var(--color-magic-primary);
+}
+
+.action-button.weapon-action {
+  border-left: 4px solid var(--color-weapon);
+}
+
+.action-button.disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+  background: var(--color-bg-tertiary);
+}
+
+.action-button.disabled:hover {
+  transform: none;
+  background: var(--color-bg-tertiary);
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 1200px) {
+  .combat-grid {
+    min-height: 60px;
+  }
+  
+  .character-card {
+    font-size: 10px;
+  }
+  
+  .character-name {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 768px) {
+  .combat-grid-container {
+    padding: var(--spacing-sm);
+  }
+  
+  .grid-square {
+    min-height: 50px;
+  }
+  
+  .character-card {
+    font-size: 9px;
+    padding: 2px;
+  }
+  
+  .enemy-display-container {
+    gap: var(--spacing-sm);
+  }
+  
+  .enemy-card-display {
+    width: 140px;
+  }
+}
