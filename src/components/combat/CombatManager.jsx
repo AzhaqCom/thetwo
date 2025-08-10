@@ -159,17 +159,17 @@ export const useCombatManager = ({
 
     // Initialize combat when encounterData is available
     useEffect(() => {
-          console.log('🎮 Combat initialization check:', { 
+        console.log('🎮 Combat initialization check:', { 
             encounterData: !!encounterData, 
             isInitialized, 
             combatKey,
             prevCombatKey: prevCombatKeyRef.current,
             phase: combatPhase 
-                  }          );
+        });
 
         // Reset on new combat (only when combatKey actually changes)
         if (combatKey !== undefined && combatKey !== prevCombatKeyRef.current) {
-         
+            console.log('🔄 Resetting combat due to combatKey change');
             prevCombatKeyRef.current = combatKey;
             setIsInitialized(false);
             setDefeated(false);
@@ -191,10 +191,10 @@ export const useCombatManager = ({
 
         // Initialize combat if not already done and we have encounter data
         if (!isInitialized && encounterData && encounterData.enemies && encounterData.enemies.length > 0) {
-           
+            console.log('🚀 Initializing new combat');
             initializeCombat();
         }
-    }, [encounterData, combatKey, combatMovement, initializeCombat, isInitialized]);
+    }, [encounterData, combatKey, initializeCombat, isInitialized]);
 
     // Debug: Log enemy positions when they change
     useEffect(() => {

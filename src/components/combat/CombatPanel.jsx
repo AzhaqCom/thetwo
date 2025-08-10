@@ -92,12 +92,19 @@ const CombatPanel = ({
     }, [combatManager.combatPositions, playerCharacter, combatManager.companionCharacter, combatManager.combatEnemies]);
     const handleTargetSelection = useCallback(
         (enemy) => {
+            console.log('🎯 Target selection called with:', enemy);
+            console.log('🎯 Current playerAction:', combatManager.playerAction);
+            console.log('🎯 Current actionTargets:', combatManager.actionTargets);
+            
             if (combatManager.playerAction?.areaOfEffect) {
+                console.log('🔥 Handling AoE spell');
                 // Handle AoE spell targeting
                 const centerPos = enemy.isPosition ? { x: enemy.x, y: enemy.y } : findPositionByCharacter(enemy);
                 if (centerPos) {
+                    console.log('🎯 Setting AoE center at:', centerPos);
                     combatManager.setAoECenter(centerPos);
                     const affectedSquares = calculateAoESquares(centerPos, combatManager.playerAction.areaOfEffect);
+                    console.log('🔥 Affected squares:', affectedSquares);
                     combatManager.setSelectedAoESquares(affectedSquares);
                     
                     // Find all targets in affected squares
@@ -112,23 +119,31 @@ const CombatPanel = ({
                     console.log('AoE Targets found:', targets);
                     
                     // Set targets BEFORE executing
+                    console.log('🎯 Setting targets:', targets);
                     combatManager.setActionTargets(targets);
                     
                     // Auto-execute AoE spell immediately after target selection
-                    setTimeout(() => {
+                    const executeTimeout = setTimeout(() => {
+                        console.log('🚀 Executing AoE spell after timeout');
                         handleExecuteAction();
-                    }, 200); // Increased delay to ensure state update
+                    }, 300); // Increased delay to ensure state update
+                    
+                    // Store timeout reference for cleanup if needed
+                    return () => clearTimeout(executeTimeout);
                 }
             } else {
+                console.log('🎯 Handling single target spell/attack');
                 // Handle single target or projectile spells
                 const maxTargets = combatManager.playerAction?.projectiles || 1;
+                console.log('🎯 Max targets:', maxTargets);
                 combatManager.setActionTargets((prevTargets) => {
                     const newTargets = [...prevTargets, enemy];
+                    console.log('🎯 New targets array:', newTargets);
                     return newTargets;
                 });
             }
         },
-        [combatManager.playerAction, combatManager.combatPositions, findCharacterAtPosition, handleExecuteAction]
+        [combatManager, findCharacterAtPosition, handleExecuteAction]
     );
 
     const calculateAoESquares = useCallback((center, aoeType) => {
