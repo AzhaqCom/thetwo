@@ -104,11 +104,13 @@ const CombatPanel = ({
                     const targets = [];
                     affectedSquares.forEach(square => {
                         const targetAtSquare = findCharacterAtPosition(square.x, square.y);
-                        if (targetAtSquare && targetAtSquare.currentHP > 0) {
+                        if (targetAtSquare && targetAtSquare.currentHP > 0 && targetAtSquare.type === 'enemy') {
                             targets.push(targetAtSquare);
                         }
                     });
                     combatManager.setActionTargets(targets);
+                    
+                    console.log('AoE Targets found:', targets);
                     
                     // Auto-execute AoE spell immediately after target selection
                     setTimeout(() => {

@@ -177,6 +177,24 @@ export const useCombatActionHandler = ({
         const action = playerAction;
         const targets = actionTargets;
 
+        console.log('Executing action:', action?.name, 'with targets:', targets);
+
+        if (!action) {
+            console.log('No action to execute');
+            return;
+        }
+
+        if (targets.length === 0) {
+            console.log('No targets for action');
+            addCombatMessage(`Aucune cible trouvée pour ${action.name}.`, 'miss');
+            setPlayerAction(null);
+            setActionTargets([]);
+            setSelectedAoESquares([]);
+            setAoECenter(null);
+            setShowTargetingFor(null);
+            return;
+        }
+
         // Validate range for all targets
         const playerPos = combatPositions.player;
         const invalidTargets = targets.filter(target => {

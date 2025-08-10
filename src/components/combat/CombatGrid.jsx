@@ -103,37 +103,8 @@ const CombatGrid = ({
     
     // Handle targeting
     if (showTargetingFor && validTargetSquares.has(squareKey)) {
-      const targetAtSquare = renderCharacterAtPosition(x, y);
-      
       if (onSelectTarget) {
-        // For AoE spells, we can target empty squares too
-        if (!targetAtSquare) {
-          // Create a dummy target for empty position (for AoE spells)
-          const dummyTarget = {
-            name: `Position (${x},${y})`,
-            x: x,
-            y: y,
-            isPosition: true
-          };
-          onSelectTarget(dummyTarget);
-          return;
-        }
-        
-        // Find character at this position
-        const targetId = Object.keys(combatPositions).find(id => {
-          const pos = combatPositions[id];
-          return pos.x === x && pos.y === y;
-        });
-        
-        if (targetId) {
-          // Find the actual character/enemy object
-          let target = null;
-          if (targetId === 'player') {
-            target = { ...playerCharacter, id: 'player' };
-        }
-      }
-      } else if (onSelectTarget) {
-        // For AoE spells, create a dummy target at the clicked position
+        // Create a target for the clicked position (works for both empty squares and occupied squares)
         const dummyTarget = {
           name: `Position (${x},${y})`,
           x: x,
