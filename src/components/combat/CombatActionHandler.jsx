@@ -126,16 +126,18 @@ export const useCombatActionHandler = ({
                     
                     damage = rollDice(spell.damage.dice) + (spell.damage.bonus || 0);
                     
+                    // Add detailed saving throw message
+                    addCombatMessage(`${target.name} fait un jet de sauvegarde de ${targetStat} : ${savingThrow} (1d20 + ${targetModifier}) contre DD ${savingThrowDC}`, 'dice-icon');
                     if (savingThrow >= savingThrowDC) {
                         // Successful save - half damage
                         damage = Math.floor(damage / 2);
                         addCombatMessage(
-                            `${target.name} réussit son jet de sauvegarde de ${targetStat} (${savingThrow} vs DD ${savingThrowDC}) et ne subit que ${damage} dégâts de ${spell.damage.type} !`, 'player-damage'
+                            `✅ ${target.name} RÉUSSIT son jet de sauvegarde ! Il ne subit que ${damage} dégâts de ${spell.damage.type} (dégâts réduits de moitié).`, 'heal'
                         );
                     } else {
                         // Failed save - full damage
                         addCombatMessage(
-                            `${target.name} rate son jet de sauvegarde de ${targetStat} (${savingThrow} vs DD ${savingThrowDC}) et subit ${damage} dégâts de ${spell.damage.type} !`, 'player-damage'
+                            `❌ ${target.name} ÉCHOUE son jet de sauvegarde ! Il subit ${damage} dégâts de ${spell.damage.type} (dégâts complets).`, 'player-damage'
                         );
                     }
                     
