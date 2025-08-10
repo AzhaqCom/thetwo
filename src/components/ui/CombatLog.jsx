@@ -28,11 +28,18 @@ const CombatLog = ({ logMessages = [] }) => {
   );
 
   if (logMessages.length === 0) {
-    return null;
+    return (
+      <div id="combat-log">
+        <div id="log-entries" ref={logRef}>
+          <strong>Journal :</strong>
+          <p>En attente d'actions de combat...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div id="combat-log">
+    <div id="combat-log" className="combat-log-container">
       <div id="log-entries" ref={logRef}>
         <strong>Journal :</strong>
         {logEntries}

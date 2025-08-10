@@ -79,19 +79,16 @@ p{
 .combat-panel-container {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
-    height: 100vh;
-    overflow: hidden;
+    gap: var(--spacing-sm);
+   
 }
 
 .combat-controls {
     flex-shrink: 0;
-    padding: var(--spacing-sm);
+    padding: 10px;
     background-color: var(--color-bg-secondary);
     border-radius: var(--radius-md);
     border: 1px solid var(--color-border-primary);
-    max-height: 200px;
-    overflow-y: auto;
 }
 
 .combat-controls button {
@@ -256,12 +253,17 @@ button:hover {
 }
 
 #combat-log {
-    height: 300px;
+    position: sticky;
+    top: 0;
+    height: 250px;
     overflow: hidden;
     border: 1px solid var(--color-border-primary);
-    padding: 10px;
+    padding: var(--spacing-sm);
     background: var(--color-bg-primary);
     border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-medium);
+    z-index: 100;
+    margin-bottom: var(--spacing-sm);
 }
 
 #log-entries {
@@ -269,11 +271,21 @@ button:hover {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    scroll-behavior: smooth;
 }
 
 #combat-log p {
     margin: 0;
-    padding: 2px 0;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+#combat-log p:last-child {
+    border-bottom: none;
+    font-weight: bold;
+    color: var(--color-text-secondary);
 }
 
 .scene {
