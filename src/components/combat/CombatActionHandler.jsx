@@ -173,9 +173,9 @@ export const useCombatActionHandler = ({
         return true;
     }, [onPlayerCastSpell, combatEnemies, playerCharacter, addCombatMessage, setCombatEnemies]);
 
-    const handleExecuteAction = useCallback(() => {
+    const handleExecuteAction = useCallback((directTargets = null) => {
         const action = playerAction;
-        const targets = actionTargets;
+        const targets = directTargets || actionTargets; // Use direct targets if provided
 
         console.log('🚀 Executing action:', action?.name);
         console.log('🎯 With targets:', targets);
@@ -190,6 +190,7 @@ export const useCombatActionHandler = ({
         if (targets.length === 0) {
             console.log('❌ No targets for action');
             console.log('📊 actionTargets state:', actionTargets);
+            console.log('📊 directTargets:', directTargets);
             addCombatMessage(`Aucune cible trouvée pour ${action.name}.`, 'miss');
             setPlayerAction(null);
             setActionTargets([]);
@@ -268,12 +269,6 @@ export const useCombatActionHandler = ({
         handleNextTurn
     ]);
 
-    // Auto-execute action when enough targets are selected
-    useEffect(() => {
-        if (playerAction && actionTargets.length === (playerAction.projectiles || 1)) {
-            handleExecuteAction();
-        }
-    }, [actionTargets, playerAction, handleExecuteAction]);
 
     return {
         handleExecuteAction

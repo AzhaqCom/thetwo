@@ -99,7 +99,7 @@ const CombatPanel = ({
             if (combatManager.playerAction?.areaOfEffect) {
                 console.log('🔥 Handling AoE spell');
                 // Handle AoE spell targeting
-                const centerPos = enemy.isPosition ? { x: enemy.x, y: enemy.y } : findPositionByCharacter(enemy);
+                const centerPos = enemy.isPosition ? { x: enemy.x, y: enemy.y } : combatManager.combatPositions[enemy.name];
                 if (centerPos) {
                     console.log('🎯 Setting AoE center at:', centerPos);
                     combatManager.setAoECenter(centerPos);
@@ -118,29 +118,36 @@ const CombatPanel = ({
                     
                     console.log('AoE Targets found:', targets);
                     
-                    // Set targets BEFORE executing
+                    // Set targets and execute immediately
                     console.log('🎯 Setting targets:', targets);
-                    combatManager.setActionTargets(targets);
-                    
-                    // Auto-execute AoE spell immediately after target selection
-                    const executeTimeout = setTimeout(() => {
-                        console.log('🚀 Executing AoE spell after timeout');
-                        handleExecuteAction();
-                    }, 300); // Increased delay to ensure state update
-                    
-                    // Store timeout reference for cleanup if needed
-                    return () => clearTimeout(executeTimeout);
+                    handleExecuteAction(targets); // Pass targets directly
                 }
             } else {
                 console.log('🎯 Handling single target spell/attack');
-                // Handle single target or projectile spells
+                // Handle single target or projectile spells - need to target actual enemies
                 const maxTargets = combatManager.playerAction?.projectiles || 1;
                 console.log('🎯 Max targets:', maxTargets);
-                combatManager.setActionTargets((prevTargets) => {
-                    const newTargets = [...prevTargets, enemy];
-                    console.log('🎯 New targets array:', newTargets);
-                    return newTargets;
-                });
+                
+                // For single target spells, we need to find the actual enemy at the position
+                let actualTarget = enemy;
+                if (enemy.isPosition) {
+                    actualTarget = findCharacterAtPosition(enemy.x, enemy.y);
+                    if (!actualTarget || actualTarget.type !== 'enemy' || actualTarget.currentHP <= 0) {
+                        addCombatMessage("Aucune cible valide à cette position.", 'miss');
+                        return;
+                    }
+                }
+                
+                const newTargets = [...combatManager.actionTargets, actualTarget];
+                console.log('🎯 New targets array:', newTargets);
+                combatManager.setActionTargets(newTargets);
+                
+                // Auto-execute when we have enough targets
+                if (newTargets.length >= maxTargets) {
+                    setTimeout(() => {
+                        handleExecuteAction(newTargets);
+                    }, 100);
+                }
             }
         },
         [combatManager, findCharacterAtPosition, handleExecuteAction]
