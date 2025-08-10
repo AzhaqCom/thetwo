@@ -94,90 +94,7 @@ export const useCombatActions = ({
         
         return bestTarget;
     }, [combatEnemies]);
-
-    const enemyAttack = useCallback(() => {
-        const currentTurnEntity = turnOrder[currentTurnIndex];
-        const enemyData = combatEnemies.find(e => e.name === currentTurnEntity.name);
-
-        if (!enemyData || enemyData.currentHP <= 0) {
-            addCombatMessage(`${currentTurnEntity.name} est déjà vaincu et ne peut pas attaquer.`);
-            handleNextTurn();
-            return;
-        }
-
-        const enemyPos = combatPositions[enemyData.name];
-        if (!enemyPos) {
-            addCombatMessage(`${currentTurnEntity.name} n'a pas de position définie.`);
-            handleNextTurn();
-            return;
-        }
-
-        // Find valid targets (with priority system)
-        const validTargets = findValidTargetsForEnemy();
-        
-        if (validTargets.length === 0) {
-            addCombatMessage(`${currentTurnEntity.name} n'a aucune cible valide à attaquer.`);
-            handleNextTurn();
-            return;
-        }
-
-        const attack = enemyData.attacks?.[0];
-        if (!attack) {
-            addCombatMessage(`${currentTurnEntity.name} n'a pas d'attaque définie.`);
-            handleNextTurn();
-            return;
-        }
-
-        // Check which targets are in attack range
-        const targetsInRange = findTargetsInRangeForEnemy(enemyData, enemyPos, attack);
-
-        // If no targets in range, try to move closer
-        if (targetsInRange.length === 0) {
-            addCombatMessage(`${enemyData.name} n'a aucune cible à portée, il tente de se rapprocher.`);
-            const newPosition = calculateEnemyMovementPosition(enemyData);
-            if (newPosition && (newPosition.x !== enemyPos.x || newPosition.y !== enemyPos.y)) {
-                updateEnemyPosition(enemyData.name, newPosition);
-                addCombatMessage(`${enemyData.name} se déplace vers une meilleure position.`);
-                
-                // Recalculate targets in range after movement
-                const newTargetsInRange = findTargetsInRangeForEnemy(enemyData, newPosition, attack);
-                
-                // Execute attack if now in range
-                if (newTargetsInRange.length > 0) {
-                    const target = newTargetsInRange[0]; // Take highest priority target
-                    executeEnemyAttack(currentTurnEntity, target, attack);
-                } else {
-                    addCombatMessage(`${currentTurnEntity.name} ne peut toujours pas atteindre de cible après son déplacement.`);
-                }
-            } else {
-                addCombatMessage(`${currentTurnEntity.name} ne peut pas se déplacer vers une meilleure position.`);
-            }
-        } else {
-            // Attack the highest priority target in range
-            const target = targetsInRange[0];
-            executeEnemyAttack(currentTurnEntity, target, attack);
-        }
-
-        handleNextTurn();
-    }, [
-        addCombatMessage,
-        handleNextTurn,
-        onPlayerTakeDamage,
-        playerCharacter,
-        turnOrder,
-        currentTurnIndex,
-        combatEnemies,
-        companionCharacter,
-        onCompanionTakeDamage,
-        combatPositions,
-        calculateEnemyMovementPosition,
-        updateEnemyPosition,
-        isInAttackRange,
-        findValidTargetsForEnemy,
-        findTargetsInRangeForEnemy
-    ]);
-
-    // Helper function to execute enemy attack
+   // Helper function to execute enemy attack
     const executeEnemyAttack = useCallback((attacker, target, attack) => {
         const attackRoll = Math.floor(Math.random() * 20) + 1 + (attack.attackBonus || 0);
 
@@ -192,6 +109,102 @@ export const useCombatActions = ({
             addCombatMessage(`${attacker.name} tente d'attaquer ${target.name} avec ${attack.name}, mais rate son attaque.`, 'miss');
         }
     }, [onPlayerTakeDamage, onCompanionTakeDamage, addCombatMessage]);
+  
+    const enemyAttack = useCallback(() => { 
+    const currentTurnEntity = turnOrder[currentTurnIndex];
+    const enemyData = combatEnemies.find(e => e.name === currentTurnEntity.name);
+
+    if (!enemyData || enemyData.currentHP <= 0) {
+        addCombatMessage(`${currentTurnEntity.name} est déjà vaincu et ne peut pas attaquer.`);
+        handleNextTurn();
+        return;
+    }
+
+    const enemyPos = combatPositions[enemyData.name];
+    if (!enemyPos) {
+        addCombatMessage(`${currentTurnEntity.name} n'a pas de position définie.`);
+        handleNextTurn();
+        return;
+    }
+
+    const validTargets = findValidTargetsForEnemy();
+    if (validTargets.length === 0) {
+        addCombatMessage(`${currentTurnEntity.name} n'a aucune cible valide à attaquer.`);
+        handleNextTurn();
+        return;
+    }
+
+    // Choisir le set d'attaque ou attaques individuelles
+    let attacksToUse = [];
+    if (enemyData.attackSets?.length > 0) {
+        // Trouver un set avec au moins une attaque à portée
+        let chosenSet = enemyData.attackSets.find(set =>
+            set.attacks.some(atk => {
+                const targets = findTargetsInRangeForEnemy(enemyData, enemyPos, atk);
+                return targets.length > 0;
+            })
+        );
+
+        if (!chosenSet) {
+            chosenSet = enemyData.attackSets[0];
+        }
+        attacksToUse = chosenSet.attacks;
+    } else if (enemyData.attacks?.length > 0) {
+        attacksToUse = [enemyData.attacks[0]];
+    }
+
+    if (attacksToUse.length === 0) {
+        addCombatMessage(`${currentTurnEntity.name} n'a pas d'attaque définie.`);
+        handleNextTurn();
+        return;
+    }
+
+    // Pour chaque attaque dans le set
+    attacksToUse.forEach(attack => {
+        const targetsInRange = findTargetsInRangeForEnemy(enemyData, enemyPos, attack);
+
+        if (targetsInRange.length === 0) {
+            addCombatMessage(`${enemyData.name} n'a aucune cible à portée pour ${attack.name}, il tente de se rapprocher.`);
+            const newPosition = calculateEnemyMovementPosition(enemyData);
+            if (newPosition && (newPosition.x !== enemyPos.x || newPosition.y !== enemyPos.y)) {
+                updateEnemyPosition(enemyData.name, newPosition);
+                addCombatMessage(`${enemyData.name} se déplace vers une meilleure position.`);
+
+                // Recalcule cibles après déplacement
+                const newTargetsInRange = findTargetsInRangeForEnemy(enemyData, newPosition, attack);
+
+                if (newTargetsInRange.length > 0) {
+                    const target = newTargetsInRange[0];
+                    executeEnemyAttack(currentTurnEntity, target, attack);
+                } else {
+                    addCombatMessage(`${currentTurnEntity.name} ne peut toujours pas atteindre de cible après son déplacement pour ${attack.name}.`);
+                }
+            } else {
+                addCombatMessage(`${currentTurnEntity.name} ne peut pas se déplacer vers une meilleure position pour ${attack.name}.`);
+            }
+        } else {
+            // Attaque la première cible à portée
+            const target = targetsInRange[0];
+            executeEnemyAttack(currentTurnEntity, target, attack);
+        }
+    });
+
+    handleNextTurn();
+}, [
+    addCombatMessage,
+    handleNextTurn,
+    turnOrder,
+    currentTurnIndex,
+    combatEnemies,
+    combatPositions,
+    calculateEnemyMovementPosition,
+    updateEnemyPosition,
+    findValidTargetsForEnemy,
+    findTargetsInRangeForEnemy,
+    executeEnemyAttack
+]);
+
+ 
 
     const companionAttack = useCallback(() => {
         if (!companionCharacter) {
