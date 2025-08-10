@@ -69,7 +69,27 @@ const CombatPanel = ({
         combatManager.handleMoveCharacter(characterId, newPosition);
         combatManager.setCombatPhase('player-action');
     }, [combatManager]);
-
+ const findCharacterAtPosition = useCallback((x, y) => {
+        // Check player
+        if (combatManager.combatPositions.player && combatManager.combatPositions.player.x === x && combatManager.combatPositions.player.y === y) {
+            return { ...playerCharacter, id: 'player', name: playerCharacter.name };
+        }
+        
+        // Check companion
+        if (combatManager.combatPositions.companion && combatManager.combatPositions.companion.x === x && combatManager.combatPositions.companion.y === y && combatManager.companionCharacter) {
+            return { ...combatManager.companionCharacter, id: 'companion', name: combatManager.companionCharacter.name };
+        }
+        
+        // Check enemies
+        for (const enemy of combatManager.combatEnemies) {
+            const enemyPos = combatManager.combatPositions[enemy.name];
+            if (enemyPos && enemyPos.x === x && enemyPos.y === y) {
+                return enemy;
+            }
+        }
+        
+        return null;
+    }, [combatManager.combatPositions, playerCharacter, combatManager.companionCharacter, combatManager.combatEnemies]);
     const handleTargetSelection = useCallback(
         (enemy) => {
             if (combatManager.playerAction?.areaOfEffect) {
@@ -134,27 +154,7 @@ const CombatPanel = ({
         return squares;
     }, []);
 
-    const findCharacterAtPosition = useCallback((x, y) => {
-        // Check player
-        if (combatManager.combatPositions.player && combatManager.combatPositions.player.x === x && combatManager.combatPositions.player.y === y) {
-            return { ...playerCharacter, id: 'player', name: playerCharacter.name };
-        }
-        
-        // Check companion
-        if (combatManager.combatPositions.companion && combatManager.combatPositions.companion.x === x && combatManager.combatPositions.companion.y === y && combatManager.companionCharacter) {
-            return { ...combatManager.companionCharacter, id: 'companion', name: combatManager.companionCharacter.name };
-        }
-        
-        // Check enemies
-        for (const enemy of combatManager.combatEnemies) {
-            const enemyPos = combatManager.combatPositions[enemy.name];
-            if (enemyPos && enemyPos.x === x && enemyPos.y === y) {
-                return enemy;
-            }
-        }
-        
-        return null;
-    }, [combatManager.combatPositions, playerCharacter, combatManager.companionCharacter, combatManager.combatEnemies]);
+   
 
     const findPositionByCharacter = useCallback((character) => {
         if (character.id === 'player') return combatManager.combatPositions.player;
