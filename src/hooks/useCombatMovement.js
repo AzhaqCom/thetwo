@@ -112,6 +112,9 @@ export const useCombatMovement = (
                 const enemyPos = combatPositions[enemy.name];
                 if (!enemyPos) return;
                 
+                // Double check that enemy is still alive
+                if (enemy.currentHP <= 0) return;
+                
                 const wasAdjacent = Math.abs(oldPos.x - enemyPos.x) <= 1 && Math.abs(oldPos.y - enemyPos.y) <= 1;
                 const isStillAdjacent = Math.abs(newPos.x - enemyPos.x) <= 1 && Math.abs(newPos.y - enemyPos.y) <= 1;
                 
@@ -124,6 +127,10 @@ export const useCombatMovement = (
             });
         } else {
             // Enemy moving - check for player/companion opportunity attacks
+            // First check if the moving enemy is still alive
+            const movingEnemy = combatEnemies.find(e => e.name === movingCharacterId);
+            if (movingEnemy && movingEnemy.currentHP <= 0) return [];
+            
             const playerPos = combatPositions.player;
             const companionPos = combatPositions.companion;
             
@@ -156,6 +163,12 @@ export const useCombatMovement = (
     }, [combatEnemies, combatPositions, playerCharacter, companionCharacter]);
 
     const executeOpportunityAttack = useCallback((attacker, targetId) => {
+        // If attacker is an enemy, check if it's still alive
+        if (typeof attacker === 'object' && attacker.currentHP <= 0) {
+            console.log(`❌ Dead enemy ${attacker.name} cannot make opportunity attack`);
+            return;
+        }
+        
         const attack = attacker.attacks?.[0];
         if (!attack) return;
         
