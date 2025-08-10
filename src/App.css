@@ -57,7 +57,10 @@ p{
 /* Combat mode main content */
 .main-content.combat-mode {
     width: 70%;
-    min-height: 800px;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .scene-container {
