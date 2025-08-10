@@ -1,69 +1,86 @@
 import React, { useMemo, useCallback } from 'react';
-import { spells } from '../../data/spells';
-
-const SpellButton = React.memo(({ spell, onSelectSpell }) => {
-  const handleClick = useCallback(() => {
-    onSelectSpell(spell);
-  }, [spell, onSelectSpell]);
-
-  return (
-    <button onClick={handleClick}>
-      {spell.name}
-      {spell.level > 0 && ` (Niv. ${spell.level})`}
-    </button>
-  );
-});
+import { getAvailableActions } from '../utils/actionUtils';
+import ActionButton from './ActionButton';
 
 const PlayerTurnPanel = ({ 
   playerCharacter, 
-  onSelectSpell, 
+  onSelectAction, 
   onPassTurn, 
-  selectedSpell, 
+  selectedAction, 
   selectedTargets = [] 
 }) => {
-  const offensiveSpells = useMemo(() => {
-    const allSpells = [
-      ...playerCharacter.spellcasting.cantrips,
-      ...playerCharacter.spellcasting.preparedSpells
-    ];
-    
-    return allSpells
-      .map(spellName => spells[spellName])
-      .filter(spell => spell && spell.damage);
-  }, [playerCharacter.spellcasting]);
+  const availableActions = useMemo(() => {
+    return getAvailableActions(playerCharacter);
+  }, [playerCharacter]);
 
-  const handleCancelSpell = useCallback(() => {
-    onSelectSpell(null);
-  }, [onSelectSpell]);
+  const spellActions = useMemo(() => 
+    availableActions.filter(action => action.actionType === 'spell'),
+    [availableActions]
+  );
 
-  // If a spell is selected, show target selection UI
-  if (selectedSpell) {
-    const maxTargets = selectedSpell.projectiles || 1;
+  const weaponActions = useMemo(() => 
+    availableActions.filter(action => action.actionType === 'weapon'),
+    [availableActions]
+  );
+
+  const handleCancelAction = useCallback(() => {
+    onSelectAction(null);
+  }, [onSelectAction]);
+
+  // If an action is selected, show target selection UI
+  if (selectedAction) {
+    const maxTargets = selectedAction.projectiles || 1;
 
     return (
       <div>
         <p>
           {maxTargets > 1
-            ? `Choisis les ${maxTargets} cibles de ton sort (tu peux sélectionner plusieurs fois la même créature).`
-            : `Choisis une cible pour ton sort.`}
+            ? `Choisis les ${maxTargets} cibles de ton ${selectedAction.actionType === 'spell' ? 'sort' : 'attaque'} (tu peux sélectionner plusieurs fois la même créature).`
+            : `Choisis une cible pour ton ${selectedAction.actionType === 'spell' ? 'sort' : 'attaque'}.`}
         </p>
         <p>(Cibles sélectionnées : {selectedTargets.length}/{maxTargets})</p>
-        <button onClick={handleCancelSpell}>Annuler le sort</button>
+        <button onClick={handleCancelAction}>
+          Annuler {selectedAction.actionType === 'spell' ? 'le sort' : 'l\'attaque'}
+        </button>
       </div>
     );
   }
 
-  // Show spell selection
+  // Show action selection
   return (
     <div>
-      <p>C'est ton tour ! Quel sort veux-tu lancer ?</p>
-      {offensiveSpells.map(spell => (
-        <SpellButton 
-          key={spell.name} 
-          spell={spell} 
-          onSelectSpell={onSelectSpell} 
-        />
-      ))}
+      <p>C'est ton tour ! Que veux-tu faire ?</p>
+      
+      {weaponActions.length > 0 && (
+        <div className="action-group">
+          <h4>Attaques d'Armes</h4>
+          {weaponActions.map(action => (
+            <ActionButton 
+              key={action.id} 
+              action={action} 
+              onSelectAction={onSelectAction} 
+            />
+          ))}
+        </div>
+      )}
+
+      {spellActions.length > 0 && (
+        <div className="action-group">
+          <h4>Sorts</h4>
+          {spellActions.map(action => (
+            <ActionButton 
+              key={action.id} 
+              action={action} 
+              onSelectAction={onSelectAction} 
+            />
+          ))}
+        </div>
+      )}
+
+      {availableActions.length === 0 && (
+        <p>Aucune action offensive disponible.</p>
+      )}
+
       <button onClick={onPassTurn}>Passer le tour</button>
     </div>
   );
