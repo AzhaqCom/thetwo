@@ -103,9 +103,22 @@ const CombatGrid = ({
     
     // Handle targeting
     if (showTargetingFor && validTargetSquares.has(squareKey)) {
-      // For AoE spells, we can target empty squares too
       const targetAtSquare = renderCharacterAtPosition(x, y);
-      if (targetAtSquare && onSelectTarget) {
+      
+      if (onSelectTarget) {
+        // For AoE spells, we can target empty squares too
+        if (!targetAtSquare) {
+          // Create a dummy target for empty position (for AoE spells)
+          const dummyTarget = {
+            name: `Position (${x},${y})`,
+            x: x,
+            y: y,
+            isPosition: true
+          };
+          onSelectTarget(dummyTarget);
+          return;
+        }
+        
         // Find character at this position
         const targetId = Object.keys(combatPositions).find(id => {
           const pos = combatPositions[id];
@@ -117,16 +130,8 @@ const CombatGrid = ({
           let target = null;
           if (targetId === 'player') {
             target = { ...playerCharacter, id: 'player' };
-          } else if (targetId === 'companion') {
-            target = { ...playerCompanion, id: 'companion' };
-          } else {
-            target = combatEnemies.find(enemy => enemy.name === targetId);
-          }
-          
-          if (target) {
-            onSelectTarget(target);
-          }
         }
+      }
       } else if (onSelectTarget) {
         // For AoE spells, create a dummy target at the clicked position
         const dummyTarget = {

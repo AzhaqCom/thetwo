@@ -94,7 +94,7 @@ const CombatPanel = ({
         (enemy) => {
             if (combatManager.playerAction?.areaOfEffect) {
                 // Handle AoE spell targeting
-                const centerPos = findPositionByCharacter(enemy);
+                const centerPos = enemy.isPosition ? { x: enemy.x, y: enemy.y } : findPositionByCharacter(enemy);
                 if (centerPos) {
                     combatManager.setAoECenter(centerPos);
                     const affectedSquares = calculateAoESquares(centerPos, combatManager.playerAction.areaOfEffect);
@@ -109,6 +109,11 @@ const CombatPanel = ({
                         }
                     });
                     combatManager.setActionTargets(targets);
+                    
+                    // Auto-execute AoE spell immediately after target selection
+                    setTimeout(() => {
+                        handleExecuteAction();
+                    }, 100);
                 }
             } else {
                 // Handle single target or projectile spells
@@ -119,7 +124,7 @@ const CombatPanel = ({
                 });
             }
         },
-        [combatManager.playerAction, combatManager.combatPositions, findCharacterAtPosition]
+        [combatManager.playerAction, combatManager.combatPositions, findCharacterAtPosition, handleExecuteAction]
     );
 
     const calculateAoESquares = useCallback((center, aoeType) => {

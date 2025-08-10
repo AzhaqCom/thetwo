@@ -29,8 +29,20 @@ const PlayerTurnPanel = ({
 
   // If an action is selected, show target selection UI
   if (selectedAction) {
-    const maxTargets = selectedAction.projectiles || 1;
+    // For AoE spells, show different message
+    if (selectedAction.areaOfEffect) {
+      return (
+        <div>
+          <p>Choisis une zone cible pour ton sort {selectedAction.name}.</p>
+          <p>Clique sur n'importe quelle case pour centrer l'effet.</p>
+          <button onClick={handleCancelAction}>
+            Annuler le sort
+          </button>
+        </div>
+      );
+    }
 
+    const maxTargets = selectedAction.projectiles || 1;
     return (
       <div>
         <p>
