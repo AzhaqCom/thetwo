@@ -57,10 +57,7 @@ p{
 /* Combat mode main content */
 .main-content.combat-mode {
     width: 70%;
-  height: 100vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+    min-height: 800px;
 }
 
 .scene-container {
@@ -82,16 +79,19 @@ p{
 .combat-panel-container {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
-   
+    gap: var(--spacing-xs);
+    height: 100vh;
+    overflow: hidden;
 }
 
 .combat-controls {
     flex-shrink: 0;
-    padding: 10px;
+    padding: var(--spacing-sm);
     background-color: var(--color-bg-secondary);
     border-radius: var(--radius-md);
     border: 1px solid var(--color-border-primary);
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .combat-controls button {
