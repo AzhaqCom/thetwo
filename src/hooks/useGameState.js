@@ -32,7 +32,7 @@ const skillToStat = {
 
 export const useGameState = () => {
     const [gamePhase, setGamePhase] = useState('character-selection');
-    const [currentScene, setCurrentScene] = useState("scene3");
+    const [currentScene, setCurrentScene] = useState("scene1");
     const [playerCharacter, setPlayerCharacter] = useState(null);
     const [playerCompanion, setPlayerCompanion] = useState(null);
     const [combatLog, setCombatLog] = useState([]);
