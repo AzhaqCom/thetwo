@@ -23,7 +23,7 @@ export const useCombatManager = ({
     const [defeated, setDefeated] = useState(false);
     const [victory, setVictory] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
-
+    
     // Track previous combatKey to detect actual changes
     const prevCombatKeyRef = useRef(undefined);
 
@@ -39,24 +39,24 @@ export const useCombatManager = ({
 
     // Initialize combat when encounterData is available
     const initializeCombat = useCallback(() => {
-       
-        
+
+
         // Extract enemyPositions from the encounter data structure
         const customEnemyPositions = encounterData?.enemyPositions || null;
-     
-        
+
+
         // Create enemies from encounter data
         const encounters = encounterData?.enemies || [];
-       
-        
+
+
         const initialCombatEnemies = encounters.flatMap((encounter, encounterIndex) => {
             const template = enemyTemplates[encounter.type];
             if (!template) {
                 console.error('❌ Template not found for:', encounter.type);
-               
+
                 return [];
             }
-           
+
             return Array(encounter.count)
                 .fill(null)
                 .map((_, index) => ({
@@ -75,13 +75,13 @@ export const useCombatManager = ({
 
         if (!initialCombatEnemies.length) {
             console.error('❌ No enemies created!');
-         
+
             addCombatMessage("Erreur lors du chargement des ennemis. Le combat se termine.");
             return;
         }
 
-     
-       
+
+
 
         // Roll initiative for enemies
         const enemiesWithInitiative = initialCombatEnemies.map((enemy) => ({
@@ -129,8 +129,8 @@ export const useCombatManager = ({
             return b.initiative - a.initiative;
         });
 
-     
-       
+
+
 
         // Update state
         setCombatEnemies(enemiesWithInitiative);
@@ -138,31 +138,33 @@ export const useCombatManager = ({
         setIsInitialized(true);
 
         // Initialize positions
-       
+
         combatMovement.initializeCombatPositions(initialCombatEnemies, !!playerCompanion, customEnemyPositions);
 
         // Add combat messages
-      
+
         addCombatMessage('Un combat commence !');
         order.forEach((entity) => {
             addCombatMessage(`${entity.name} a lancé l'initiative et a obtenu ${entity.initiative}.`, 'initiative');
         });
 
         // Move to initiative display phase
-      
+
         setCombatPhase('initiative-display');
-        
-     
-     
+
+
+
     }, [encounterData, playerCharacter, playerCompanion, addCombatMessage, combatMovement]);
+
+
 
     // Initialize combat when encounterData is available
     useEffect(() => {
-     
+
 
         // Reset on new combat (only when combatKey actually changes)
         if (combatKey !== undefined && combatKey !== prevCombatKeyRef.current) {
-          
+
             prevCombatKeyRef.current = combatKey;
             setIsInitialized(false);
             setDefeated(false);
@@ -184,7 +186,7 @@ export const useCombatManager = ({
 
         // Initialize combat if not already done and we have encounter data
         if (!isInitialized && encounterData && encounterData.enemies && encounterData.enemies.length > 0) {
-        
+
             initializeCombat();
         }
     }, [encounterData, combatKey, initializeCombat, isInitialized]);
@@ -192,7 +194,7 @@ export const useCombatManager = ({
     // Debug: Log enemy positions when they change
     useEffect(() => {
         if (encounterData && encounterData.enemyPositions) {
-    
+
         }
     }, [encounterData]);
 
@@ -212,7 +214,7 @@ export const useCombatManager = ({
         }
 
         const allEnemiesDefeated = combatEnemies.every(enemy => enemy.currentHP <= 0);
-        
+
         if (allEnemiesDefeated) {
             // Clean up dead enemy positions
             combatMovement.setCombatPositions(prev => {
@@ -224,7 +226,7 @@ export const useCombatManager = ({
                 });
                 return updated;
             });
-            
+
             setCombatPhase('end');
             setVictory(true);
             addCombatMessage("Victoire ! Tous les ennemis ont été vaincus.", 'victory');
@@ -233,7 +235,7 @@ export const useCombatManager = ({
 
     const handleNextTurn = useCallback(() => {
         if (playerCharacter.currentHP <= 0) {
-            
+
             setCombatPhase('end');
             setDefeated(true);
             addCombatMessage("Défaite... Tu as perdu connaissance.", 'defeat');
@@ -242,7 +244,7 @@ export const useCombatManager = ({
 
         let nextIndex = (currentTurnIndex + 1) % turnOrder.length;
         let safetyCounter = 0;
-        
+
         // Skip defeated characters
         while (
             safetyCounter < turnOrder.length &&
@@ -257,14 +259,14 @@ export const useCombatManager = ({
         }
 
         if (safetyCounter >= turnOrder.length) {
-           
+
             return;
         }
 
-        
+
         setCurrentTurnIndex(nextIndex);
         setCombatPhase('turn');
-        
+
         // Reset turn-specific state
         setPlayerAction(null);
         setActionTargets([]);
@@ -301,10 +303,10 @@ export const useCombatManager = ({
         victory,
         setVictory,
         isInitialized,
-        
+
         // Combat movement
         ...combatMovement,
-        
+
         // Functions
         handleNextTurn,
         startCombat,

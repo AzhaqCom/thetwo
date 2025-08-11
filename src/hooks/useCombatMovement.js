@@ -96,7 +96,7 @@ export const useCombatMovement = (
         // Check if the enemy is still alive
         const enemy = combatEnemies.find(e => e.name === enemyName);
         if (enemy && enemy.currentHP <= 0) {
-            console.log(`Enemy ${enemyName} is dead, not moving`);
+        
             return;
         }
         
@@ -194,7 +194,7 @@ export const useCombatMovement = (
     const executeOpportunityAttack = useCallback((attacker, targetId) => {
         // If attacker is an enemy object, check if it's still alive
         if (typeof attacker === 'object' && attacker.name && attacker.currentHP <= 0) {
-            console.log(`Attacker ${attacker.name} is dead (${attacker.currentHP} HP), skipping opportunity attack`);
+       
             return;
         }
 

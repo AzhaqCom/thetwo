@@ -72,6 +72,7 @@ const CombatPanel = ({
         combatManager.handleMoveCharacter(characterId, newPosition);
         combatManager.setCombatPhase('player-action');
     }, [combatManager]);
+    
     const findCharacterAtPosition = useCallback((x, y) => {
         // Check player
         if (combatManager.combatPositions.player && combatManager.combatPositions.player.x === x && combatManager.combatPositions.player.y === y) {

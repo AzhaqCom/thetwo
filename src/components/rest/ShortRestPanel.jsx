@@ -20,16 +20,18 @@ const ShortRestPanel = ({ playerCharacter, handleSpendHitDie, onEndRest }) => {
       <p>
         Dés de vie disponibles : {playerCharacter.hitDice} (d{playerCharacter.hitDiceType})
       </p>
-      
-      {canSpendHitDie && (
-        <button onClick={handleSpendDie}>
-          Dépenser un dé de vie
+
+      <div className='flex flex--start flex--row  gap10 flex--wrap'>
+        {canSpendHitDie && (
+          <button onClick={handleSpendDie}>
+            Dépenser un dé de vie
+          </button>
+        )}
+
+        <button onClick={handleEndRest}>
+          Terminer le repos
         </button>
-      )}
-      
-      <button onClick={handleEndRest}>
-        Terminer le repos
-      </button>
+      </div>
     </div>
   );
 };

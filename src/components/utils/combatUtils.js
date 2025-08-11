@@ -164,7 +164,7 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     } else if (enemy.type === 'companion') {
         // Companions target enemies
         combatEnemies.forEach(combatEnemy => {
-            console.log(`[DEBUG] Enemy: ${enemy.name} is considering targeting: ${combatEnemy.name}. HP: ${combatEnemy.currentHP}`);
+         
             if (combatEnemy.currentHP > 0) {
                 const enemyPos = combatPositions[combatEnemy.name];
                 if (enemyPos) {
@@ -173,7 +173,7 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
             }
         });
     }
-    console.log(`[DEBUG] Enemy: ${enemy.name} potential targets:`, targets.map(t => t.type === 'enemy' ? t.name : t.type));
+ 
 
     if (targets.length === 0) return null;
 
@@ -252,23 +252,19 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
 
     // Validate the best position one more time and find alternative if needed
     if (bestPosition) {
-        console.log(`[DEBUG] Enemy: ${enemy.name} best calculated position: (${bestPosition.x}, ${bestPosition.y})`);
+   
         if (isValidGridPosition(bestPosition.x, bestPosition.y) &&
             !isPositionOccupied(bestPosition.x, bestPosition.y, combatPositions, combatEnemies, enemy.name)) {
-            console.log(`[DEBUG] Enemy: ${enemy.name} is moving to valid position: (${bestPosition.x}, ${bestPosition.y})`);
+         
             return bestPosition;
         } else {
-            console.log(`[DEBUG] Enemy: ${enemy.name} best position is invalid/occupied. Searching for fallback.`);
+      
             const fallbackPosition = findNearestValidPosition(bestPosition.x, bestPosition.y, combatPositions, combatEnemies, enemy.name);
-            if (fallbackPosition) {
-                console.log(`[DEBUG] Enemy: ${enemy.name} found fallback position: (${fallbackPosition.x}, ${fallbackPosition.y})`);
-            } else {
-                console.log(`[DEBUG] Enemy: ${enemy.name} could not find any valid fallback position.`);
-            }
+            
             return fallbackPosition;
         }
     }
-    console.log(`[DEBUG] Enemy: ${enemy.name} could not find any movement position.`);
+  
 
     return null;
 };
@@ -297,19 +293,17 @@ const isPositionOccupied = (x, y, combatPositions, combatEnemies, excludeEnemyNa
     for (const enemy of combatEnemies) {
         if (enemy.name !== excludeEnemyName) {
             // Log pour voir quel ennemi est vérifié et son statut
-            console.log(`[DEBUG] Checking if position (${x},${y}) is occupied by: ${enemy.name}. Current HP: ${enemy.currentHP}`);
+
             if (enemy.currentHP > 0) {
                 const enemyPos = combatPositions[enemy.name];
                 if (enemyPos && enemyPos.x === x && enemyPos.y === y) {
-                    console.log(`[DEBUG] Position (${x},${y}) is occupied by LIVING enemy: ${enemy.name}`);
+                  
                     return true;
                 }
-            } else {
-                console.log(`[DEBUG] Position (${x},${y}) is occupied by DEAD enemy: ${enemy.name}. Skipping check.`);
-            }
+            } 
         }
     }
-    console.log(`[DEBUG] Position (${x},${y}) is NOT occupied.`);
+ 
 
     return false;
 };
