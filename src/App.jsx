@@ -17,6 +17,7 @@ import { useInventoryActions } from './hooks/useInventoryActions';
 import { useSpellActions } from './hooks/useSpellActions';
 import { useRestActions } from './hooks/useRestActions';
 import { processSceneAction } from './components/utils/sceneUtils';
+import SpecialAbilitiesPanel from './components/character/SpecialAbilitiesPanel';
 import './App.css';
 
 function App() {
@@ -109,19 +110,27 @@ function App() {
     const renderCurrentScene = () => {
         if (isLongResting) {
             return (
-                <LongRestPanel
-                    onRestComplete={restActions.handleLongRest}
-                />
+                <div className='long-rest-panel'>
+                    <LongRestPanel
+                        onRestComplete={restActions.handleLongRest}
+                    />
+                    <CombatLog logMessages={combatLog} />
+                </div>
+
             );
         }
 
         if (isShortResting) {
             return (
-                <ShortRestPanel
-                    playerCharacter={playerCharacter}
-                    handleSpendHitDie={restActions.handleSpendHitDie}
-                    onEndRest={restActions.endShortRest}
-                />
+                <div className='short-rest-panel'>
+                    <ShortRestPanel
+                        playerCharacter={playerCharacter}
+                        handleSpendHitDie={restActions.handleSpendHitDie}
+                        onEndRest={restActions.endShortRest}
+                    />
+                    <CombatLog logMessages={combatLog} />
+                </div>
+
             );
         }
 
@@ -134,7 +143,7 @@ function App() {
                     onCombatEnd={combatActions.handleCombatVictory}
                     addCombatMessage={addCombatMessage}
                     combatLog={combatLog}
-                    setCombatLog={setCombatLog} 
+                    setCombatLog={setCombatLog}
                     encounterData={currentScene}
                     onPlayerCastSpell={spellActions.handlePlayerCastSpell}
                     onReplayCombat={combatActions.handleReplayCombat}
@@ -148,26 +157,30 @@ function App() {
         const currentSceneData = scenes[currentScene];
         if (currentSceneData) {
             return (
-                <Scene
-                    text={currentSceneData.text}
-                    choices={currentSceneData.choices}
-                    onChoice={(nextAction) => {
-                        const action = typeof nextAction === 'function' ? nextAction() : nextAction;
+                <div className='scene-textuel'>
+                    <Scene
+                        text={currentSceneData.text}
+                        choices={currentSceneData.choices}
+                        onChoice={(nextAction) => {
+                            const action = typeof nextAction === 'function' ? nextAction() : nextAction;
 
-                        const result = processSceneAction(action, {
-                            startLongRest: restActions.startLongRest,
-                            startShortRest: restActions.startShortRest,
-                            handleItemGain: inventoryActions.handleItemGain,
-                            setPlayerCompanion,
-                            addCombatMessage,
-                            handleSkillCheck
-                        });
+                            const result = processSceneAction(action, {
+                                startLongRest: restActions.startLongRest,
+                                startShortRest: restActions.startShortRest,
+                                handleItemGain: inventoryActions.handleItemGain,
+                                setPlayerCompanion,
+                                addCombatMessage,
+                                handleSkillCheck
+                            });
 
-                        if (result) {
-                            setCurrentScene(result);
-                        }
-                    }}
-                />
+                            if (result) {
+                                setCurrentScene(result);
+                            }
+                        }}
+                    />
+                    <CombatLog logMessages={combatLog} />
+                </div>
+
             );
         }
 
@@ -182,7 +195,7 @@ function App() {
         <div className={containerClass}>
             <div className={mainContentClass}>
                 {renderCurrentScene()}
-                <CombatLog logMessages={combatLog} />
+                {/*  */}
             </div>
             <div className={`${sidebarClass} right-sidebar`}>
 

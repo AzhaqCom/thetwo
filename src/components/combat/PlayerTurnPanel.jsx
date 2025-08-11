@@ -62,10 +62,11 @@ const PlayerTurnPanel = ({
   return (
     <div>
       <p>C'est ton tour ! Que veux-tu faire ?</p>
-      <div className='flex flex--row  gap20 flex--wrap'>
+      <div className='flex flex--row gap10 flex--wrap'>
         {weaponActions.length > 0 && (
-          <div className="action-group flex flex--row">
+          <div className="action-group flex flex--start flex--row  gap10 flex--wrap">
             <h4 className="self-center">Attaques d'Armes</h4>
+
             {weaponActions.map(action => (
               <ActionButton
                 key={action.id}
@@ -73,11 +74,13 @@ const PlayerTurnPanel = ({
                 onSelectAction={onSelectAction}
               />
             ))}
+
+
           </div>
         )}
 
         {spellActions.length > 0 && (
-          <div className="action-group flex flex--row">
+          <div className="action-group flex flex--start flex--row  gap10 flex--wrap">
             <h4 className="self-center">Sorts</h4>
             {spellActions.map(action => (
               <ActionButton
@@ -88,6 +91,7 @@ const PlayerTurnPanel = ({
             ))}
           </div>
         )}
+
 
         {availableActions.length === 0 && (
           <p>Aucune action offensive disponible.</p>

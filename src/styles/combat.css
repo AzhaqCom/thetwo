@@ -1,46 +1,47 @@
 /* === INTERFACE DE COMBAT AMÉLIORÉE === */
 
 .combat-interface {
-    display: flex;
-    flex-direction: row;
-    height: 100%;
-    gap: var(--spacing-md);
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  gap: var(--spacing-md);
 }
 
 /* === GRILLE DE COMBAT === */
 .combat-grid-container {
-    width: 60%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    background: var(--color-bg-secondary);
-    border-radius: var(--radius-lg);
-    border: 2px solid var(--color-border-primary);
-    box-shadow: var(--shadow-large);
-   
+  width: 60%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border-primary);
+  box-shadow: var(--shadow-large);
+
 }
 
 .combat-grid {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-    gap: 2px;
-    background-color: var(--color-border-primary);
-    padding: var(--spacing-sm);
-    border-radius: var(--radius-md);
-    width: 100%;
-    aspect-ratio: 8/6;
-    height: 93%;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 2px;
+  background-color: var(--color-border-primary);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-md);
+  width: 98%;
+  aspect-ratio: 8/6;
+  height: 99%;
+  flex: 1;
 }
 
 /* === CONTENEUR LATÉRAL DE COMBAT === */
 .combat-side-container {
-    width: 40%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
+  width: 40%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 .grid-square {
@@ -212,7 +213,7 @@
 
 .character-hp-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-health-full), var(--color-health-medium));
+ 
   transition: var(--transition-normal);
   border-radius: var(--radius-sm);
 }
@@ -378,26 +379,26 @@
 
 /* === CONTRÔLES DE COMBAT === */
 .combat-controls {
-    flex: 0 0 auto;
-    padding: var(--spacing-md);
-    background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary));
-    border-radius: var(--radius-lg);
-    border: 2px solid var(--color-border-primary);
-    box-shadow: var(--shadow-medium);
-    /* min-height: 200px; */
+  flex: 0 0 auto;
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary));
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border-primary);
+  box-shadow: var(--shadow-medium);
+  /* min-height: 200px; */
 }
 
 /* === CONTENEUR DU LOG DE COMBAT === */
 .combat-log-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .combat-log-container #combat-log {
-    height: 100%;
-    margin-bottom: 0;
+  height: 100%;
+  margin-bottom: 0;
 }
 
 .combat-controls h3 {
@@ -407,7 +408,7 @@
   font-size: 1.2em;
 }
 
-.combat-controls button {
+/* .combat-controls button {
   margin: var(--spacing-xs);
   padding: var(--spacing-sm) var(--spacing-md);
   font-size: 14px;
@@ -426,7 +427,7 @@
   transform: translateY(-2px);
   box-shadow: var(--shadow-medium);
   background: linear-gradient(135deg, rgba(49, 57, 65, 0.8), var(--color-info));
-}
+} */
 
 .combat-controls p {
   margin: var(--spacing-sm) 0;
@@ -437,25 +438,26 @@
 
 /* === ACTIONS DE COMBAT === */
 .action-group {
-  margin-bottom: var(--spacing-sm);
   padding: var(--spacing-sm);
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-primary);
-  
+  width: 100%;
+  display: flex;
 }
 
 .action-group h4 {
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-xs);
   font-size: 1em;
+  line-height: 1.1em;
   border-bottom: 1px solid var(--color-border-secondary);
   padding-bottom: var(--spacing-xs);
 }
 
 .action-button {
   display: block;
-  width: 100%;
+  width: fit-content;
   margin-bottom: 4px;
   padding: 6px 8px;
   background: var(--color-bg-secondary);
@@ -483,6 +485,10 @@
   border-left: 3px solid var(--color-weapon);
 }
 
+.action-button.movement {
+  border-left: 3px solid var(--color-movement-valid)
+}
+
 .action-button.disabled {
   opacity: var(--opacity-disabled);
   cursor: not-allowed;
@@ -496,57 +502,57 @@
 
 /* === RESPONSIVE DESIGN === */
 @media (max-width: 1200px) {
-    .combat-interface {
-        flex-direction: column;
-        gap: var(--spacing-sm);
-    }
-    
-    .combat-grid-container {
-        width: 100%;
-        height: 60%;
-    }
-    
-    .combat-side-container {
-        width: 100%;
-        height: 40%;
-        flex-direction: row;
-        gap: var(--spacing-sm);
-    }
-    
-    .combat-controls {
-        flex: 0 0 50%;
-        min-height: auto;
-    }
-    
-    .combat-log-container {
-        flex: 1;
-    }
+  .combat-interface {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .combat-grid-container {
+    width: 100%;
+    height: 60%;
+  }
+
+  .combat-side-container {
+    width: 100%;
+    height: 40%;
+    flex-direction: row;
+    gap: var(--spacing-sm);
+  }
+
+  .combat-controls {
+    flex: 0 0 50%;
+    min-height: auto;
+  }
+
+  .combat-log-container {
+    flex: 1;
+  }
 }
 
 @media (max-width: 768px) {
-    .combat-interface {
-        flex-direction: column;
-    }
-    
-    .combat-grid-container {
-        width: 100%;
-        height: 50%;
-        padding: var(--spacing-xs);
-    }
-    
-    .combat-side-container {
-        width: 100%;
-        height: 50%;
-        flex-direction: column;
-    }
-    
-    .combat-controls {
-        flex: 0 0 auto;
-        min-height: 150px;
-    }
-    
-    .combat-log-container {
-        flex: 1;
-        min-height: 200px;
-    }
+  .combat-interface {
+    flex-direction: column;
+  }
+
+  .combat-grid-container {
+    width: 100%;
+    height: 50%;
+    padding: var(--spacing-xs);
+  }
+
+  .combat-side-container {
+    width: 100%;
+    height: 50%;
+    flex-direction: column;
+  }
+
+  .combat-controls {
+    flex: 0 0 auto;
+    min-height: 150px;
+  }
+
+  .combat-log-container {
+    flex: 1;
+    min-height: 200px;
+  }
 }

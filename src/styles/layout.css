@@ -81,6 +81,13 @@
   align-items: flex-start;
 }
 
+.flex--start {
+ justify-content: flex-start;
+}
+
+.flex--end {
+  justify-content: space-between;
+}
 .flex--between {
   justify-content: space-between;
 }

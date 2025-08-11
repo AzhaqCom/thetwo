@@ -32,7 +32,7 @@ const CombatLog = ({ logMessages = [] }) => {
       <div id="combat-log">
         <div id="log-entries" ref={logRef}>
           <strong>Journal :</strong>
-          <p>En attente d'actions de combat...</p>
+          <p>En attente d'actions ...</p>
         </div>
       </div>
     );

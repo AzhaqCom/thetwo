@@ -39,16 +39,15 @@ export const useCombatManager = ({
 
     // Initialize combat when encounterData is available
     const initializeCombat = useCallback(() => {
-        console.log('🚀 Starting initializeCombat');
-        console.log('📦 encounterData:', encounterData);
+       
         
         // Extract enemyPositions from the encounter data structure
         const customEnemyPositions = encounterData?.enemyPositions || null;
-        console.log('🎯 Custom enemy positions:', customEnemyPositions);
+     
         
         // Create enemies from encounter data
         const encounters = encounterData?.enemies || [];
-        console.log('⚔️ Encounters to process:', encounters);
+       
         
         const initialCombatEnemies = encounters.flatMap((encounter, encounterIndex) => {
             const template = enemyTemplates[encounter.type];
@@ -57,7 +56,7 @@ export const useCombatManager = ({
                
                 return [];
             }
-            console.log('✅ Found template for:', encounter.type);
+           
             return Array(encounter.count)
                 .fill(null)
                 .map((_, index) => ({
@@ -81,7 +80,7 @@ export const useCombatManager = ({
             return;
         }
 
-        console.log('👹 Created enemies:', initialCombatEnemies);
+     
        
 
         // Roll initiative for enemies
@@ -130,7 +129,7 @@ export const useCombatManager = ({
             return b.initiative - a.initiative;
         });
 
-        console.log('🎲 Turn order:', order);
+     
        
 
         // Update state
@@ -139,37 +138,31 @@ export const useCombatManager = ({
         setIsInitialized(true);
 
         // Initialize positions
-        console.log('📍 Initializing positions...');
+       
         combatMovement.initializeCombatPositions(initialCombatEnemies, !!playerCompanion, customEnemyPositions);
 
         // Add combat messages
-        console.log('📝 Adding combat messages...');
+      
         addCombatMessage('Un combat commence !');
         order.forEach((entity) => {
             addCombatMessage(`${entity.name} a lancé l'initiative et a obtenu ${entity.initiative}.`, 'initiative');
         });
 
         // Move to initiative display phase
-        console.log('🎯 Setting phase to initiative-display');
+      
         setCombatPhase('initiative-display');
         
-        console.log('✅ initializeCombat completed');
+     
      
     }, [encounterData, playerCharacter, playerCompanion, addCombatMessage, combatMovement]);
 
     // Initialize combat when encounterData is available
     useEffect(() => {
-        console.log('🎮 Combat initialization check:', { 
-            encounterData: !!encounterData, 
-            isInitialized, 
-            combatKey,
-            prevCombatKey: prevCombatKeyRef.current,
-            phase: combatPhase 
-        });
+     
 
         // Reset on new combat (only when combatKey actually changes)
         if (combatKey !== undefined && combatKey !== prevCombatKeyRef.current) {
-            console.log('🔄 Resetting combat due to combatKey change');
+          
             prevCombatKeyRef.current = combatKey;
             setIsInitialized(false);
             setDefeated(false);
@@ -191,7 +184,7 @@ export const useCombatManager = ({
 
         // Initialize combat if not already done and we have encounter data
         if (!isInitialized && encounterData && encounterData.enemies && encounterData.enemies.length > 0) {
-            console.log('🚀 Initializing new combat');
+        
             initializeCombat();
         }
     }, [encounterData, combatKey, initializeCombat, isInitialized]);
@@ -199,7 +192,7 @@ export const useCombatManager = ({
     // Debug: Log enemy positions when they change
     useEffect(() => {
         if (encounterData && encounterData.enemyPositions) {
-            console.log('🎯 Enemy positions from scene:', encounterData.enemyPositions);
+    
         }
     }, [encounterData]);
 

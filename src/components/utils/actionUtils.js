@@ -31,9 +31,7 @@ export const getAvailableActions = (character) => {
     }
 
     // Add class abilities (future implementation)
-    if (character.abilities) {
-        // TODO: Implement class abilities
-    }
+
 
     return actions;
 };
@@ -85,7 +83,7 @@ export const getPrimaryCombatStat = (character) => {
  */
 export const getSpellcastingAbility = (character) => {
     if (!character.spellcasting) return null;
-    
+
     return character.spellcasting.ability || (() => {
         switch (character.class) {
             case 'Magicien':
@@ -120,7 +118,7 @@ export const calculateAttackBonus = (action, character) => {
         case 'weapon':
             // Determine which stat to use
             let statToUse = action.stat || 'force';
-            
+
             // Handle finesse weapons - can choose between Force and Dexterity
             if (action.properties?.includes('finesse')) {
                 const forceBonus = getModifier(character.stats.force);
@@ -155,7 +153,7 @@ export const calculateActionDamage = (action, character) => {
         case 'weapon':
             // Determine which stat to use for damage bonus
             let statToUse = action.stat || 'force';
-            
+
             // Handle finesse weapons
             if (action.properties?.includes('finesse')) {
                 const forceBonus = getModifier(character.stats.force);

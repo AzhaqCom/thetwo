@@ -39,7 +39,7 @@ export const spells = {
 
     "Boule de Feu": {
         name: "Boule de Feu",
-        level: 0,
+        level: 2,
         school: "Évocation",
         castingTime: "1 action",
         range: "45 mètres",

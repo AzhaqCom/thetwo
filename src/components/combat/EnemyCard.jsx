@@ -2,8 +2,8 @@ import React from 'react';
 import { HeartIcon } from '../ui/Icons';
 
 const EnemyCard = ({ enemy, isCurrentTurn, isSelected, targetable }) => {
-  const hpPercentage = enemy.maxHP > 0 
-    ? Math.max(0, (enemy.currentHP / enemy.maxHP) * 100) 
+  const hpPercentage = enemy.maxHP > 0
+    ? Math.max(0, (enemy.currentHP / enemy.maxHP) * 100)
     : 0;
 
   return (
@@ -25,7 +25,11 @@ const EnemyCard = ({ enemy, isCurrentTurn, isSelected, targetable }) => {
       <div className="character-hp-bar">
         <div
           className="character-hp-bar-fill"
-          style={{ width: `${hpPercentage}%` }}
+          style={{
+            width: `${hpPercentage}%`,
+            backgroundColor: `hsl(${hpPercentage * 1.2}, 80%, 40%)`,
+            transition: "width 0.3s ease, background-color 0.3s ease"
+          }}
         />
       </div>
       <div className="character-ac">

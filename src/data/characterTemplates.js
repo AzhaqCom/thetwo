@@ -8,7 +8,7 @@ export const characterTemplates = {
         historic: "Érudit de l'Académie",
         maxHP: 12,
         currentHP: 12,
-        ac: 13,
+        ac: 10,
         initiative: 0,
         speed: "9m",
         proficiencyBonus: 2,
@@ -32,7 +32,7 @@ export const characterTemplates = {
             ability: "intelligence",
             spellSlots: {},
             knownSpells: [], 
-            cantrips: ["Projectile Magique", "Rayon de givre","Boule de Feu"],
+            cantrips: ["Projectile Magique", "Rayon de givre"],
             preparedSpells: ["Armure du Mage"],
             activeSpells: {}
         },
@@ -93,12 +93,12 @@ export const characterTemplates = {
         hitDiceType: 8,
         type: "player",
         stats: {
-            force: 8,
+            force: 15,
             dexterite: 16, // Stat principale
             constitution: 14,
             intelligence: 13,
             sagesse: 12,
-            charisme: 15
+            charisme: 8
         },
         proficiencies: {
             saves: ["dexterite", "intelligence"],
@@ -106,7 +106,7 @@ export const characterTemplates = {
         },
         weaponProficiencies: ["simple", "longsword", "rapier", "shortsword", "lightCrossbow"],
         armorProficiencies: ["light"],
-        weapons: ["rapier", "shortbow", "dagger", "dagger"], // Deux dagues
+        weapons: ["rapier", "shortbow", "dagger"], // Deux dagues
         armor: "leather", // CA 11 + DEX
         specialAbilities: {
             sneakAttack: {

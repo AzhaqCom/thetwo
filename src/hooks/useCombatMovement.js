@@ -20,15 +20,15 @@ export const useCombatMovement = (
     // Initialize combat positions when enemies are set up
     const initializeCombatPositions = useCallback((enemies, hasCompanion, customEnemyPositions = null) => {
         const positions = {};
-        
+
         // Place player at bottom-left
         positions.player = { x: 0, y: 5 };
-        
+
         // Place companion next to player if exists
         if (hasCompanion) {
             positions.companion = { x: 1, y: 5 };
         }
-        
+
         // Place enemies using custom positions or default logic
         if (customEnemyPositions && Array.isArray(customEnemyPositions)) {
             enemies.forEach((enemy, index) => {
@@ -61,13 +61,13 @@ export const useCombatMovement = (
                 positions[enemy.name] = { x, y };
             });
         }
-        
+
         setCombatPositions(positions);
     }, []);
 
     const handleMoveCharacter = useCallback((characterId, newPosition) => {
         const oldPosition = combatPositions[characterId];
-        
+
         // Check for opportunity attacks
         if (characterId === 'player' || characterId === 'companion') {
             const opportunityAttacks = checkOpportunityAttacks(characterId, oldPosition, newPosition);
@@ -75,7 +75,7 @@ export const useCombatMovement = (
                 executeOpportunityAttack(attack.attacker, attack.target);
             });
         }
-        
+
         setCombatPositions(prev => ({
             ...prev,
             [characterId]: newPosition
@@ -86,13 +86,13 @@ export const useCombatMovement = (
 
     const updateEnemyPosition = useCallback((enemyName, newPosition) => {
         const oldPosition = combatPositions[enemyName];
-        
+
         // Check for opportunity attacks when enemy moves
         const opportunityAttacks = checkOpportunityAttacks(enemyName, oldPosition, newPosition);
         opportunityAttacks.forEach(attack => {
             executeOpportunityAttack(attack.attacker, attack.target);
         });
-        
+
         setCombatPositions(prev => ({
             ...prev,
             [enemyName]: newPosition
@@ -101,23 +101,23 @@ export const useCombatMovement = (
 
     const checkOpportunityAttacks = useCallback((movingCharacterId, oldPos, newPos) => {
         if (!oldPos || !newPos) return [];
-        
+
         const attacks = [];
-        
+
         if (movingCharacterId === 'player' || movingCharacterId === 'companion') {
             // Player/companion moving - check for enemy opportunity attacks
             const livingEnemies = combatEnemies.filter(e => e.currentHP > 0);
-            
+
             livingEnemies.forEach(enemy => {
                 const enemyPos = combatPositions[enemy.name];
                 if (!enemyPos) return;
-                
+
                 // Double check that enemy is still alive
                 if (enemy.currentHP <= 0) return;
-                
+
                 const wasAdjacent = Math.abs(oldPos.x - enemyPos.x) <= 1 && Math.abs(oldPos.y - enemyPos.y) <= 1;
                 const isStillAdjacent = Math.abs(newPos.x - enemyPos.x) <= 1 && Math.abs(newPos.y - enemyPos.y) <= 1;
-                
+
                 if (wasAdjacent && !isStillAdjacent) {
                     attacks.push({
                         attacker: enemy,
@@ -130,14 +130,14 @@ export const useCombatMovement = (
             // First check if the moving enemy is still alive
             const movingEnemy = combatEnemies.find(e => e.name === movingCharacterId);
             if (movingEnemy && movingEnemy.currentHP <= 0) return [];
-            
+
             const playerPos = combatPositions.player;
             const companionPos = combatPositions.companion;
-            
+
             if (playerPos && playerCharacter.currentHP > 0) {
                 const wasAdjacent = Math.abs(oldPos.x - playerPos.x) <= 1 && Math.abs(oldPos.y - playerPos.y) <= 1;
                 const isStillAdjacent = Math.abs(newPos.x - playerPos.x) <= 1 && Math.abs(newPos.y - playerPos.y) <= 1;
-                
+
                 if (wasAdjacent && !isStillAdjacent) {
                     attacks.push({
                         attacker: 'player',
@@ -145,11 +145,11 @@ export const useCombatMovement = (
                     });
                 }
             }
-            
+
             if (companionPos && companionCharacter && companionCharacter.currentHP > 0) {
                 const wasAdjacent = Math.abs(oldPos.x - companionPos.x) <= 1 && Math.abs(oldPos.y - companionPos.y) <= 1;
                 const isStillAdjacent = Math.abs(newPos.x - companionPos.x) <= 1 && Math.abs(newPos.y - companionPos.y) <= 1;
-                
+
                 if (wasAdjacent && !isStillAdjacent) {
                     attacks.push({
                         attacker: 'companion',
@@ -158,53 +158,50 @@ export const useCombatMovement = (
                 }
             }
         }
-        
+
         return attacks;
     }, [combatEnemies, combatPositions, playerCharacter, companionCharacter]);
 
     const executeOpportunityAttack = useCallback((attacker, targetId) => {
         // If attacker is an enemy, check if it's still alive
         if (typeof attacker === 'object' && attacker.currentHP <= 0) {
-            console.log(`❌ Dead enemy ${attacker.name} cannot make opportunity attack`);
+            console.log(attacker.currentHP)
             return;
         }
-        
+
         const attack = attacker.attacks?.[0];
         if (!attack) return;
-        
+
         const attackBonus = attack.attackBonus || 0;
         const attackRoll = Math.floor(Math.random() * 20) + 1 + attackBonus;
-        
+
         let targetAC = 10;
         if (targetId === 'player') targetAC = playerCharacter.ac;
         else if (targetId === 'companion' && companionCharacter) targetAC = companionCharacter.ac;
-        
+
         if (attackRoll >= targetAC) {
             const { damage, message } = calculateDamage(attack);
+            console.log(attacker.currentHP)
             addCombatMessage(`Attaque d'opportunité ! ${attacker.name} touche avec ${attack.name} et inflige ${message}.`, 'enemy-damage');
-            
+
             if (targetId === 'player') {
                 onPlayerTakeDamage(damage, `Attaque d'opportunité de ${attacker.name} !`);
             } else if (targetId === 'companion') {
                 onCompanionTakeDamage(damage, `Attaque d'opportunité de ${attacker.name} sur ${companionCharacter.name} !`);
             }
         } else {
+            console.log(attacker.currentHP)
             addCombatMessage(`Attaque d'opportunité ! ${attacker.name} rate son attaque.`, 'miss');
         }
     }, [playerCharacter, companionCharacter, addCombatMessage, onPlayerTakeDamage, onCompanionTakeDamage]);
 
     const calculateEnemyMovementPosition = useCallback((enemy) => {
         let currentPos;
-        
+
         // Handle companion positioning
         if (enemy.type === 'companion') {
             currentPos = combatPositions.companion;
             if (!currentPos) return null;
-            
-            // Debug: Log companion movement calculation
-            console.log('Calculating companion movement from:', currentPos);
-            console.log('Available enemies:', combatEnemies.filter(e => e.currentHP > 0).map(e => ({ name: e.name, pos: combatPositions[e.name] })));
-            
             return calculateEnemyMovement(enemy, currentPos, {
                 combatPositions,
                 playerCharacter,
@@ -212,11 +209,11 @@ export const useCombatMovement = (
                 combatEnemies
             });
         }
-        
+
         // Handle enemy positioning
         currentPos = combatPositions[enemy.name];
         if (!currentPos) return null;
-        
+
         return calculateEnemyMovement(enemy, currentPos, {
             combatPositions,
             playerCharacter,
@@ -239,7 +236,7 @@ export const useCombatMovement = (
         setSelectedAoESquares,
         aoeCenter,
         setAoECenter,
-        
+
         // Functions
         initializeCombatPositions,
         handleMoveCharacter,

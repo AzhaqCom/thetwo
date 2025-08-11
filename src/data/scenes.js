@@ -40,6 +40,10 @@ Récemment, tu as entendu des murmures concernant une ancienne prophétie liée 
                 action: {
                     type: 'combat',
                     enemies: [{ type: 'gobelin', count: 2 }],
+                    enemyPositions: [
+                        { x: 6, y: 0 },  // Premier gobelin
+                        { x: 7, y: 0 }   // Deuxième gobelin
+                    ],
                     next: 'scene4'
                 }
             }
@@ -326,6 +330,9 @@ Récemment, tu as entendu des murmures concernant une ancienne prophétie liée 
                 action: {
                     type: 'combat',
                     enemies: [{ type: 'mephiteBoueux', count: 1 }],
+                       enemyPositions: [
+                        { x: 6, y: 0 }
+                    ],
                     next: 'scene24'
                 }
             }

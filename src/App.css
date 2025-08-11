@@ -49,16 +49,16 @@ p {
     color: var(--color-text-primary);
     overflow: hidden;
     box-shadow: var(--shadow-medium);
-    height: calc(100vh - 20px);
+    height: calc(100vh - 35px);
     display: flex;
     flex-direction: column;
 }
 
 /* Combat mode main content */
-.main-content.combat-mode {
+/* .main-content.combat-mode {
     width: 75%;
     height: calc(100vh - 16px);
-}
+} */
 
 .scene-container {
     min-height: 400px;
@@ -113,13 +113,9 @@ p {
     box-shadow: var(--shadow-medium);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-sm);
 }
 
-/* Combat mode sidebars */
-.sidebar.combat-mode {
-    width: 25%;
-}
 
 /* Styles pour la barre de défilement */
 .sidebar::-webkit-scrollbar {
@@ -128,12 +124,12 @@ p {
 }
 
 .sidebar::-webkit-scrollbar-track {
-    background: var(--color-bg-tertiary);
+    background: var(--color-magic-secondary);
     border-radius: 10px;
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-    background-color: var(--color-border-secondary);
+    background-color: var(--color-magic-secondary);
     border-radius: 10px;
     border: 2px solid var(--color-bg-tertiary);
 }
@@ -144,7 +140,7 @@ p {
 
 .sidebar {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-border-secondary) var(--color-bg-tertiary);
+    scrollbar-color: var(--color-magic-secondary) var(--color-bg-tertiary);
 }
 
 h1,
@@ -158,8 +154,8 @@ h5 {
 }
 
 button {
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
+    padding: 12px;
+    font-size: 14px;
     border: none;
     background-color: var(--color-bg-tertiary);
     color: var(--color-text-primary);
@@ -170,13 +166,17 @@ button {
 
 button:hover {
     background-color: var(--color-bg-quaternary);
+    border-left: 3px solid var(--color-movement-valid);
 }
 
 .inventory,
 .spellcasting,
 .weapon-panel {
-    background-color: var(--color-bg-secondary);
-    padding: 15px;
+    background-color: #333333;
+    border: 1px solid #555;
+    padding: 10px;
+    color: #f0e6d3;
+    font-size: 0.9rem;
     border-radius: var(--radius-sm);
     border: 1px solid var(--color-border-primary);
     box-shadow: var(--shadow-small);
@@ -185,9 +185,9 @@ button:hover {
 .inventory h4,
 .spellcasting h4,
 .weapon-panel h4 {
-    color: var(--color-text-primary);
+
     margin-top: 0;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     border-bottom: 1px solid var(--color-border-secondary);
     padding-bottom: 5px;
 }
@@ -197,6 +197,7 @@ button:hover {
 .weapon-panel ul {
     list-style: none;
     padding: 0;
+    margin: 5px 0;
 }
 
 .inventory li,
@@ -206,7 +207,7 @@ button:hover {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     background-color: var(--color-bg-tertiary);
     padding: 8px;
     border-radius: var(--radius-sm);
@@ -219,10 +220,10 @@ button:hover {
     color: var(--color-text-secondary);
 }
 
-.inventory li strong {
+/* .inventory li strong {
     font-size: 16px;
     line-height: 16px;
-}
+} */
 
 .inventory li.item {
     gap: var(--spacing-xs);
@@ -231,7 +232,7 @@ button:hover {
 .inventory li.item span {
     font-size: 14px;
     line-height: 14px;
-    text-align: center;
+    text-align: left;
 }
 
 .inventory button,
@@ -245,6 +246,7 @@ button:hover {
     cursor: pointer;
     margin-left: 10px;
     transition: var(--transition-fast);
+    align-self: center;
 }
 
 .inventory button:hover,
@@ -254,7 +256,7 @@ button:hover {
 }
 
 #combat-log {
-    height: 100%;
+    min-height: 210px;
     overflow: hidden;
     border: 1px solid var(--color-border-primary);
     padding: var(--spacing-sm);
@@ -263,6 +265,12 @@ button:hover {
     box-shadow: var(--shadow-medium);
     display: flex;
     flex-direction: column;
+}
+
+.scene-textuel #combat-log,
+.short-rest-panel #combat-log,
+.long-rest-panel #combat-log {
+    height: 210px;
 }
 
 #log-entries {
@@ -276,7 +284,7 @@ button:hover {
 #combat-log p {
     margin: 0;
     padding: var(--spacing-xs) 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
     font-size: 0.9rem;
     line-height: 1.4;
 }
@@ -291,7 +299,7 @@ button:hover {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1rem;
+    padding: 12px 3px;
 
 }
 
@@ -415,10 +423,15 @@ button:hover {
 
 .companion-display-container {
     display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    gap: 24px;
-    margin: 20px 0;
+    gap: 10px;
+    margin: 0px 0;
     flex-wrap: wrap;
+    padding: 5px;
+    border-radius: var(--radius-sm);
+    background: #333;
 }
 
 .companion-card {
@@ -660,11 +673,11 @@ button:hover {
     margin-bottom: 1px;
 }
 
-.character-hp-bar-fill {
+/* .character-hp-bar-fill {
     height: 100%;
     background-color: #d32f2f;
     transition: width 0.3s ease;
-}
+} */
 
 .character-ac {
     font-size: 10px;
@@ -884,7 +897,7 @@ button:hover {
     height: 58px;
     object-fit: contain;
     border-radius: 3px;
-    margin:0 auto;
+    margin: 0 auto;
     flex-shrink: 0;
 }
 
@@ -953,6 +966,7 @@ button:hover {
     color: #f0e6d3;
     font-size: 0.9rem;
     flex-grow: 1;
+    border-radius: var(--radius-sm);
     /* Permet à la fiche de personnage de prendre la place restante dans sa sidebar */
 }
 
@@ -986,9 +1000,9 @@ button:hover {
 
 .character-sheet .abilities {
     display: flex;
-    justify-content: space-evenly;
+    justify-content: center;
     flex-wrap: wrap;
-    gap: 2px 13px;
+    gap: 2px 5px;
     margin-bottom: 10px;
 }
 

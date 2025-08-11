@@ -75,13 +75,13 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
         maxRange = attack.range || 1; // Default melee range
     }
     
-    console.log(`${attacker.name || attacker.type} targeting - Attack type: ${attack.type}, Max range: ${maxRange}`);
+ 
     
     // Check player as target (if attacker is enemy)
     if (attacker.type === 'enemy' && playerCharacter && playerCharacter.currentHP > 0 && combatPositions.player) {
         const playerPos = combatPositions.player;
         const distance = Math.abs(attackerPos.x - playerPos.x) + Math.abs(attackerPos.y - playerPos.y);
-        console.log(`Distance to player: ${distance}, Player pos:`, playerPos);
+    
         if (distance <= maxRange) {
             targets.push({
                 ...playerCharacter,
@@ -89,7 +89,7 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
                 name: playerCharacter.name,
                 ac: playerCharacter.ac
             });
-            console.log(`Added player as target`);
+       
         }
     }
     
@@ -97,7 +97,7 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
     if (attacker.type === 'enemy' && companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
         const companionPos = combatPositions.companion;
         const distance = Math.abs(attackerPos.x - companionPos.x) + Math.abs(attackerPos.y - companionPos.y);
-        console.log(`Distance to companion: ${distance}, Companion pos:`, companionPos);
+       
         if (distance <= maxRange) {
             targets.push({
                 ...companionCharacter,
@@ -105,7 +105,7 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
                 name: companionCharacter.name,
                 ac: companionCharacter.ac
             });
-            console.log(`Added companion as target`);
+          
         }
     }
     
@@ -116,7 +116,7 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
                 const enemyPos = combatPositions[enemy.name];
                 if (enemyPos) {
                     const distance = Math.abs(attackerPos.x - enemyPos.x) + Math.abs(attackerPos.y - enemyPos.y);
-                    console.log(`Distance to ${enemy.name}: ${distance}, Enemy pos:`, enemyPos);
+                 
                     if (distance <= maxRange) {
                         targets.push({
                             ...enemy,
@@ -124,14 +124,14 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
                             name: enemy.name,
                             ac: enemy.ac
                         });
-                        console.log(`Added ${enemy.name} as target`);
+                     
                     }
                 }
             }
         });
     }
     
-    console.log(`Final targets for ${attacker.name || attacker.type}:`, targets);
+
     return targets;
 };
 
@@ -146,15 +146,6 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     const { combatPositions, playerCharacter, companionCharacter, combatEnemies } = combatState;
     
     if (!currentPos || !combatPositions) return null;
-    
-    // Debug logging
-    console.log(`Calculating movement for ${enemy.name || enemy.type}:`, {
-        currentPos,
-        enemyType: enemy.type,
-        hasAttacks: !!enemy.attacks,
-        movement: enemy.movement
-    });
-    
     // Find potential targets
     const targets = [];
     
@@ -178,7 +169,6 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
         });
     }
     
-    console.log(`Found ${targets.length} potential targets:`, targets);
     
     if (targets.length === 0) return null;
     
@@ -195,8 +185,6 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     });
     
     if (!closestTarget) return null;
-    
-    console.log(`Closest target at distance ${closestDistance}:`, closestTarget);
     
     // Determine movement strategy based on enemy attacks
     const hasRangedAttack = enemy.attacks?.some(attack => 
@@ -215,11 +203,10 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
         idealDistance = 1; // Mixed, prefer melee range
     }
     
-    console.log(`Attack analysis - Melee: ${hasMeleeAttack}, Ranged: ${hasRangedAttack}, Ideal distance: ${idealDistance}`);
     
     // If already at ideal distance, don't move
     if (closestDistance <= idealDistance) {
-        console.log('Already at ideal distance, no movement needed');
+
         return null;
     }
     
@@ -227,8 +214,6 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     const maxMovement = enemy.movement || 6;
     let bestPosition = null;
     let bestScore = -1;
-    
-    console.log(`Calculating movement with max range: ${maxMovement}`);
     
     // Check all positions within movement range
     for (let dx = -maxMovement; dx <= maxMovement; dx++) {
@@ -258,8 +243,6 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
             }
         }
     }
-    
-    console.log(`Best position found:`, bestPosition, `with score:`, bestScore);
     return bestPosition;
 };
 

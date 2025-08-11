@@ -127,19 +127,17 @@ const CombatPanel = ({
 
     const handleTargetSelection = useCallback(
         (enemy) => {
-            console.log('🎯 Target selection called with:', enemy);
-            console.log('🎯 Current playerAction:', combatManager.playerAction);
-            console.log('🎯 Current actionTargets:', combatManager.actionTargets);
+          
 
             if (combatManager.playerAction?.areaOfEffect) {
-                console.log('🔥 Handling AoE spell');
+            
                 // Handle AoE spell targeting
                 const centerPos = enemy.isPosition ? { x: enemy.x, y: enemy.y } : combatManager.combatPositions[enemy.name];
                 if (centerPos) {
-                    console.log('🎯 Setting AoE center at:', centerPos);
+                  
                     combatManager.setAoECenter(centerPos);
                     const affectedSquares = calculateAoESquares(centerPos, combatManager.playerAction.areaOfEffect);
-                    console.log('🔥 Affected squares:', affectedSquares);
+                  
                     combatManager.setSelectedAoESquares(affectedSquares);
 
                     // Find all targets in affected squares
@@ -151,17 +149,13 @@ const CombatPanel = ({
                         }
                     });
 
-                    console.log('AoE Targets found:', targets);
-
-                    // Set targets and execute immediately
-                    console.log('🎯 Setting targets:', targets);
+                   
                     handleExecuteAction(targets); // Pass targets directly
                 }
             } else {
-                console.log('🎯 Handling single target spell/attack');
-                // Handle single target or projectile spells - need to target actual enemies
+ 
                 const maxTargets = combatManager.playerAction?.projectiles || 1;
-                console.log('🎯 Max targets:', maxTargets);
+               
 
                 // For single target spells, we need to find the actual enemy at the position
                 let actualTarget = enemy;
@@ -174,7 +168,7 @@ const CombatPanel = ({
                 }
 
                 const newTargets = [...combatManager.actionTargets, actualTarget];
-                console.log('🎯 New targets array:', newTargets);
+              
                 combatManager.setActionTargets(newTargets);
 
                 // Auto-execute when we have enough targets
@@ -221,7 +215,7 @@ const CombatPanel = ({
                     <div className="combat-controls">
                         <h3>Phase de Mouvement</h3>
                         <p>Clique sur une case verte pour te déplacer (6 cases maximum).</p>
-                        <button onClick={() => {
+                        <button className='action-button movement' onClick={() => {
                             combatManager.setShowMovementFor(null);
                             combatManager.setCombatPhase('player-action');
                         }}>

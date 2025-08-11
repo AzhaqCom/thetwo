@@ -179,20 +179,14 @@ export const useCombatActionHandler = ({
         const action = playerAction;
         const targets = directTargets || actionTargets; // Use direct targets if provided
 
-        console.log('🚀 Executing action:', action?.name);
-        console.log('🎯 With targets:', targets);
-        console.log('📊 Targets length:', targets?.length);
-        console.log('🎮 Action details:', action);
 
         if (!action) {
-            console.log('❌ No action to execute');
+         
             return;
         }
 
         if (targets.length === 0) {
-            console.log('❌ No targets for action');
-            console.log('📊 actionTargets state:', actionTargets);
-            console.log('📊 directTargets:', directTargets);
+       
             addCombatMessage(`Aucune cible trouvée pour ${action.name}.`, 'miss');
             setPlayerAction(null);
             setActionTargets([]);
@@ -211,7 +205,7 @@ export const useCombatActionHandler = ({
         
         if (invalidTargets.length > 0) {
             addCombatMessage(`Certaines cibles sont hors de portée.`, 'miss');
-            console.log('❌ Some targets out of range:', invalidTargets);
+          
             setPlayerAction(null);
             setActionTargets([]);
             setSelectedAoESquares([]);
@@ -224,12 +218,12 @@ export const useCombatActionHandler = ({
 
         switch (action.actionType) {
             case 'spell':
-                console.log('🔮 Executing spell:', action.name);
+            
                 actionExecuted = executeSpellAttack(action, targets);
                 break;
                 
             case 'weapon':
-                console.log('⚔️ Executing weapon attack:', action.name);
+              
                 // Pour les armes, on attaque chaque cible individuellement
                 targets.forEach(target => {
                     executeWeaponAttack(action, target);
@@ -238,13 +232,13 @@ export const useCombatActionHandler = ({
                 break;
                 
             default:
-                console.log('❌ Unsupported action type:', action.actionType);
+           
                 addCombatMessage(`Type d'action "${action.actionType}" non supporté.`, 'miss');
                 break;
         }
 
         if (actionExecuted) {
-            console.log('✅ Action executed successfully, cleaning up');
+      
             setPlayerAction(null);
             setActionTargets([]);
             setSelectedAoESquares([]);
@@ -252,7 +246,7 @@ export const useCombatActionHandler = ({
             setShowTargetingFor(null);
             handleNextTurn();
         } else {
-            console.log('❌ Action execution failed');
+            
         }
     }, [
         playerAction,

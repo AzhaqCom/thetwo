@@ -12,6 +12,7 @@ const CompanionDisplay = ({ companion }) => {
   
   return (
     <div className="companion-display-container">
+      <h4>Compagnon</h4>
       <div
         className="companion-card"
         title={`${companion.name} - CA: ${companion.ac}`}

@@ -11,7 +11,11 @@ export const HPBar = ({ currentHP, maxHP }) => {
       <div className="hp-bar-background">
         <div
           className="hp-bar-fill"
-          style={{ width: `${hpPercentage}%` }}
+          style={{
+            width: `${hpPercentage}%`,
+            backgroundColor: `hsl(${hpPercentage * 1.2}, 80%, 40%)`,
+            transition: "width 0.3s ease, background-color 0.3s ease"
+          }}
         />
       </div>
     </div>

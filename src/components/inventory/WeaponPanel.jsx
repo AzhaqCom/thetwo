@@ -5,7 +5,7 @@ import { calculateAttackBonus, calculateActionDamage, isWeaponProficient } from 
 
 const WeaponItem = React.memo(({ weaponId, character }) => {
   const weapon = weapons[weaponId];
-  
+
   if (!weapon) return null;
 
   const attackBonus = calculateAttackBonus({ ...weapon, actionType: 'weapon' }, character);
@@ -16,7 +16,7 @@ const WeaponItem = React.memo(({ weaponId, character }) => {
     <li className="text-gray-200 mb-2">
       <div className="flex justify-between items-center">
         <span>
-          <strong className="text-white">{weapon.name}</strong> 
+          <strong className="text-white">{weapon.name}</strong>
           ({weapon.damage} {weapon.damageType})
         </span>
         <span className="text-sm text-gray-400">
@@ -47,7 +47,7 @@ const WeaponPanel = ({ character }) => {
   const weaponStats = useMemo(() => {
     const primaryStat = character.class === 'Roublard' ? 'dexterite' : 'force';
     const attackModifier = getModifier(character.stats[primaryStat]) + character.proficiencyBonus;
-    
+
     return {
       attackModifier,
       primaryStat: primaryStat.charAt(0).toUpperCase() + primaryStat.slice(1)
@@ -57,16 +57,6 @@ const WeaponPanel = ({ character }) => {
   return (
     <div className="weapon-panel">
       <h4 className="text-xl font-bold mb-4">Arsenal</h4>
-      
-      <div className="mb-4 p-3 bg-gray-700 rounded-lg">
-        <p className="text-sm text-gray-300">
-          <strong>Bonus d'attaque principal:</strong> +{weaponStats.attackModifier} ({weaponStats.primaryStat})
-        </p>
-        <p className="text-xs text-gray-400 mt-1">
-          Bonus de maîtrise: +{character.proficiencyBonus}
-        </p>
-      </div>
-      
       <h5 className="text-lg font-semibold mt-6 mb-2">Armes Équipées</h5>
       <ul className="list-disc list-inside bg-gray-700 p-4 rounded-lg shadow-md mb-4">
         {character.weapons.map((weaponId, index) => (
