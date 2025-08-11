@@ -62,7 +62,7 @@ const PlayerTurnPanel = ({
   return (
     <div>
       <p>C'est ton tour ! Que veux-tu faire ?</p>
-      <div className='flex flex--row flex--center gap20'>
+      <div className='flex flex--row  gap20 flex--wrap'>
         {weaponActions.length > 0 && (
           <div className="action-group flex flex--row">
             <h4 className="self-center">Attaques d'Armes</h4>

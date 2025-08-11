@@ -499,30 +499,16 @@ button:hover {
 }
 
 /* Combat Grid Styles */
-.combat-grid-container {
+/* .combat-grid-container {
     margin: 0;
     display: flex;
     justify-content: center;
     flex-shrink: 0;
-    /* Prevent grid from shrinking */
-    width: 100%;
-}
 
-.combat-grid {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-    gap: 1px;
-    background-color: #333;
-    padding: 5px;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 100%;
-    aspect-ratio: 8/6;
-    /* Maintain 8:6 ratio */
-}
+} */
 
-.grid-square {
+
+/* .grid-square {
     background-color: #f5f5f5;
     border: 1px solid #ddd;
     display: flex;
@@ -533,8 +519,8 @@ button:hover {
     min-height: 60px;
     position: relative;
     overflow: hidden;
-    /* Keep cards within bounds */
-}
+
+} */
 
 .grid-square:hover {
     background-color: #e0e0e0;
@@ -599,7 +585,7 @@ button:hover {
     bottom: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
     box-sizing: border-box;
 }
 
@@ -894,11 +880,11 @@ button:hover {
 
 .enemy-image-small,
 .companion-image-small {
-    width: 20px;
-    height: 20px;
-    object-fit: cover;
+    width: 40px;
+    height: 58px;
+    object-fit: contain;
     border-radius: 3px;
-    margin-bottom: 1px;
+    margin:0 auto;
     flex-shrink: 0;
 }
 

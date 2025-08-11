@@ -13,6 +13,7 @@ const CombatPanel = ({
     onCombatEnd,
     addCombatMessage,
     combatLog,
+    setCombatLog,
     encounterData,
     onPlayerCastSpell,
     onPlayerTakeDamage,
@@ -47,7 +48,7 @@ const CombatPanel = ({
         calculateEnemyMovementPosition: combatManager.calculateEnemyMovementPosition,
         addCombatMessage
     });
-    
+
     // Use action handler hook
     const { handleExecuteAction } = useCombatActionHandler({
         playerCharacter,
@@ -70,17 +71,17 @@ const CombatPanel = ({
         combatManager.handleMoveCharacter(characterId, newPosition);
         combatManager.setCombatPhase('player-action');
     }, [combatManager]);
- const findCharacterAtPosition = useCallback((x, y) => {
+    const findCharacterAtPosition = useCallback((x, y) => {
         // Check player
         if (combatManager.combatPositions.player && combatManager.combatPositions.player.x === x && combatManager.combatPositions.player.y === y) {
             return { ...playerCharacter, id: 'player', name: playerCharacter.name };
         }
-        
+
         // Check companion
         if (combatManager.combatPositions.companion && combatManager.combatPositions.companion.x === x && combatManager.combatPositions.companion.y === y && combatManager.companionCharacter) {
             return { ...combatManager.companionCharacter, id: 'companion', name: combatManager.companionCharacter.name };
         }
-        
+
         // Check enemies
         for (const enemy of combatManager.combatEnemies) {
             const enemyPos = combatManager.combatPositions[enemy.name];
@@ -88,13 +89,13 @@ const CombatPanel = ({
                 return enemy;
             }
         }
-        
+
         return null;
     }, [combatManager.combatPositions, playerCharacter, combatManager.companionCharacter, combatManager.combatEnemies]);
 
     const calculateAoESquares = useCallback((center, aoeType) => {
         const squares = [];
-        
+
         switch (aoeType.shape) {
             case 'sphere':
                 const radius = Math.floor(aoeType.radius / 5); // Convert feet to squares
@@ -120,7 +121,7 @@ const CombatPanel = ({
                 }
                 break;
         }
-        
+
         return squares;
     }, []);
 
@@ -129,7 +130,7 @@ const CombatPanel = ({
             console.log('🎯 Target selection called with:', enemy);
             console.log('🎯 Current playerAction:', combatManager.playerAction);
             console.log('🎯 Current actionTargets:', combatManager.actionTargets);
-            
+
             if (combatManager.playerAction?.areaOfEffect) {
                 console.log('🔥 Handling AoE spell');
                 // Handle AoE spell targeting
@@ -140,7 +141,7 @@ const CombatPanel = ({
                     const affectedSquares = calculateAoESquares(centerPos, combatManager.playerAction.areaOfEffect);
                     console.log('🔥 Affected squares:', affectedSquares);
                     combatManager.setSelectedAoESquares(affectedSquares);
-                    
+
                     // Find all targets in affected squares
                     const targets = [];
                     affectedSquares.forEach(square => {
@@ -149,9 +150,9 @@ const CombatPanel = ({
                             targets.push(targetAtSquare);
                         }
                     });
-                    
+
                     console.log('AoE Targets found:', targets);
-                    
+
                     // Set targets and execute immediately
                     console.log('🎯 Setting targets:', targets);
                     handleExecuteAction(targets); // Pass targets directly
@@ -161,7 +162,7 @@ const CombatPanel = ({
                 // Handle single target or projectile spells - need to target actual enemies
                 const maxTargets = combatManager.playerAction?.projectiles || 1;
                 console.log('🎯 Max targets:', maxTargets);
-                
+
                 // For single target spells, we need to find the actual enemy at the position
                 let actualTarget = enemy;
                 if (enemy.isPosition) {
@@ -171,11 +172,11 @@ const CombatPanel = ({
                         return;
                     }
                 }
-                
+
                 const newTargets = [...combatManager.actionTargets, actualTarget];
                 console.log('🎯 New targets array:', newTargets);
                 combatManager.setActionTargets(newTargets);
-                
+
                 // Auto-execute when we have enough targets
                 if (newTargets.length >= maxTargets) {
                     setTimeout(() => {
@@ -300,30 +301,30 @@ const CombatPanel = ({
             />
 
             {/* Combat Grid Container - 60% width */}
-                {combatManager.isInitialized && (
-                    <CombatGrid
-                        playerCharacter={playerCharacter}
-                        playerCompanion={combatManager.companionCharacter}
-                        combatEnemies={combatManager.combatEnemies}
-                        onSelectTarget={handleTargetSelection}
-                        selectedTargets={combatManager.actionTargets}
-                        currentTurnIndex={combatManager.currentTurnIndex}
-                        turnOrder={combatManager.turnOrder}
-                        onMoveCharacter={combatManager.handleMoveCharacter}
-                        combatPositions={combatManager.combatPositions}
-                        showMovementFor={combatManager.showMovementFor}
-                        showTargetingFor={combatManager.showTargetingFor}
-                        selectedAoESquares={combatManager.selectedAoESquares}
-                        aoeCenter={combatManager.aoeCenter}
-                    />
-                )}
+            {combatManager.isInitialized && (
+                <CombatGrid
+                    playerCharacter={playerCharacter}
+                    playerCompanion={combatManager.companionCharacter}
+                    combatEnemies={combatManager.combatEnemies}
+                    onSelectTarget={handleTargetSelection}
+                    selectedTargets={combatManager.actionTargets}
+                    currentTurnIndex={combatManager.currentTurnIndex}
+                    turnOrder={combatManager.turnOrder}
+                    onMoveCharacter={combatManager.handleMoveCharacter}
+                    combatPositions={combatManager.combatPositions}
+                    showMovementFor={combatManager.showMovementFor}
+                    showTargetingFor={combatManager.showTargetingFor}
+                    selectedAoESquares={combatManager.selectedAoESquares}
+                    aoeCenter={combatManager.aoeCenter}
+                />
+            )}
 
             {/* Combat Side Container - 40% width */}
             <div className="combat-side-container">
                 {/* Phase-specific controls */}
-                <div className="combat-controls">
-                    {renderCombatPhase()}
-                </div>
+
+                {renderCombatPhase()}
+
 
                 {/* Combat Log */}
                 <div className="combat-log-container">

@@ -112,7 +112,7 @@ export const useSpellActions = (
         // Calculate maximum prepared spells based on spellcasting ability
         const spellcastingAbility = playerCharacter.spellcasting.ability || 'intelligence';
         const abilityModifier = getModifier(playerCharacter.stats[spellcastingAbility]);
-        const maxPreparedSpells = intModifier + playerCharacter.level;
+        const maxPreparedSpells = abilityModifier + playerCharacter.level;
         const currentPreparedCount = playerCharacter.spellcasting.preparedSpells.length;
 
         // Check if already at maximum
