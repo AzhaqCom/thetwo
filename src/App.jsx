@@ -95,7 +95,6 @@ function App() {
             <div className="game-container">
                 <div className="main-content">
                     <p>Chargement de ton personnage...</p>
-                </div>
             </div>
         );
     }
@@ -133,7 +132,7 @@ function App() {
                     onPlayerTakeDamage={combatActions.handlePlayerTakeDamage}
                     onCombatEnd={combatActions.handleCombatVictory}
                     addCombatMessage={addCombatMessage}
-                    setCombatLog={setCombatLog}
+                    combatLog={combatLog}
                     encounterData={currentScene}
                     onPlayerCastSpell={spellActions.handlePlayerCastSpell}
                     onReplayCombat={combatActions.handleReplayCombat}

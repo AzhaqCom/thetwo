@@ -1,38 +1,46 @@
 /* === INTERFACE DE COMBAT AMÉLIORÉE === */
 
 .combat-interface {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  gap: var(--spacing-md);
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    gap: var(--spacing-md);
 }
 
 /* === GRILLE DE COMBAT === */
 .combat-grid-container {
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 100%;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 2px solid var(--color-border-primary);
-  box-shadow: var(--shadow-large);
-
+    width: 60%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--color-border-primary);
+    box-shadow: var(--shadow-large);
+    padding: var(--spacing-sm);
 }
 
 .combat-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  grid-template-rows: repeat(6, 1fr);
-  gap: 2px;
-  background-color: var(--color-border-primary);
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
-  width: 100%;
-  height: 100%;
-  max-width: 480px;
-  max-height: 360px;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: 2px;
+    background-color: var(--color-border-primary);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 8/6;
+}
+
+/* === CONTENEUR LATÉRAL DE COMBAT === */
+.combat-side-container {
+    width: 40%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
 }
 
 .grid-square {
@@ -369,12 +377,26 @@
 
 /* === CONTRÔLES DE COMBAT === */
 .combat-controls {
-  flex-shrink: 0;
-  padding: var(--spacing-md);
-  background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary));
-  border-radius: var(--radius-lg);
-  border: 2px solid var(--color-border-primary);
-  box-shadow: var(--shadow-medium);
+    flex: 0 0 auto;
+    padding: var(--spacing-md);
+    background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary));
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--color-border-primary);
+    box-shadow: var(--shadow-medium);
+    min-height: 200px;
+}
+
+/* === CONTENEUR DU LOG DE COMBAT === */
+.combat-log-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.combat-log-container #combat-log {
+    height: 100%;
+    margin-bottom: 0;
 }
 
 .combat-controls h3 {
@@ -473,91 +495,57 @@
 
 /* === RESPONSIVE DESIGN === */
 @media (max-width: 1200px) {
-  .combat-grid-container {
-    height: 720px;
-  }
-  
-  .combat-grid {
-    width: 700px;
-    height: 700px;
-  }
-  
-  .grid-square {
-    height: 105px;
-  }
-  
-  .character-card {
-    font-size: 11px;
-    padding: 4px;
-  }
-  
-  .character-name {
-    font-size: 12px;
-  }
-  
-  .enemy-card-display {
-    width: 180px;
-    padding: var(--spacing-md);
-  }
-  
-  .enemy-image {
-    width: 130px;
-    height: 130px;
-  }
+    .combat-interface {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .combat-grid-container {
+        width: 100%;
+        height: 60%;
+    }
+    
+    .combat-side-container {
+        width: 100%;
+        height: 40%;
+        flex-direction: row;
+        gap: var(--spacing-sm);
+    }
+    
+    .combat-controls {
+        flex: 0 0 50%;
+        min-height: auto;
+    }
+    
+    .combat-log-container {
+        flex: 1;
+    }
 }
 
 @media (max-width: 768px) {
-  .combat-grid-container {
-    height: 620px;
-    padding: var(--spacing-xs);
-  }
-  
-  .combat-grid {
-    width: 600px;
-    height: 600px;
-  }
-  
-  .grid-square {
-    height: 90px;
-  }
-  
-  .character-card {
-    font-size: 10px;
-    padding: 3px;
-  }
-  
-  .character-name {
-    font-size: 11px;
-    margin-bottom: 2px;
-  }
-  
-  .character-hp {
-    font-size: 10px;
-    margin-bottom: 2px;
-  }
-  
-  .character-hp-bar {
-    height: 6px;
-    margin-bottom: 2px;
-  }
-  
-  .enemy-display-container {
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
-  }
-  
-  .enemy-card-display {
-    width: 160px;
-    padding: var(--spacing-sm);
-  }
-  
-  .enemy-image {
-    width: 120px;
-    height: 120px;
-  }
-  
-  #combat-log {
-    height: 200px;
-    position: relative;
-  }
+    .combat-interface {
+        flex-direction: column;
+    }
+    
+    .combat-grid-container {
+        width: 100%;
+        height: 50%;
+        padding: var(--spacing-xs);
+    }
+    
+    .combat-side-container {
+        width: 100%;
+        height: 50%;
+        flex-direction: column;
+    }
+    
+    .combat-controls {
+        flex: 0 0 auto;
+        min-height: 150px;
+    }
+    
+    .combat-log-container {
+        flex: 1;
+        min-height: 200px;
+    }
 }

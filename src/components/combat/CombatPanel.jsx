@@ -5,13 +5,14 @@ import { useCombatActionHandler } from './CombatActionHandler';
 import CombatTurnManager from './CombatTurnManager';
 import CombatGrid from './CombatGrid';
 import PlayerTurnPanel from './PlayerTurnPanel';
+import CombatLog from '../ui/CombatLog';
 
 const CombatPanel = ({
     playerCharacter,
     playerCompanion,
     onCombatEnd,
     addCombatMessage,
-    setCombatLog,
+    combatLog,
     encounterData,
     onPlayerCastSpell,
     onPlayerTakeDamage,
@@ -297,22 +298,44 @@ const CombatPanel = ({
                 companionAttack={companionAttack}
             />
 
-            {/* Combat Grid - shows after initialization */}
-            {combatManager.isInitialized && (
-                <CombatGrid
-                    playerCharacter={playerCharacter}
-                    playerCompanion={combatManager.companionCharacter}
-                    combatEnemies={combatManager.combatEnemies}
-                    onSelectTarget={handleTargetSelection}
-                    selectedTargets={combatManager.actionTargets}
-                    currentTurnIndex={combatManager.currentTurnIndex}
-                    turnOrder={combatManager.turnOrder}
-                    onMoveCharacter={combatManager.handleMoveCharacter}
-                    combatPositions={combatManager.combatPositions}
-                    showMovementFor={combatManager.showMovementFor}
-                    showTargetingFor={combatManager.showTargetingFor}
-                    selectedAoESquares={combatManager.selectedAoESquares}
-                    aoeCenter={combatManager.aoeCenter}
+            {/* Combat Grid Container - 60% width */}
+            <div className="combat-grid-container">
+                {combatManager.isInitialized && (
+                    <CombatGrid
+                        playerCharacter={playerCharacter}
+                        playerCompanion={combatManager.companionCharacter}
+                        combatEnemies={combatManager.combatEnemies}
+                        onSelectTarget={handleTargetSelection}
+                        selectedTargets={combatManager.actionTargets}
+                        currentTurnIndex={combatManager.currentTurnIndex}
+                        turnOrder={combatManager.turnOrder}
+                        onMoveCharacter={combatManager.handleMoveCharacter}
+                        combatPositions={combatManager.combatPositions}
+                        showMovementFor={combatManager.showMovementFor}
+                        showTargetingFor={combatManager.showTargetingFor}
+                        selectedAoESquares={combatManager.selectedAoESquares}
+                        aoeCenter={combatManager.aoeCenter}
+                    />
+                )}
+            </div>
+
+            {/* Combat Side Container - 40% width */}
+            <div className="combat-side-container">
+                {/* Phase-specific controls */}
+                <div className="combat-controls">
+                    {renderCombatPhase()}
+                </div>
+
+                {/* Combat Log */}
+                <div className="combat-log-container">
+                    <CombatLog logMessages={combatLog} />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default CombatPanel;
                 />
             )}
 
