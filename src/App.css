@@ -575,11 +575,8 @@ button:hover {
 /* Character Card Styles */
 .character-card {
     width: 100%;
-    /* Fill the grid square */
     height: 100%;
-    /* Fill the grid square */
     max-width: 100%;
-    /* Ensure it doesn't exceed square width */
     padding: 4px;
     text-align: center;
     border-radius: 6px;
@@ -603,7 +600,7 @@ button:hover {
 }
 
 .character-card.current-turn {
-    border-color: #2196f3;
+    /* border-color: #2196f3; */
     box-shadow: 0 0 8px rgba(33, 150, 243, 0.6);
 }
 
@@ -893,8 +890,8 @@ button:hover {
 
 .enemy-image-small,
 .companion-image-small {
-    width: 40px;
-    height: 58px;
+    width: 4vw;
+    height: 9vh;
     object-fit: contain;
     border-radius: 3px;
     margin: 0 auto;

@@ -64,9 +64,9 @@ export const GRID_HEIGHT = 6;
 export const getTargetsInRange = (attacker, attackerPos, attack, combatState) => {
     const { playerCharacter, companionCharacter, combatEnemies, combatPositions } = combatState;
     const targets = [];
-    
+
     if (!attackerPos) return targets;
-    
+
     // Determine attack range
     let maxRange = attack.range || 1; // Use attack.range or default to 1
     if (attack.type === 'ranged') {
@@ -74,14 +74,14 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
     } else if (attack.type === 'melee') {
         maxRange = attack.range || 1; // Default melee range
     }
-    
- 
-    
+
+
+
     // Check player as target (if attacker is enemy)
     if (attacker.type === 'enemy' && playerCharacter && playerCharacter.currentHP > 0 && combatPositions.player) {
         const playerPos = combatPositions.player;
         const distance = Math.abs(attackerPos.x - playerPos.x) + Math.abs(attackerPos.y - playerPos.y);
-    
+
         if (distance <= maxRange) {
             targets.push({
                 ...playerCharacter,
@@ -89,15 +89,15 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
                 name: playerCharacter.name,
                 ac: playerCharacter.ac
             });
-       
+
         }
     }
-    
+
     // Check companion as target (if attacker is enemy)
     if (attacker.type === 'enemy' && companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
         const companionPos = combatPositions.companion;
         const distance = Math.abs(attackerPos.x - companionPos.x) + Math.abs(attackerPos.y - companionPos.y);
-       
+
         if (distance <= maxRange) {
             targets.push({
                 ...companionCharacter,
@@ -105,10 +105,10 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
                 name: companionCharacter.name,
                 ac: companionCharacter.ac
             });
-          
+
         }
     }
-    
+
     // Check enemies as targets (if attacker is player/companion)
     if (attacker.type === 'player' || attacker.type === 'companion') {
         combatEnemies.forEach(enemy => {
@@ -116,7 +116,7 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
                 const enemyPos = combatPositions[enemy.name];
                 if (enemyPos) {
                     const distance = Math.abs(attackerPos.x - enemyPos.x) + Math.abs(attackerPos.y - enemyPos.y);
-                 
+
                     if (distance <= maxRange) {
                         targets.push({
                             ...enemy,
@@ -124,13 +124,13 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
                             name: enemy.name,
                             ac: enemy.ac
                         });
-                     
+
                     }
                 }
             }
         });
     }
-    
+
 
     return targets;
 };
@@ -144,15 +144,15 @@ export const getTargetsInRange = (attacker, attackerPos, attack, combatState) =>
  */
 export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     const { combatPositions, playerCharacter, companionCharacter, combatEnemies } = combatState;
-    
+
     if (!currentPos || !combatPositions) return null;
-    
+
     // If enemy is dead, don't move
     if (enemy.currentHP <= 0) return null;
-    
+
     // Find potential targets
     const targets = [];
-    
+
     if (enemy.type === 'enemy') {
         // Enemies target player and companion
         if (playerCharacter && playerCharacter.currentHP > 0 && combatPositions.player) {
@@ -164,6 +164,7 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     } else if (enemy.type === 'companion') {
         // Companions target enemies
         combatEnemies.forEach(combatEnemy => {
+            console.log(`[DEBUG] Enemy: ${enemy.name} is considering targeting: ${combatEnemy.name}. HP: ${combatEnemy.currentHP}`);
             if (combatEnemy.currentHP > 0) {
                 const enemyPos = combatPositions[combatEnemy.name];
                 if (enemyPos) {
@@ -172,14 +173,14 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
             }
         });
     }
-    
-    
+    console.log(`[DEBUG] Enemy: ${enemy.name} potential targets:`, targets.map(t => t.type === 'enemy' ? t.name : t.type));
+
     if (targets.length === 0) return null;
-    
+
     // Find closest target
     let closestTarget = null;
     let closestDistance = Infinity;
-    
+
     targets.forEach(target => {
         const distance = Math.abs(currentPos.x - target.pos.x) + Math.abs(currentPos.y - target.pos.y);
         if (distance < closestDistance) {
@@ -187,17 +188,17 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
             closestTarget = target;
         }
     });
-    
+
     if (!closestTarget) return null;
-    
+
     // Determine movement strategy based on enemy attacks
-    const hasRangedAttack = enemy.attacks?.some(attack => 
+    const hasRangedAttack = enemy.attacks?.some(attack =>
         attack.type === 'ranged' || (typeof attack.range === 'number' && attack.range > 1)
     );
-    const hasMeleeAttack = enemy.attacks?.some(attack => 
+    const hasMeleeAttack = enemy.attacks?.some(attack =>
         attack.type === 'melee' || (typeof attack.range === 'number' && attack.range <= 1)
     );
-    
+
     let idealDistance;
     if (hasMeleeAttack && !hasRangedAttack) {
         idealDistance = 1; // Get adjacent for melee
@@ -207,59 +208,68 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     } else {
         idealDistance = 1; // Mixed, prefer melee range
     }
-    
-    
+
+
     // If already at ideal distance, don't move
     if (closestDistance <= idealDistance) {
 
         return null;
     }
-    
+
     // Calculate movement (up to 6 squares)
     const maxMovement = enemy.movement || 6;
     let bestPosition = null;
     let bestScore = -1;
-    
+
     // Check all positions within movement range
     for (let dx = -maxMovement; dx <= maxMovement; dx++) {
         for (let dy = -maxMovement; dy <= maxMovement; dy++) {
             const manhattanDistance = Math.abs(dx) + Math.abs(dy);
             if (manhattanDistance === 0 || manhattanDistance > maxMovement) continue;
-            
+
             const newX = currentPos.x + dx;
             const newY = currentPos.y + dy;
-            
+
             // Check bounds
             if (!isValidGridPosition(newX, newY)) continue;
-            
+
             // Check if position is occupied
             if (isPositionOccupied(newX, newY, combatPositions, combatEnemies, enemy.name)) continue;
-            
+
             // Calculate distance to target from this position
             const distanceToTarget = Math.abs(newX - closestTarget.pos.x) + Math.abs(newY - closestTarget.pos.y);
-            
+
             // Score this position (prefer positions closer to ideal distance)
             const distanceFromIdeal = Math.abs(distanceToTarget - idealDistance);
             const score = 100 - distanceFromIdeal - manhattanDistance * 0.1; // Slight preference for less movement
-            
+
             if (score > bestScore) {
                 bestScore = score;
                 bestPosition = { x: newX, y: newY };
             }
         }
     }
-    
+
     // Validate the best position one more time and find alternative if needed
     if (bestPosition) {
-        if (isValidGridPosition(bestPosition.x, bestPosition.y) && 
+        console.log(`[DEBUG] Enemy: ${enemy.name} best calculated position: (${bestPosition.x}, ${bestPosition.y})`);
+        if (isValidGridPosition(bestPosition.x, bestPosition.y) &&
             !isPositionOccupied(bestPosition.x, bestPosition.y, combatPositions, combatEnemies, enemy.name)) {
+            console.log(`[DEBUG] Enemy: ${enemy.name} is moving to valid position: (${bestPosition.x}, ${bestPosition.y})`);
             return bestPosition;
         } else {
-            // Find nearest valid position as fallback
-            return findNearestValidPosition(bestPosition.x, bestPosition.y, combatPositions, combatEnemies, enemy.name);
+            console.log(`[DEBUG] Enemy: ${enemy.name} best position is invalid/occupied. Searching for fallback.`);
+            const fallbackPosition = findNearestValidPosition(bestPosition.x, bestPosition.y, combatPositions, combatEnemies, enemy.name);
+            if (fallbackPosition) {
+                console.log(`[DEBUG] Enemy: ${enemy.name} found fallback position: (${fallbackPosition.x}, ${fallbackPosition.y})`);
+            } else {
+                console.log(`[DEBUG] Enemy: ${enemy.name} could not find any valid fallback position.`);
+            }
+            return fallbackPosition;
         }
     }
-    
+    console.log(`[DEBUG] Enemy: ${enemy.name} could not find any movement position.`);
+
     return null;
 };
 
@@ -277,22 +287,30 @@ const isPositionOccupied = (x, y, combatPositions, combatEnemies, excludeEnemyNa
     if (combatPositions.player && combatPositions.player.x === x && combatPositions.player.y === y) {
         return true;
     }
-    
+
     // Check companion
     if (combatPositions.companion && combatPositions.companion.x === x && combatPositions.companion.y === y) {
         return true;
     }
-    
+
     // Check other living enemies (dead enemies don't block movement)
     for (const enemy of combatEnemies) {
-        if (enemy.name !== excludeEnemyName && enemy.currentHP > 0) {
-            const enemyPos = combatPositions[enemy.name];
-            if (enemyPos && enemyPos.x === x && enemyPos.y === y) {
-                return true;
+        if (enemy.name !== excludeEnemyName) {
+            // Log pour voir quel ennemi est vérifié et son statut
+            console.log(`[DEBUG] Checking if position (${x},${y}) is occupied by: ${enemy.name}. Current HP: ${enemy.currentHP}`);
+            if (enemy.currentHP > 0) {
+                const enemyPos = combatPositions[enemy.name];
+                if (enemyPos && enemyPos.x === x && enemyPos.y === y) {
+                    console.log(`[DEBUG] Position (${x},${y}) is occupied by LIVING enemy: ${enemy.name}`);
+                    return true;
+                }
+            } else {
+                console.log(`[DEBUG] Position (${x},${y}) is occupied by DEAD enemy: ${enemy.name}. Skipping check.`);
             }
         }
     }
-    
+    console.log(`[DEBUG] Position (${x},${y}) is NOT occupied.`);
+
     return false;
 };
 
@@ -327,16 +345,16 @@ const findNearestValidPosition = (targetX, targetY, combatPositions, combatEnemi
             for (let dy = -radius; dy <= radius; dy++) {
                 // Only check positions on the edge of the current radius
                 if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
-                
+
                 const x = targetX + dx;
                 const y = targetY + dy;
-                
+
                 if (isValidGridPosition(x, y) && !isPositionOccupied(x, y, combatPositions, combatEnemies, excludeEnemyName)) {
                     return { x, y };
                 }
             }
         }
     }
-    
+
     return null; // No valid position found
 };

@@ -41,8 +41,8 @@ Récemment, tu as entendu des murmures concernant une ancienne prophétie liée 
                     type: 'combat',
                     enemies: [{ type: 'gobelin', count: 2 }],
                     enemyPositions: [
-                        { x: 6, y: 0 },  // Premier gobelin
-                        { x: 7, y: 0 }   // Deuxième gobelin
+                        { x: 0, y: 4 },  // Premier gobelin
+                        { x: 1, y: 4}   // Deuxième gobelin
                     ],
                     next: 'scene4'
                 }
