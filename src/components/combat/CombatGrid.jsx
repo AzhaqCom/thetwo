@@ -126,6 +126,13 @@ const CombatGrid = ({
 
     if (!characterId) return null;
 
+    // Don't render dead enemies
+    if (characterId !== 'player' && characterId !== 'companion') {
+      const enemy = combatEnemies.find(e => e.name === characterId);
+      if (enemy && enemy.currentHP <= 0) {
+        return null;
+      }
+    }
     const isCurrentTurn = turnOrder[currentTurnIndex]?.name === characterId || 
                          (characterId === 'player' && turnOrder[currentTurnIndex]?.type === 'player') ||
                          (characterId === 'companion' && turnOrder[currentTurnIndex]?.type === 'companion');

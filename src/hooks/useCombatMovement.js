@@ -100,6 +100,20 @@ export const useCombatMovement = (
             return;
         }
         
+        // Remove dead enemy positions from combatPositions to free up space
+        setCombatPositions(prev => {
+            const updated = { ...prev };
+            
+            // Remove positions of dead enemies
+            combatEnemies.forEach(enemy => {
+                if (enemy.currentHP <= 0 && updated[enemy.name]) {
+                    delete updated[enemy.name];
+                }
+            });
+            
+            return updated;
+        });
+        
         const oldPosition = combatPositions[enemyName];
 
         // Check for opportunity attacks when enemy moves

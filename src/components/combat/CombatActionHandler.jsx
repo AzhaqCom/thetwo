@@ -167,13 +167,21 @@ export const useCombatActionHandler = ({
                 if (updatedEnemies[index].currentHP <= 0 && !defeatedThisTurn.has(updatedEnemies[index].name)) {
                     addCombatMessage(`${updatedEnemies[index].name} a été vaincu !`);
                     defeatedThisTurn.add(updatedEnemies[index].name);
+                    
+                    // Remove dead enemy from combat positions immediately
+                    setTimeout(() => {
+                        setCombatPositions(prev => {
+                            const updated = { ...prev };
+                            delete updated[updatedEnemies[index].name];
+                            return updated;
+                        });
+                    }, 100);
                 }
             }
         });
 
         setCombatEnemies(updatedEnemies);
         return true;
-    }, [onPlayerCastSpell, combatEnemies, playerCharacter, addCombatMessage, setCombatEnemies]);
 
     const handleExecuteAction = useCallback((directTargets = null) => {
         const action = playerAction;

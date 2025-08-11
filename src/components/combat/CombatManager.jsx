@@ -214,6 +214,17 @@ export const useCombatManager = ({
         const allEnemiesDefeated = combatEnemies.every(enemy => enemy.currentHP <= 0);
         
         if (allEnemiesDefeated) {
+            // Clean up dead enemy positions
+            combatMovement.setCombatPositions(prev => {
+                const updated = { ...prev };
+                combatEnemies.forEach(enemy => {
+                    if (enemy.currentHP <= 0 && updated[enemy.name]) {
+                        delete updated[enemy.name];
+                    }
+                });
+                return updated;
+            });
+            
             setCombatPhase('end');
             setVictory(true);
             addCombatMessage("Victoire ! Tous les ennemis ont été vaincus.", 'victory');
