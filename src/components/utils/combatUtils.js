@@ -146,6 +146,10 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     const { combatPositions, playerCharacter, companionCharacter, combatEnemies } = combatState;
     
     if (!currentPos || !combatPositions) return null;
+    
+    // If enemy is dead, don't move
+    if (enemy.currentHP <= 0) return null;
+    
     // Find potential targets
     const targets = [];
     
@@ -198,7 +202,8 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
     if (hasMeleeAttack && !hasRangedAttack) {
         idealDistance = 1; // Get adjacent for melee
     } else if (hasRangedAttack && !hasMeleeAttack) {
-        idealDistance = Math.min(4, attack.range || 4); // Stay at range but respect max range
+        const rangedAttack = enemy.attacks.find(attack => attack.type === 'ranged' || (typeof attack.range === 'number' && attack.range > 1));
+        idealDistance = Math.min(4, rangedAttack?.range || 4); // Stay at range but respect max range
     } else {
         idealDistance = 1; // Mixed, prefer melee range
     }
@@ -225,7 +230,7 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
             const newY = currentPos.y + dy;
             
             // Check bounds
-            if (newX < 0 || newX >= GRID_WIDTH || newY < 0 || newY >= GRID_HEIGHT) continue;
+            if (!isValidGridPosition(newX, newY)) continue;
             
             // Check if position is occupied
             if (isPositionOccupied(newX, newY, combatPositions, combatEnemies, enemy.name)) continue;
@@ -243,7 +248,19 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
             }
         }
     }
-    return bestPosition;
+    
+    // Validate the best position one more time and find alternative if needed
+    if (bestPosition) {
+        if (isValidGridPosition(bestPosition.x, bestPosition.y) && 
+            !isPositionOccupied(bestPosition.x, bestPosition.y, combatPositions, combatEnemies, enemy.name)) {
+            return bestPosition;
+        } else {
+            // Find nearest valid position as fallback
+            return findNearestValidPosition(bestPosition.x, bestPosition.y, combatPositions, combatEnemies, enemy.name);
+        }
+    }
+    
+    return null;
 };
 
 /**
@@ -255,7 +272,7 @@ export const calculateEnemyMovement = (enemy, currentPos, combatState) => {
  * @param {string} excludeEnemyName - Enemy name to exclude from check
  * @returns {boolean} True if position is occupied
  */
-const isPositionOccupied = (x, y, combatPositions, combatEnemies, excludeEnemyName) => {
+const isPositionOccupied = (x, y, combatPositions, combatEnemies, excludeEnemyName = null) => {
     // Check player
     if (combatPositions.player && combatPositions.player.x === x && combatPositions.player.y === y) {
         return true;
@@ -266,7 +283,7 @@ const isPositionOccupied = (x, y, combatPositions, combatEnemies, excludeEnemyNa
         return true;
     }
     
-    // Check other enemies
+    // Check other living enemies (dead enemies don't block movement)
     for (const enemy of combatEnemies) {
         if (enemy.name !== excludeEnemyName && enemy.currentHP > 0) {
             const enemyPos = combatPositions[enemy.name];
@@ -277,4 +294,49 @@ const isPositionOccupied = (x, y, combatPositions, combatEnemies, excludeEnemyNa
     }
     
     return false;
+};
+
+/**
+ * Validates that a position is within grid bounds
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @returns {boolean} True if position is valid
+ */
+const isValidGridPosition = (x, y) => {
+    return x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT;
+};
+
+/**
+ * Finds the nearest valid position if the given position is invalid or occupied
+ * @param {number} targetX - Target X coordinate
+ * @param {number} targetY - Target Y coordinate
+ * @param {Object} combatPositions - All character positions
+ * @param {Array} combatEnemies - Array of enemies
+ * @param {string} excludeEnemyName - Enemy name to exclude from check
+ * @returns {Object|null} Valid position {x, y} or null if none found
+ */
+const findNearestValidPosition = (targetX, targetY, combatPositions, combatEnemies, excludeEnemyName = null) => {
+    // Check if target position is already valid
+    if (isValidGridPosition(targetX, targetY) && !isPositionOccupied(targetX, targetY, combatPositions, combatEnemies, excludeEnemyName)) {
+        return { x: targetX, y: targetY };
+    }
+
+    // Search in expanding circles around the target position
+    for (let radius = 1; radius <= Math.max(GRID_WIDTH, GRID_HEIGHT); radius++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+            for (let dy = -radius; dy <= radius; dy++) {
+                // Only check positions on the edge of the current radius
+                if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+                
+                const x = targetX + dx;
+                const y = targetY + dy;
+                
+                if (isValidGridPosition(x, y) && !isPositionOccupied(x, y, combatPositions, combatEnemies, excludeEnemyName)) {
+                    return { x, y };
+                }
+            }
+        }
+    }
+    
+    return null; // No valid position found
 };
