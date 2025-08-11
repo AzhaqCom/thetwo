@@ -280,7 +280,7 @@ const CombatPanel = ({
     };
 
     return (
-        <div className="combat-panel-container">
+        <div className="combat-interface">
             {/* Turn Manager - handles automatic turn progression */}
             <CombatTurnManager
                 combatPhase={combatManager.combatPhase}

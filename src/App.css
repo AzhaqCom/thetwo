@@ -30,6 +30,7 @@ p{
     box-sizing: border-box;
     max-width: 1400px;
     margin: 0 auto;
+    overflow: hidden;
 }
 
 /* Combat full-width mode */
@@ -46,10 +47,9 @@ p{
     border-radius: var(--radius-md);
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
-    overflow-y: auto;
+    overflow: hidden;
     box-shadow: var(--shadow-medium);
-    min-height: 700px;
-    max-height: 90vh;
+    height: calc(100vh - 20px);
     display: flex;
     flex-direction: column;
 }
@@ -57,7 +57,7 @@ p{
 /* Combat mode main content */
 .main-content.combat-mode {
     width: 70%;
-    min-height: 800px;
+    height: calc(100vh - 16px);
 }
 
 .scene-container {
