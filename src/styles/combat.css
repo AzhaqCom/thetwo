@@ -168,7 +168,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.1;
-  color: var(--color-text-primary);
+
 }
 
 .character-class {
