@@ -17,6 +17,7 @@ export const useCombatActionHandler = ({
     combatEnemies,
     setCombatEnemies,
     combatPositions,
+    setCombatPositions,
     onPlayerCastSpell,
     addCombatMessage,
     handleNextTurn

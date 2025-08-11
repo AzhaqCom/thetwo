@@ -62,6 +62,7 @@ const CombatPanel = ({
         combatEnemies: combatManager.combatEnemies,
         setCombatEnemies: combatManager.setCombatEnemies,
         combatPositions: combatManager.combatPositions,
+        setCombatPositions: combatManager.setCombatPositions,
         onPlayerCastSpell,
         addCombatMessage,
         handleNextTurn: combatManager.handleNextTurn
