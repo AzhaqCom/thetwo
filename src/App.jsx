@@ -95,6 +95,7 @@ function App() {
             <div className="game-container">
                 <div className="main-content">
                     <p>Chargement de ton personnage...</p>
+                </div>
             </div>
         );
     }
