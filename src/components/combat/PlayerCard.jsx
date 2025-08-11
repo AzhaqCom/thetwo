@@ -11,9 +11,7 @@ const PlayerCard = ({ character, isCurrentTurn, isSelected }) => {
       <div className="character-name">
         {character.name}
       </div>
-      <div className="character-class">
-        {character.class}
-      </div>
+      
       <div className="character-hp">
         <HeartIcon />
         <span>{Math.max(0, character.currentHP)} PV</span>
