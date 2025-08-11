@@ -151,7 +151,7 @@ const CombatPanel = ({
                 }
             }
         },
-        [combatManager, findCharacterAtPosition, handleExecuteAction]
+        [combatManager, findCharacterAtPosition, handleExecuteAction, addCombatMessage, calculateAoESquares]
     );
 
     const calculateAoESquares = useCallback((center, aoeType) => {
@@ -331,16 +331,6 @@ const CombatPanel = ({
                     <CombatLog logMessages={combatLog} />
                 </div>
             </div>
-        </div>
-    );
-};
-
-export default CombatPanel;
-                />
-            )}
-
-            {/* Phase-specific controls */}
-            {renderCombatPhase()}
         </div>
     );
 };
