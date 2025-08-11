@@ -91,6 +91,39 @@ const CombatPanel = ({
         
         return null;
     }, [combatManager.combatPositions, playerCharacter, combatManager.companionCharacter, combatManager.combatEnemies]);
+
+    const calculateAoESquares = useCallback((center, aoeType) => {
+        const squares = [];
+        
+        switch (aoeType.shape) {
+            case 'sphere':
+                const radius = Math.floor(aoeType.radius / 5); // Convert feet to squares
+                for (let x = center.x - radius; x <= center.x + radius; x++) {
+                    for (let y = center.y - radius; y <= center.y + radius; y++) {
+                        if (x >= 0 && x < 8 && y >= 0 && y < 6) {
+                            const distance = Math.sqrt(Math.pow(x - center.x, 2) + Math.pow(y - center.y, 2));
+                            if (distance <= radius) {
+                                squares.push({ x, y });
+                            }
+                        }
+                    }
+                }
+                break;
+            case 'cube':
+                const size = Math.floor(aoeType.size / 5); // Convert feet to squares
+                for (let x = center.x; x < center.x + size && x < 8; x++) {
+                    for (let y = center.y; y < center.y + size && y < 6; y++) {
+                        if (x >= 0 && y >= 0) {
+                            squares.push({ x, y });
+                        }
+                    }
+                }
+                break;
+        }
+        
+        return squares;
+    }, []);
+
     const handleTargetSelection = useCallback(
         (enemy) => {
             console.log('🎯 Target selection called with:', enemy);
@@ -154,39 +187,7 @@ const CombatPanel = ({
         [combatManager, findCharacterAtPosition, handleExecuteAction, addCombatMessage, calculateAoESquares]
     );
 
-    const calculateAoESquares = useCallback((center, aoeType) => {
-        const squares = [];
-        
-        switch (aoeType.shape) {
-            case 'sphere':
-                const radius = Math.floor(aoeType.radius / 5); // Convert feet to squares
-                for (let x = center.x - radius; x <= center.x + radius; x++) {
-                    for (let y = center.y - radius; y <= center.y + radius; y++) {
-                        if (x >= 0 && x < 8 && y >= 0 && y < 6) {
-                            const distance = Math.sqrt(Math.pow(x - center.x, 2) + Math.pow(y - center.y, 2));
-                            if (distance <= radius) {
-                                squares.push({ x, y });
-                            }
-                        }
-                    }
-                }
-                break;
-            case 'cube':
-                const size = Math.floor(aoeType.size / 5); // Convert feet to squares
-                for (let x = center.x; x < center.x + size && x < 8; x++) {
-                    for (let y = center.y; y < center.y + size && y < 6; y++) {
-                        if (x >= 0 && y >= 0) {
-                            squares.push({ x, y });
-                        }
-                    }
-                }
-                break;
-        }
-        
-        return squares;
-    }, []);
 
-   
 
     const findPositionByCharacter = useCallback((character) => {
         if (character.id === 'player') return combatManager.combatPositions.player;
