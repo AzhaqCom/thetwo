@@ -182,6 +182,7 @@ export const useCombatActionHandler = ({
 
         setCombatEnemies(updatedEnemies);
         return true;
+    }, [playerCharacter, combatEnemies, setCombatEnemies, addCombatMessage]);
 
     const handleExecuteAction = useCallback((directTargets = null) => {
         const action = playerAction;
