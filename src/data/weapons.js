@@ -2,6 +2,7 @@ export const weapons = {
     // Armes de mêlée simples
     dagger: {
         name: "Dague",
+        id: "dagger",
         type: "weapon",
         category: "melee",
         damage: "1d4",
@@ -13,6 +14,7 @@ export const weapons = {
     },
     club: {
         name: "Gourdin",
+        id: "club",
         type: "weapon", 
         category: "melee",
         damage: "1d4",
@@ -24,6 +26,7 @@ export const weapons = {
     },
     quarterstaff: {
         name: "Bâton",
+        id: "quarterstaff",
         type: "weapon",
         category: "melee", 
         damage: "1d6",
@@ -37,6 +40,7 @@ export const weapons = {
     // Armes de mêlée de guerre
     longsword: {
         name: "Épée longue",
+        id: "longsword",
         type: "weapon",
         category: "melee",
         damage: "1d8",
@@ -48,6 +52,7 @@ export const weapons = {
     },
     shortsword: {
         name: "Épée courte",
+        id: "shortsword",
         type: "weapon",
         category: "melee",
         damage: "1d6", 
@@ -59,6 +64,7 @@ export const weapons = {
     },
     rapier: {
         name: "Rapière",
+        id: "rapier",
         type: "weapon",
         category: "melee",
         damage: "1d8",
@@ -70,6 +76,7 @@ export const weapons = {
     },
     battleaxe: {
         name: "Hache de bataille",
+        id:"battleaxe",
         type: "weapon",
         category: "melee",
         damage: "1d8",
@@ -81,6 +88,7 @@ export const weapons = {
     },
     warhammer: {
         name: "Marteau de guerre",
+        id: "warhammer",
         type: "weapon",
         category: "melee", 
         damage: "1d8",
@@ -92,6 +100,7 @@ export const weapons = {
     },
     greatsword: {
         name: "Épée à deux mains",
+        id: "greatsword",
         type: "weapon",
         category: "melee",
         damage: "2d6",
@@ -105,6 +114,7 @@ export const weapons = {
     // Armes à distance simples
     lightCrossbow: {
         name: "Arbalète légère",
+        id: "lightCrossbow",
         type: "weapon",
         category: "ranged",
         damage: "1d8",
@@ -116,6 +126,7 @@ export const weapons = {
     },
     shortbow: {
         name: "Arc court",
+        id: "shortbow",
         type: "weapon",
         category: "ranged",
         damage: "1d6", 
@@ -129,6 +140,7 @@ export const weapons = {
     // Armes à distance de guerre
     longbow: {
         name: "Arc long",
+        id: "longbow",
         type: "weapon",
         category: "ranged",
         damage: "1d8",
@@ -140,6 +152,7 @@ export const weapons = {
     },
     heavyCrossbow: {
         name: "Arbalète lourde",
+        id: "heavyCrossbow",
         type: "weapon",
         category: "ranged",
         damage: "1d10",

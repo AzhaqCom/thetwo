@@ -693,14 +693,14 @@ button:hover {
 
 .selection-header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 10px;
     max-width: 800px;
 }
 
 .selection-header h1 {
     font-size: 3rem;
     color: #e0d0b8;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
