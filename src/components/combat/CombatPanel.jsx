@@ -300,7 +300,6 @@ const CombatPanel = ({
             />
 
             {/* Combat Grid Container - 60% width */}
-            <div className="combat-grid-container">
                 {combatManager.isInitialized && (
                     <CombatGrid
                         playerCharacter={playerCharacter}
@@ -318,7 +317,6 @@ const CombatPanel = ({
                         aoeCenter={combatManager.aoeCenter}
                     />
                 )}
-            </div>
 
             {/* Combat Side Container - 40% width */}
             <div className="combat-side-container">
