@@ -2,23 +2,23 @@ import React, { useMemo, useCallback } from 'react';
 import { getAvailableActions } from '../utils/actionUtils';
 import ActionButton from './ActionButton';
 
-const PlayerTurnPanel = ({ 
-  playerCharacter, 
-  onSelectAction, 
-  onPassTurn, 
-  selectedAction, 
-  selectedTargets = [] 
+const PlayerTurnPanel = ({
+  playerCharacter,
+  onSelectAction,
+  onPassTurn,
+  selectedAction,
+  selectedTargets = []
 }) => {
   const availableActions = useMemo(() => {
     return getAvailableActions(playerCharacter);
   }, [playerCharacter]);
 
-  const spellActions = useMemo(() => 
+  const spellActions = useMemo(() =>
     availableActions.filter(action => action.actionType === 'spell'),
     [availableActions]
   );
 
-  const weaponActions = useMemo(() => 
+  const weaponActions = useMemo(() =>
     availableActions.filter(action => action.actionType === 'weapon'),
     [availableActions]
   );
@@ -62,38 +62,39 @@ const PlayerTurnPanel = ({
   return (
     <div>
       <p>C'est ton tour ! Que veux-tu faire ?</p>
-      
-      {weaponActions.length > 0 && (
-        <div className="action-group">
-          <h4>Attaques d'Armes</h4>
-          {weaponActions.map(action => (
-            <ActionButton 
-              key={action.id} 
-              action={action} 
-              onSelectAction={onSelectAction} 
-            />
-          ))}
-        </div>
-      )}
+      <div className='flex flex--row flex--center gap20'>
+        {weaponActions.length > 0 && (
+          <div className="action-group flex flex--row">
+            <h4 className="self-center">Attaques d'Armes</h4>
+            {weaponActions.map(action => (
+              <ActionButton
+                key={action.id}
+                action={action}
+                onSelectAction={onSelectAction}
+              />
+            ))}
+          </div>
+        )}
 
-      {spellActions.length > 0 && (
-        <div className="action-group">
-          <h4>Sorts</h4>
-          {spellActions.map(action => (
-            <ActionButton 
-              key={action.id} 
-              action={action} 
-              onSelectAction={onSelectAction} 
-            />
-          ))}
-        </div>
-      )}
+        {spellActions.length > 0 && (
+          <div className="action-group flex flex--row">
+            <h4 className="self-center">Sorts</h4>
+            {spellActions.map(action => (
+              <ActionButton
+                key={action.id}
+                action={action}
+                onSelectAction={onSelectAction}
+              />
+            ))}
+          </div>
+        )}
 
-      {availableActions.length === 0 && (
-        <p>Aucune action offensive disponible.</p>
-      )}
+        {availableActions.length === 0 && (
+          <p>Aucune action offensive disponible.</p>
+        )}
 
-      <button onClick={onPassTurn}>Passer le tour</button>
+        <button onClick={onPassTurn}>Passer le tour</button>
+      </div>
     </div>
   );
 };

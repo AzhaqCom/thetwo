@@ -13,11 +13,11 @@ body {
     line-height: 1.6;
 }
 
-p{
+p {
     margin: 5px;
 }
 
-.text-sm{
+.text-sm {
     font-size: 14px;
 }
 
@@ -41,7 +41,7 @@ p{
 }
 
 .main-content {
-    width: 50%;
+    width: 75%;
     padding: 10px;
     border: 1px solid var(--color-border-primary);
     border-radius: var(--radius-md);
@@ -56,7 +56,7 @@ p{
 
 /* Combat mode main content */
 .main-content.combat-mode {
-    width: 70%;
+    width: 75%;
     height: calc(100vh - 16px);
 }
 
@@ -80,7 +80,7 @@ p{
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
-   
+
 }
 
 .combat-controls {
@@ -105,7 +105,7 @@ p{
 .sidebar {
     width: 25%;
     overflow-y: auto;
-    padding: 15px;
+    padding: 10px;
     border: 1px solid var(--color-border-primary);
     border-radius: var(--radius-md);
     background-color: var(--color-bg-secondary);
@@ -118,32 +118,33 @@ p{
 
 /* Combat mode sidebars */
 .sidebar.combat-mode {
-    width: 15%;
+    width: 25%;
 }
 
 /* Styles pour la barre de défilement */
 .sidebar::-webkit-scrollbar {
-  width: 8px; /* Largeur de la barre de défilement */
+    width: 8px;
+    /* Largeur de la barre de défilement */
 }
 
 .sidebar::-webkit-scrollbar-track {
-  background: var(--color-bg-tertiary);
-  border-radius: 10px;
+    background: var(--color-bg-tertiary);
+    border-radius: 10px;
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-  background-color: var(--color-border-secondary);
-  border-radius: 10px;
-  border: 2px solid var(--color-bg-tertiary);
+    background-color: var(--color-border-secondary);
+    border-radius: 10px;
+    border: 2px solid var(--color-bg-tertiary);
 }
 
 .sidebar::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-border-accent);
+    background-color: var(--color-border-accent);
 }
 
 .sidebar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border-secondary) var(--color-bg-tertiary);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-secondary) var(--color-bg-tertiary);
 }
 
 h1,
@@ -219,15 +220,15 @@ button:hover {
 }
 
 .inventory li strong {
-     font-size: 16px;
-     line-height: 16px;
+    font-size: 16px;
+    line-height: 16px;
 }
 
-.inventory li.item{
+.inventory li.item {
     gap: var(--spacing-xs);
 }
 
-.inventory li.item span{
+.inventory li.item span {
     font-size: 14px;
     line-height: 14px;
     text-align: center;
@@ -293,12 +294,12 @@ button:hover {
     flex-direction: column;
     align-items: center;
     padding: 1rem;
-    max-width: 800px;
+
 }
 
 .scene-text {
     white-space: pre-wrap;
-    min-height: 320px;
+    min-height: 240px;
     transition: var(--transition-normal);
     margin-bottom: 1rem;
     font-size: 1rem;
@@ -504,7 +505,8 @@ button:hover {
     margin: 0;
     display: flex;
     justify-content: center;
-    flex-shrink: 0; /* Prevent grid from shrinking */
+    flex-shrink: 0;
+    /* Prevent grid from shrinking */
     width: 100%;
 }
 
@@ -518,7 +520,8 @@ button:hover {
     border-radius: 8px;
     width: 100%;
     max-width: 100%;
-    aspect-ratio: 8/6; /* Maintain 8:6 ratio */
+    aspect-ratio: 8/6;
+    /* Maintain 8:6 ratio */
 }
 
 .grid-square {
@@ -531,7 +534,8 @@ button:hover {
     transition: background-color 0.2s ease;
     min-height: 60px;
     position: relative;
-    overflow: hidden; /* Keep cards within bounds */
+    overflow: hidden;
+    /* Keep cards within bounds */
 }
 
 .grid-square:hover {
@@ -573,9 +577,12 @@ button:hover {
 
 /* Character Card Styles */
 .character-card {
-    width: 100%; /* Fill the grid square */
-    height: 100%; /* Fill the grid square */
-    max-width: 100%; /* Ensure it doesn't exceed square width */
+    width: 100%;
+    /* Fill the grid square */
+    height: 100%;
+    /* Fill the grid square */
+    max-width: 100%;
+    /* Ensure it doesn't exceed square width */
     padding: 4px;
     text-align: center;
     border-radius: 6px;
@@ -876,12 +883,12 @@ button:hover {
     .character-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .character-stats-detailed {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    
+
     .selection-header h1 {
         font-size: 2rem;
     }
@@ -961,13 +968,14 @@ button:hover {
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
     color: #f0e6d3;
     font-size: 0.9rem;
-    flex-grow: 1; /* Permet à la fiche de personnage de prendre la place restante dans sa sidebar */
+    flex-grow: 1;
+    /* Permet à la fiche de personnage de prendre la place restante dans sa sidebar */
 }
 
 .character-sheet .header {
     border-bottom: 1px solid #666;
     padding-bottom: 10px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     text-align: center;
 }
 
@@ -980,7 +988,6 @@ button:hover {
 .character-sheet .main-stats {
     display: flex;
     justify-content: space-around;
-    margin-bottom: 10px;
     gap: 5px;
     flex-wrap: wrap;
 }
@@ -995,10 +1002,10 @@ button:hover {
 
 .character-sheet .abilities {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-evenly;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 2px 13px;
+    margin-bottom: 10px;
 }
 
 .character-sheet .ability-score {
@@ -1007,32 +1014,38 @@ button:hover {
     border: 1px solid #666;
     padding: 5px;
     background: #222;
+    display: flex;
+    gap: 0 4px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .character-sheet .ability-score h4 {
     margin: 0 0 5px 0;
     color: #f0e6d3;
 }
-.character-sheet .ability-score p{
+
+.character-sheet .ability-score p {
     margin: 0;
 }
+
 .character-sheet .proficiencies,
-.character-sheet .skills { 
+.character-sheet .skills {
     margin-bottom: 15px;
     padding: 10px;
     border: 1px solid #666;
     background: #222;
 }
 
-.character-sheet .proficiencies h4 ,
-.character-sheet .skills h4{ 
+.character-sheet .proficiencies h4,
+.character-sheet .skills h4 {
     border-bottom: 1px solid #666;
     padding-bottom: 5px;
     margin-top: 0;
 }
 
 .character-sheet .proficiencies ul,
-.character-sheet .skills ul  { 
+.character-sheet .skills ul {
     list-style-type: none;
     padding: 0;
 }
@@ -1044,8 +1057,7 @@ button:hover {
     align-items: center;
 }
 
-.character-sheet .skills input[type="checkbox"]
-  {
+.character-sheet .skills input[type="checkbox"] {
     margin-right: 8px;
 }
 

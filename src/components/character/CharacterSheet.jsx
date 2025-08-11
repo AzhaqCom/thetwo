@@ -15,12 +15,12 @@ const CharacterSheet = ({ character }) => {
   const characterStats = useMemo(() => {
     const nextLevelXP = levels[character.level + 1]?.xpRequired || character.currentXP;
     const currentLevelXP = levels[character.level].xpRequired;
-    const xpProgress = nextLevelXP > currentLevelXP 
-      ? ((character.currentXP - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100 
+    const xpProgress = nextLevelXP > currentLevelXP
+      ? ((character.currentXP - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100
       : 100;
 
     // Calculate spell attack bonus only if character can cast spells
-    const spellAttackBonus = character.spellcasting 
+    const spellAttackBonus = character.spellcasting
       ? getModifier(character.stats[character.spellcasting.ability || 'intelligence']) + character.proficiencyBonus
       : null;
 
@@ -46,21 +46,20 @@ const CharacterSheet = ({ character }) => {
     <div className="character-sheet">
       <div className="header">
         <h3>{character.name}</h3>
-        <XPBar 
+        <XPBar
           currentXP={character.currentXP}
           nextLevelXP={characterStats.nextLevelXP}
           xpProgress={characterStats.xpProgress}
         />
         <p>Niv. {character.level} {character.race} {character.class}</p>
         <p>Historique : {character.historic}</p>
-      </div>
-
-      <div className="main-stats">
-        <StatBlock label="CA" value={character.ac} />
-        <HPBar 
-          currentHP={character.currentHP}
-          maxHP={character.maxHP}
-        />
+        <div className="main-stats">
+          <StatBlock label="CA" value={character.ac} />
+          <HPBar
+            currentHP={character.currentHP}
+            maxHP={character.maxHP}
+          />
+        </div>
       </div>
 
       <AbilityScores stats={character.stats} />
@@ -78,7 +77,7 @@ const CharacterSheet = ({ character }) => {
         isVisible={skillsVisible}
         onToggle={() => setSkillsVisible(!skillsVisible)}
       >
-        <SkillsList 
+        <SkillsList
           character={character}
           getSaveBonus={getSaveBonus}
         />

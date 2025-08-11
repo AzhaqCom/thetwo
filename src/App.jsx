@@ -152,7 +152,7 @@ function App() {
                     choices={currentSceneData.choices}
                     onChoice={(nextAction) => {
                         const action = typeof nextAction === 'function' ? nextAction() : nextAction;
-                        
+
                         const result = processSceneAction(action, {
                             startLongRest: restActions.startLongRest,
                             startShortRest: restActions.startShortRest,
@@ -161,7 +161,7 @@ function App() {
                             addCombatMessage,
                             handleSkillCheck
                         });
-                        
+
                         if (result) {
                             setCurrentScene(result);
                         }
@@ -179,7 +179,13 @@ function App() {
 
     return (
         <div className={containerClass}>
-            <div className={`${sidebarClass} left-sidebar`}>
+            <div className={mainContentClass}>
+                {renderCurrentScene()}
+                <CombatLog logMessages={combatLog} />
+            </div>
+            <div className={`${sidebarClass} right-sidebar`}>
+
+                <CharacterSheet character={playerCharacter} />
                 {playerCompanion && <CompanionDisplay companion={playerCompanion} />}
                 <InventoryPanel characterInventory={playerCharacter.inventory} onUseItem={inventoryActions.handleUseItem} />
                 {shouldShowSpellcasting && (
@@ -196,13 +202,6 @@ function App() {
                 {shouldShowSpecialAbilities && (
                     <SpecialAbilitiesPanel character={playerCharacter} />
                 )}
-            </div>
-            <div className={mainContentClass}>
-                {renderCurrentScene()}
-                <CombatLog logMessages={combatLog} />
-            </div>
-            <div className={`${sidebarClass} right-sidebar`}>
-                <CharacterSheet character={playerCharacter} />
             </div>
         </div>
     );
