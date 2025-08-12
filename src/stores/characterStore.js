@@ -5,6 +5,14 @@ import { SpellSystem } from '../services/spellSystem'
 import { GameLogic } from '../services/gameLogic'
 
 // Store pour la gestion des personnages (joueur et compagnon)
+// Helper pour synchroniser playerCharacter et selectedCharacter
+const syncCharacter = (updates) => {
+  if (updates.playerCharacter) {
+    updates.selectedCharacter = updates.playerCharacter
+  }
+  return updates
+}
+
 export const useCharacterStore = create(
   subscribeWithSelector(
     devtools(
@@ -12,6 +20,7 @@ export const useCharacterStore = create(
         // État des personnages
         playerCharacter: null,
         playerCompanion: null,
+        selectedCharacter: null, // Alias pour playerCharacter pour compatibilité avec les composants
         
         // États temporaires
         activeEffects: [],
@@ -25,9 +34,9 @@ export const useCharacterStore = create(
         // === ACTIONS DE BASE ===
 
         // Définir le personnage joueur
-        setPlayerCharacter: (character) => set({ 
-          playerCharacter: character ? GameLogic.deepClone(character) : null 
-        }),
+        setPlayerCharacter: (character) => set(syncCharacter({ 
+          playerCharacter: character ? GameLogic.deepClone(character) : null
+        })),
 
         // Définir le compagnon
         setPlayerCompanion: (companion) => set({ 
@@ -53,7 +62,7 @@ export const useCharacterStore = create(
           if (!state.playerCharacter) return state
           
           const updatedCharacter = CharacterManager.takeDamage(state.playerCharacter, damage)
-          return { playerCharacter: updatedCharacter }
+          return syncCharacter({ playerCharacter: updatedCharacter })
         }),
 
         takeDamageCompanion: (damage) => set((state) => {
@@ -67,7 +76,7 @@ export const useCharacterStore = create(
           if (!state.playerCharacter) return state
           
           const updatedCharacter = CharacterManager.heal(state.playerCharacter, healing)
-          return { playerCharacter: updatedCharacter }
+          return syncCharacter({ playerCharacter: updatedCharacter })
         }),
 
         healCompanion: (healing) => set((state) => {
@@ -83,14 +92,14 @@ export const useCharacterStore = create(
           if (!state.playerCharacter) return state
           
           const updatedCharacter = CharacterManager.shortRest(state.playerCharacter, hitDiceSpent)
-          return { playerCharacter: updatedCharacter }
+          return syncCharacter({ playerCharacter: updatedCharacter })
         }),
 
         longRestPlayer: () => set((state) => {
           if (!state.playerCharacter) return state
           
           const updatedCharacter = CharacterManager.longRest(state.playerCharacter)
-          return { playerCharacter: updatedCharacter }
+          return syncCharacter({ playerCharacter: updatedCharacter })
         }),
 
         longRestCompanion: () => set((state) => {
@@ -171,7 +180,7 @@ export const useCharacterStore = create(
           const updatedCharacter = CharacterManager.consumeSpellSlot(character, spellLevel)
           
           if (targetCharacter === 'player') {
-            return { playerCharacter: updatedCharacter }
+            return syncCharacter({ playerCharacter: updatedCharacter })
           } else {
             return { playerCompanion: updatedCharacter }
           }
@@ -185,7 +194,7 @@ export const useCharacterStore = create(
           if (!updatedCharacter) return state // Couldn't prepare
 
           if (targetCharacter === 'player') {
-            return { playerCharacter: updatedCharacter }
+            return syncCharacter({ playerCharacter: updatedCharacter })
           } else {
             return { playerCompanion: updatedCharacter }
           }
@@ -198,7 +207,7 @@ export const useCharacterStore = create(
           const updatedCharacter = SpellSystem.unprepareSpell(character, spellName)
 
           if (targetCharacter === 'player') {
-            return { playerCharacter: updatedCharacter }
+            return syncCharacter({ playerCharacter: updatedCharacter })
           } else {
             return { playerCompanion: updatedCharacter }
           }
@@ -219,7 +228,7 @@ export const useCharacterStore = create(
           const updates = { inventory: newInventory }
 
           if (targetCharacter === 'player') {
-            return { playerCharacter: { ...character, ...updates } }
+            return syncCharacter({ playerCharacter: { ...character, ...updates } })
           } else {
             return { playerCompanion: { ...character, ...updates } }
           }
@@ -233,7 +242,7 @@ export const useCharacterStore = create(
           const updates = { inventory: newInventory }
 
           if (targetCharacter === 'player') {
-            return { playerCharacter: { ...character, ...updates } }
+            return syncCharacter({ playerCharacter: { ...character, ...updates } })
           } else {
             return { playerCompanion: { ...character, ...updates } }
           }

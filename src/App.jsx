@@ -1,93 +1,168 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { scenes } from './data/scenes';
-import CharacterSheet from './components/character/CharacterSheet';
-import CharacterSelection from './components/character/CharacterSelection';
-import InventoryPanel from './components/inventory/InventoryPanel';
-import SpellcastingPanel from './components/spells/SpellcastingPanel';
-import WeaponPanel from './components/inventory/WeaponPanel';
-import CombatLog from './components/ui/CombatLog';
+
+// Modern feature components
+import {
+  CharacterSheet,
+  CharacterSelection,
+  SpecialAbilitiesPanel,
+  CompanionDisplay
+} from './components/features/character';
+import {
+  CombatPanel,
+  CombatLog
+} from './components/features/combat';
+import {
+  InventoryPanel
+} from './components/features/inventory';
+import {
+  SpellPanel
+} from './components/features/spells';
+import {
+  RestPanel
+} from './components/features/rest';
+
+// Legacy components (TODO: will be migrated in next phases)
 import Scene from './components/game/Scene';
-import CombatPanel from './components/combat/CombatPanel';
-import ShortRestPanel from './components/rest/ShortRestPanel';
-import LongRestPanel from './components/rest/LongRestPanel';
-import CompanionDisplay from './components/combat/CompanionDisplay';
-import { useGameState } from './hooks/useGameState';
-import { useCombatActions } from './hooks/useCombatActions';
-import { useInventoryActions } from './hooks/useInventoryActions';
-import { useSpellActions } from './hooks/useSpellActions';
-import { useRestActions } from './hooks/useRestActions';
+
+// Zustand stores
+import {
+  useGameStore,
+  useCharacterStore,
+  useCombatStore,
+  useUIStore,
+  gameSelectors,
+  characterSelectors,
+  combatSelectors,
+  initializeStores
+} from './stores';
+
+// Utils
 import { processSceneAction } from './components/utils/sceneUtils';
-import SpecialAbilitiesPanel from './components/character/SpecialAbilitiesPanel';
+import { items } from './data/items';
 import './App.css';
 
+// Error fallback component
+function ErrorFallback({ error, resetErrorBoundary }) {
+  return (
+    <div className="error-boundary">
+      <h2>Quelque chose s'est mal passé :</h2>
+      <pre>{error.message}</pre>
+      <button onClick={resetErrorBoundary}>Réessayer</button>
+    </div>
+  );
+}
+
 function App() {
-    // Use custom hooks for state management
-    const gameState = useGameState();
+    // Zustand stores
     const {
         gamePhase,
-        setGamePhase,
         currentScene,
-        setCurrentScene,
-        playerCharacter,
-        setPlayerCharacter,
-        playerCompanion,
-        setPlayerCompanion,
         combatLog,
-        setCombatLog,
         isShortResting,
         isLongResting,
         nextSceneAfterRest,
         combatKey,
-        addCombatMessage,
-        handleSkillCheck
-    } = gameState;
-
-    // Use custom hooks for actions
-    const combatActions = useCombatActions(
-        playerCharacter,
-        setPlayerCharacter,
-        playerCompanion,
-        setPlayerCompanion,
-        addCombatMessage,
-        currentScene,
+        setGamePhase,
         setCurrentScene,
-        setCombatLog,
-        gameState.setCombatKey
-    );
-
-    const inventoryActions = useInventoryActions(
-        playerCharacter,
-        setPlayerCharacter,
-        addCombatMessage
-    );
-
-    const spellActions = useSpellActions(
-        playerCharacter,
-        setPlayerCharacter,
-        addCombatMessage
-    );
-
-    const restActions = useRestActions(
-        playerCharacter,
-        setPlayerCharacter,
-        playerCompanion,
-        setPlayerCompanion,
         addCombatMessage,
-        gameState.setIsShortResting,
-        gameState.setIsLongResting,
-        gameState.setNextSceneAfterRest,
-        setCurrentScene,
-        nextSceneAfterRest
-    );
+        handleSkillCheck,
+        startShortRest,
+        startLongRest,
+        endShortRest,
+        endLongRest
+    } = useGameStore();
 
+    const {
+        playerCharacter,
+        playerCompanion,
+        setPlayerCharacter,
+        setPlayerCompanion,
+        takeDamagePlayer,
+        takeDamageCompanion,
+        addItemToInventory,
+        useItem,
+        castSpellPlayer,
+        shortRestPlayer,
+        longRestPlayer,
+        longRestAll
+    } = useCharacterStore();
+
+    const {
+        isActive: isInCombat,
+        initializeCombat,
+        resetCombat,
+        incrementCombatKey
+    } = useCombatStore();
+
+    const {
+        showError
+    } = useUIStore();
+
+
+    // Character selection handler
     const handleCharacterSelect = (selectedCharacter) => {
         setPlayerCharacter(selectedCharacter);
         setGamePhase('game');
     };
 
-    // Show character selection if no character is selected
+    // Combat victory handler
+    const handleCombatVictory = () => {
+        resetCombat();
+        setCurrentScene('scene1'); // Or next scene
+        addCombatMessage('Combat terminé ! Victoire !', 'victory');
+    };
+
+    // Item gain handler
+    const handleItemGain = (itemIdOrArray) => {
+        const itemIds = Array.isArray(itemIdOrArray) ? itemIdOrArray : [itemIdOrArray];
+        
+        itemIds.forEach(itemId => {
+            const itemData = items[itemId];
+            if (itemData) {
+                const itemToAdd = {
+                    ...itemData,
+                    id: itemId
+                };
+                addItemToInventory(itemToAdd);
+                addCombatMessage(`Objet obtenu : ${itemData.name}`, 'item');
+            } else {
+                console.error(`❌ Item non trouvé : ${itemId}`);
+            }
+        });
+    };
+
+    // Rest handlers
+    const handleShortRest = () => {
+        shortRestPlayer();
+        endShortRest();
+        addCombatMessage('Repos court terminé', 'rest');
+    };
+
+    const handleLongRest = () => {
+        longRestAll();
+        endLongRest();
+        addCombatMessage('Repos long terminé - PV et sorts restaurés', 'rest');
+    };
+
+    // Spell casting out of combat
+    const handleCastSpellOutOfCombat = (spell) => {
+        try {
+            castSpellPlayer(spell);
+            addCombatMessage(`Sort lancé : ${spell.name}`, 'spell');
+        } catch (error) {
+            showError(`Impossible de lancer le sort : ${error.message}`);
+        }
+    };
+
+    // Error boundary wrapper
     if (gamePhase === 'character-selection') {
-        return <CharacterSelection onCharacterSelect={handleCharacterSelect} />;
+        return (
+            <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <CharacterSelection onCharacterSelect={handleCharacterSelect} />
+            </ErrorBoundary>
+        );
     }
 
     // Show loading if character is being set up
@@ -101,36 +176,35 @@ function App() {
         );
     }
 
-    // Determine if we're in combat mode
-    const isInCombat = typeof currentScene === 'object' && currentScene.type === 'combat';
-    const containerClass = `game-container ${isInCombat ? 'combat-mode' : ''}`;
-    const mainContentClass = `main-content ${isInCombat ? 'combat-mode' : ''}`;
-    const sidebarClass = `sidebar ${isInCombat ? 'combat-mode' : ''}`;
+    // Determine UI layout based on game state
+    const isInCombatScene = typeof currentScene === 'object' && currentScene.type === 'combat';
+    const containerClass = `game-container ${isInCombatScene ? 'combat-mode' : ''}`;
+    const mainContentClass = `main-content ${isInCombatScene ? 'combat-mode' : ''}`;
+    const sidebarClass = `sidebar ${isInCombatScene ? 'combat-mode' : ''}`;
 
     const renderCurrentScene = () => {
         if (isLongResting) {
             return (
                 <div className='long-rest-panel'>
-                    <LongRestPanel
-                        onRestComplete={restActions.handleLongRest}
+                    <RestPanel
+                        type="long"
+                        onRestComplete={handleLongRest}
                     />
                     <CombatLog logMessages={combatLog} />
                 </div>
-
             );
         }
 
         if (isShortResting) {
             return (
                 <div className='short-rest-panel'>
-                    <ShortRestPanel
-                        playerCharacter={playerCharacter}
-                        handleSpendHitDie={restActions.handleSpendHitDie}
-                        onEndRest={restActions.endShortRest}
+                    <RestPanel
+                        type="short"
+                        character={playerCharacter}
+                        onRestComplete={handleShortRest}
                     />
                     <CombatLog logMessages={combatLog} />
                 </div>
-
             );
         }
 
@@ -139,17 +213,13 @@ function App() {
                 <CombatPanel
                     key={combatKey}
                     playerCharacter={playerCharacter}
-                    onPlayerTakeDamage={combatActions.handlePlayerTakeDamage}
-                    onCombatEnd={combatActions.handleCombatVictory}
-                    addCombatMessage={addCombatMessage}
-                    combatLog={combatLog}
-                    setCombatLog={setCombatLog}
-                    encounterData={currentScene}
-                    onPlayerCastSpell={spellActions.handlePlayerCastSpell}
-                    onReplayCombat={combatActions.handleReplayCombat}
-                    combatKey={combatKey}
                     playerCompanion={playerCompanion}
-                    onCompanionTakeDamage={combatActions.handleCompanionTakeDamage}
+                    encounterData={currentScene}
+                    onCombatEnd={handleCombatVictory}
+                    onReplayCombat={() => {
+                        incrementCombatKey();
+                        initializeCombat(currentScene, playerCharacter, playerCompanion);
+                    }}
                 />
             );
         }
@@ -165,9 +235,9 @@ function App() {
                             const action = typeof nextAction === 'function' ? nextAction() : nextAction;
 
                             const result = processSceneAction(action, {
-                                startLongRest: restActions.startLongRest,
-                                startShortRest: restActions.startShortRest,
-                                handleItemGain: inventoryActions.handleItemGain,
+                                startLongRest,
+                                startShortRest,
+                                handleItemGain,
                                 setPlayerCompanion,
                                 addCombatMessage,
                                 handleSkillCheck
@@ -180,7 +250,6 @@ function App() {
                     />
                     <CombatLog logMessages={combatLog} />
                 </div>
-
             );
         }
 
@@ -192,32 +261,46 @@ function App() {
     const shouldShowSpecialAbilities = playerCharacter?.specialAbilities;
 
     return (
-        <div className={containerClass}>
-            <div className={mainContentClass}>
-                {renderCurrentScene()}
-                {/*  */}
-            </div>
-            <div className={`${sidebarClass} right-sidebar`}>
-
-                <CharacterSheet character={playerCharacter} />
-                {playerCompanion && <CompanionDisplay companion={playerCompanion} />}
-                <InventoryPanel characterInventory={playerCharacter.inventory} onUseItem={inventoryActions.handleUseItem} />
-                {shouldShowSpellcasting && (
-                    <SpellcastingPanel
-                        character={playerCharacter}
-                        onCastSpell={spellActions.handleCastSpellOutOfCombat}
-                        onPrepareSpell={spellActions.handlePrepareSpell}
-                        onUnprepareSpell={spellActions.handleUnprepareSpell}
+        <ErrorBoundary FallbackComponent={ErrorFallback}>
+            <div className={containerClass}>
+                <div className={mainContentClass}>
+                    {renderCurrentScene()}
+                </div>
+                <div className={`${sidebarClass} right-sidebar`}>
+                    <CharacterSheet 
+                        character={playerCharacter} 
+                        variant="interactive"
                     />
-                )}
-                {shouldShowWeapons && (
-                    <WeaponPanel character={playerCharacter} />
-                )}
-                {shouldShowSpecialAbilities && (
-                    <SpecialAbilitiesPanel character={playerCharacter} />
-                )}
+                    {playerCompanion && <CompanionDisplay companion={playerCompanion} />}
+                    <InventoryPanel 
+                        characterInventory={playerCharacter.inventory} 
+                        onUseItem={(itemId) => {
+                            const success = useItem(itemId);
+                            if (success) {
+                                const item = playerCharacter.inventory.find(i => i.id === itemId);
+                                addCombatMessage(`Utilisation de ${item?.name}`, 'item');
+                            }
+                        }} 
+                    />
+                    {shouldShowSpellcasting && (
+                        <SpellPanel
+                            character={playerCharacter}
+                            onCastSpell={handleCastSpellOutOfCombat}
+                        />
+                    )}
+                    {shouldShowWeapons && (
+                        <div className="weapons-section">
+                            {/* TODO: Create modern WeaponPanel component */}
+                            <h3>Armes</h3>
+                            <p>Panel d'armes à moderniser</p>
+                        </div>
+                    )}
+                    {shouldShowSpecialAbilities && (
+                        <SpecialAbilitiesPanel character={playerCharacter} />
+                    )}
+                </div>
             </div>
-        </div>
+        </ErrorBoundary>
     );
 }
 

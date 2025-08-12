@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useCallback } from 'react'
 import { useCombatStore } from '../../../stores/combatStore'
 import { useGameStore } from '../../../stores/gameStore'
-import { CombatService } from '../../../services/CombatService'
 import { Card, Button } from '../../ui'
 import { CombatGrid } from './CombatGrid'
 import { CombatTurnManager } from './CombatTurnManager'
@@ -22,31 +21,37 @@ export const CombatPanel = ({
   // Stores
   const {
     // État du combat
-    phase,
-    currentTurn,
+    combatPhase: phase,
+    currentTurnIndex,
     turnOrder,
-    enemies,
-    positions,
-    selectedAction,
-    selectedTargets,
+    combatEnemies: enemies,
+    combatPositions: positions,
+    playerAction: selectedAction,
+    actionTargets: selectedTargets,
     defeated,
     victory,
     isInitialized,
     
     // Actions
     initializeCombat,
-    setPhase,
+    startCombat,
+    setTurnPhase: setPhase,
     nextTurn,
-    selectAction,
-    selectTarget,
-    clearTargets,
+    setPlayerAction: selectAction,
+    setActionTargets,
     resetCombat
   } = useCombatStore()
   
+  // Calcul du tour actuel
+  const currentTurn = turnOrder[currentTurnIndex]
+  
+  // Fonctions pour gérer les cibles
+  const clearTargets = () => setActionTargets([])
+  const selectTarget = (target) => {
+    setActionTargets([...selectedTargets, target])
+  }
+  
   const { addCombatMessage, combatLog, clearCombatLog } = useGameStore()
-
-  // Service de combat
-  const combatService = useMemo(() => new CombatService(), [])
 
   // Initialisation du combat
   useEffect(() => {
@@ -59,31 +64,22 @@ export const CombatPanel = ({
     
     // Initialiser le combat
     if (!isInitialized) {
-      const initData = combatService.initializeCombat(
-        playerCharacter,
-        playerCompanion,
-        encounterData
-      )
-      
-      initializeCombat(initData)
+      initializeCombat(encounterData, playerCharacter, playerCompanion)
       addCombatMessage('Un combat commence !', 'combat-start')
       
-      // Messages d'initiative
-      initData.turnOrder.forEach(entity => {
-        addCombatMessage(
-          `${entity.name} a lancé l'initiative et a obtenu ${entity.initiative}.`,
-          'initiative'
-        )
-      })
+      // Démarrer le combat après un délai pour l'initiative
+      setTimeout(() => {
+        startCombat()
+      }, 2000) // 2 secondes pour voir l'initiative
     }
-  }, [encounterData, combatKey, isInitialized, playerCharacter, playerCompanion, combatService, initializeCombat, resetCombat, addCombatMessage])
+  }, [encounterData, combatKey, isInitialized, playerCharacter, playerCompanion, initializeCombat, startCombat, resetCombat, addCombatMessage])
 
   // Gestion des actions de combat
-  const handleActionSelect = (action) => {
+  const handleActionSelect = useCallback((action) => {
     selectAction(action)
-  }
+  }, [selectAction])
 
-  const handleTargetSelect = (target) => {
+  const handleTargetSelect = useCallback((target) => {
     if (!selectedAction) return
     
     selectTarget(target)
@@ -97,9 +93,9 @@ export const CombatPanel = ({
         handleExecuteAction()
       }, 100)
     }
-  }
+  }, [selectedAction, selectTarget, selectedTargets.length])
 
-  const handleExecuteAction = () => {
+  const handleExecuteAction = useCallback(() => {
     if (!selectedAction || !selectedTargets.length) return
     
     const result = combatService.executePlayerAction(
@@ -117,7 +113,7 @@ export const CombatPanel = ({
     clearTargets()
     selectAction(null)
     nextTurn()
-  }
+  }, [selectedAction, selectedTargets, playerCharacter, enemies, addCombatMessage, clearTargets, selectAction, nextTurn])
 
   const handlePassTurn = () => {
     addCombatMessage(`${playerCharacter.name} passe son tour.`)
@@ -245,6 +241,7 @@ export const CombatPanel = ({
       <CombatTurnManager
         currentTurn={currentTurn}
         turnOrder={turnOrder}
+        enemies={enemies}
         phase={phase}
         onPhaseChange={setPhase}
         onNextTurn={nextTurn}

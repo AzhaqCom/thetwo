@@ -56,5 +56,3 @@ export const AOE_SHAPES = {
   LINE: 'line',
   CONE: 'cone'
 }
-
-export default CombatPanel

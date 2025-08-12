@@ -16,6 +16,55 @@ body {
 p {
     margin: 5px;
 }
+.combat-container{
+    overflow-y: auto;
+}
+.ability-scores .stat-group  {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+/* Error Boundary Styles */
+.error-boundary {
+    padding: 2rem;
+    margin: 2rem;
+    border: 2px solid #dc3545;
+    border-radius: 8px;
+    background-color: #f8d7da;
+    color: #721c24;
+    text-align: center;
+}
+
+.error-boundary h2 {
+    color: #721c24;
+    margin-bottom: 1rem;
+}
+
+.error-boundary pre {
+    background-color: #f5c6cb;
+    padding: 1rem;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 1rem 0;
+}
+
+.error-boundary button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.error-boundary button:hover {
+    background-color: #c82333;
+}
 
 .text-sm {
     font-size: 14px;

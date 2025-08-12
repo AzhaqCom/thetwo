@@ -59,9 +59,13 @@ export const CombatTurnManager = ({
 
   // Gestion automatique des tours d'IA
   useEffect(() => {
-    if (phase !== 'combat') return
+    console.log('🎮 CombatTurnManager - phase actuelle:', phase);
+    if (phase !== 'combat' && phase !== 'turn') return // Accepter aussi 'turn'
     
     const currentCombatant = getCurrentCombatant()
+    console.log('👤 Current combattant:', currentCombatant);
+    console.log('✅ Is alive:', isCurrentCombatantAlive());
+    
     if (!currentCombatant || !isCurrentCombatantAlive()) return
     
     // Gérer les différents types de combattants
@@ -72,6 +76,13 @@ export const CombatTurnManager = ({
         break
         
       case 'companion':
+        // Vérifier que le compagnon existe toujours
+        if (!currentCombatant || !currentCombatant.character) {
+          console.warn('Tour de compagnon mais compagnon inexistant, passage au tour suivant')
+          onNextTurn()
+          return
+        }
+        
         onPhaseChange('companion-turn')
         addCombatMessage(`C'est au tour de ${currentCombatant.name}`, 'turn-start')
         // Auto-gérer le tour du compagnon après un délai
@@ -92,7 +103,7 @@ export const CombatTurnManager = ({
   }, [phase, currentTurn, getCurrentCombatant, isCurrentCombatantAlive, onPhaseChange, addCombatMessage])
 
   // Gestion du tour du compagnon
-  const handleCompanionTurn = (companion) => {
+  const handleCompanionTurn = useCallback((companion) => {
     // TODO: Implémenter l'IA du compagnon
     addCombatMessage(`${companion.name} observe la situation et attend le bon moment.`)
     
@@ -101,10 +112,10 @@ export const CombatTurnManager = ({
       onNextTurn()
       onPhaseChange('combat')
     }, 1000)
-  }
+  }, [onNextTurn, onPhaseChange, addCombatMessage])
 
   // Gestion du tour de l'ennemi
-  const handleEnemyTurn = (enemy) => {
+  const handleEnemyTurn = useCallback((enemy) => {
     if (!enemy.attacks || enemy.attacks.length === 0) {
       addCombatMessage(`${enemy.name} n'a pas d'attaque disponible.`)
       setTimeout(() => {
@@ -134,10 +145,10 @@ export const CombatTurnManager = ({
     
     // Exécuter l'attaque
     executeEnemyAttack(enemy, attack, target)
-  }
+  }, [onNextTurn, onPhaseChange, addCombatMessage])
 
   // Exécuter une attaque d'ennemi
-  const executeEnemyAttack = (enemy, attack, target) => {
+  const executeEnemyAttack = useCallback((enemy, attack, target) => {
     // Jet d'attaque
     const attackRoll = combatService.rollD20()
     const attackBonus = combatService.getAttackBonus(enemy, attack)
@@ -176,13 +187,15 @@ export const CombatTurnManager = ({
       onNextTurn()
       onPhaseChange('combat')
     }, 2000)
-  }
+  }, [onNextTurn, onPhaseChange, addCombatMessage])
 
   // Vérification des conditions de fin de combat
   useEffect(() => {
     if (phase === 'victory' || phase === 'defeat') return
     
     // Vérifier si tous les ennemis sont morts
+    if (!enemies || !Array.isArray(enemies)) return
+    
     const aliveEnemies = enemies.filter(enemy => enemy.currentHP > 0)
     if (aliveEnemies.length === 0) {
       onPhaseChange('victory')

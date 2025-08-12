@@ -10,7 +10,9 @@ import { ItemDetailModal } from './ItemDetailModal'
  * Panneau d'inventaire moderne avec gestion Zustand
  */
 export const InventoryPanel = ({
-  className = ''
+  className = '',
+  characterInventory, // Legacy prop pour compatibilité
+  onUseItem // Legacy prop pour compatibilité
 }) => {
   // Stores
   const { 
@@ -19,6 +21,9 @@ export const InventoryPanel = ({
     equipItem,
     unequipItem 
   } = useCharacterStore()
+  
+  // Utiliser selectedCharacter du store (qui est maintenant synchronisé avec playerCharacter)
+  const activeCharacter = selectedCharacter
   
   const { addCombatMessage } = useGameStore()
   
@@ -34,13 +39,15 @@ export const InventoryPanel = ({
 
   // Calculs dérivés
   const inventoryData = useMemo(() => {
-    if (!selectedCharacter?.equipement) return { items: [], totalWeight: 0, maxWeight: 0 }
+    if (!activeCharacter) return { items: [], totalWeight: 0, maxWeight: 0 }
     
+    // Utiliser inventory moderne + équipement legacy si disponible
     const allItems = [
-      ...(selectedCharacter.equipement.inventaire || []),
-      ...(selectedCharacter.equipement.armes || []),
-      ...(selectedCharacter.equipement.armures || []),
-      ...(selectedCharacter.equipement.accessoires || [])
+      ...(activeCharacter.inventory || []),
+      ...(activeCharacter.equipement?.inventaire || []),
+      ...(activeCharacter.equipement?.armes || []),
+      ...(activeCharacter.equipement?.armures || []),
+      ...(activeCharacter.equipement?.accessoires || [])
     ]
     
     // Appliquer les filtres
@@ -77,7 +84,7 @@ export const InventoryPanel = ({
       sum + (item.poids || item.weight || 0) * (item.quantity || 1), 0
     )
     
-    const maxWeight = calculateCarryingCapacity(selectedCharacter)
+    const maxWeight = calculateCarryingCapacity(activeCharacter)
     
     return {
       items: filteredItems,
@@ -85,7 +92,7 @@ export const InventoryPanel = ({
       maxWeight,
       allItemsCount: allItems.length
     }
-  }, [selectedCharacter?.equipement, filters, sortBy])
+  }, [activeCharacter?.inventory, activeCharacter?.equipement, filters, sortBy])
 
   // Gestionnaires d'événements
   const handleUseItem = async (item) => {
@@ -141,7 +148,7 @@ export const InventoryPanel = ({
     setSortBy(newSortBy)
   }
 
-  if (!selectedCharacter) {
+  if (!activeCharacter) {
     return (
       <Card className={`inventory-panel ${className}`}>
         <CardBody>
@@ -157,7 +164,7 @@ export const InventoryPanel = ({
     <Card className={`inventory-panel ${className}`}>
       <CardHeader>
         <div className="inventory-panel__header">
-          <h3>🎒 Inventaire de {selectedCharacter.name}</h3>
+          <h3>🎒 Inventaire de {activeCharacter.name}</h3>
           
           <div className="inventory-panel__stats">
             <div className={`inventory-weight ${isOverloaded ? 'inventory-weight--overloaded' : ''}`}>
@@ -207,7 +214,7 @@ export const InventoryPanel = ({
           onItemUse={handleUseItem}
           onItemEquip={handleEquipItem}
           onItemUnequip={handleUnequipItem}
-          character={selectedCharacter}
+          character={activeCharacter}
         />
 
         {/* État vide */}
@@ -226,7 +233,7 @@ export const InventoryPanel = ({
       {selectedItem && (
         <ItemDetailModal
           item={selectedItem}
-          character={selectedCharacter}
+          character={activeCharacter}
           onClose={() => setSelectedItem(null)}
           onUse={handleUseItem}
           onEquip={handleEquipItem}

@@ -14,13 +14,11 @@ export const XPBar = ({
   size = 'medium',
   animated = true
 }) => {
-  const canLevelUp = useCharacterStore(characterSelectors.canLevelUp)
-  const recentGains = useCharacterStore(state => 
-    characterSelectors.getRecentExperienceGains(state, 1)
-  )
-
-  const hasRecentGain = recentGains.length > 0
-  const latestGain = hasRecentGain ? recentGains[0] : null
+  const canLevelUp = useCharacterStore(state => state.levelUpPending)
+  const experienceGains = useCharacterStore(state => state.experienceGains)
+  
+  const hasRecentGain = experienceGains.length > 0
+  const latestGain = hasRecentGain ? experienceGains[experienceGains.length - 1] : null
 
   const barClass = [
     'xp-bar',

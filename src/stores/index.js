@@ -7,6 +7,12 @@ export { useCharacterStore, characterSelectors } from './characterStore'
 export { useCombatStore, combatSelectors } from './combatStore'
 export { useUIStore, uiSelectors } from './uiStore'
 
+// Import stores for helper functions
+import { useGameStore } from './gameStore'
+import { useCharacterStore } from './characterStore'  
+import { useCombatStore } from './combatStore'
+import { useUIStore } from './uiStore'
+
 // Combined selectors for complex queries
 export const combinedSelectors = {
   // Combine game and character state
@@ -40,16 +46,25 @@ export const combinedSelectors = {
 }
 
 // Store initialization helpers
+let isInitialized = false
 export const initializeStores = () => {
+  // Prevent multiple initializations
+  if (isInitialized) return
+  
   // Initialize UI responsive detection
   const uiStore = useUIStore.getState()
   uiStore.updateScreenSize()
   
-  // Add window resize listener
-  window.addEventListener('resize', () => {
+  // Add window resize listener (only once)
+  const handleResize = () => {
     uiStore.updateScreenSize()
-  })
+  }
+  
+  // Remove existing listener if any
+  window.removeEventListener('resize', handleResize)
+  window.addEventListener('resize', handleResize)
 
+  isInitialized = true
   console.log('Stores initialized successfully')
 }
 

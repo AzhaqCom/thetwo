@@ -19,7 +19,7 @@ export const CollapsibleSection = ({
   onToggle // Callback optionnel après toggle
 }) => {
   const isCollapsed = useUIStore(state => 
-    persistState ? uiSelectors.isSectionCollapsed(state, id) : false
+    persistState ? state.collapsedSections.has(id) : false
   )
   const toggleSection = useUIStore(state => state.toggleSection)
   const animationsEnabled = useUIStore(state => state.combatAnimationsEnabled)

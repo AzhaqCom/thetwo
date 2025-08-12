@@ -71,6 +71,12 @@ export class CombatService {
   rollInitiative(playerCharacter, playerCompanion, enemies) {
     const combatants = []
 
+    // Vérification de sécurité
+    if (!playerCharacter || !playerCharacter.stats) {
+      console.error('CombatService: playerCharacter ou playerCharacter.stats manquant')
+      throw new Error('Personnage joueur requis pour initialiser le combat')
+    }
+
     // Joueur
     const playerInit = this.rollD20() + getModifier(playerCharacter.stats.dexterite)
     combatants.push({

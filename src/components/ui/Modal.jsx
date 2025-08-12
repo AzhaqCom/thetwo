@@ -18,9 +18,10 @@ export const Modal = ({
   className = '',
   onClose
 }) => {
-  const { activeModal, modalData } = useUIStore(uiSelectors.getActiveModal)
+  const activeModal = useUIStore(state => state.activeModal)
+  const modalData = useUIStore(state => state.modalData)
   const closeModal = useUIStore(state => state.closeModal)
-  const isMobile = useUIStore(uiSelectors.isMobile)
+  const isMobile = useUIStore(state => state.isMobile)
 
   const isVisible = activeModal === type
 
@@ -107,7 +108,8 @@ export const Modal = ({
 export const useModal = () => {
   const openModal = useUIStore(state => state.openModal)
   const closeModal = useUIStore(state => state.closeModal)
-  const { activeModal, modalData } = useUIStore(uiSelectors.getActiveModal)
+  const activeModal = useUIStore(state => state.activeModal)
+  const modalData = useUIStore(state => state.modalData)
 
   return {
     openModal,

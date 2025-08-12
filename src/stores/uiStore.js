@@ -20,9 +20,10 @@ export const useUIStore = create(
         notificationCounter: 0,
 
         // === RESPONSIVE ET LAYOUT ===
-        isMobile: window.innerWidth <= 768,
+        isMobile: typeof window !== 'undefined' ? window.innerWidth <= 768 : false,
         sidebarCollapsed: false,
-        screenSize: 'desktop', // 'mobile', 'tablet', 'desktop'
+        screenSize: typeof window !== 'undefined' ? 
+          (window.innerWidth <= 480 ? 'mobile' : window.innerWidth <= 768 ? 'tablet' : 'desktop') : 'desktop',
 
         // === INTERFACE DE COMBAT ===
         showCombatDetails: true,
@@ -170,7 +171,7 @@ export const useUIStore = create(
 
         // === RESPONSIVE ET LAYOUT ===
 
-        updateScreenSize: () => {
+        updateScreenSize: () => set((state) => {
           const width = window.innerWidth
           let screenSize = 'desktop'
           let isMobile = false
@@ -182,8 +183,14 @@ export const useUIStore = create(
             screenSize = 'tablet'
           }
 
-          set({ isMobile, screenSize })
-        },
+          // Only update if values have changed
+          if (state.isMobile !== isMobile || state.screenSize !== screenSize) {
+            return { isMobile, screenSize }
+          }
+          
+          // Return current state if no changes (prevents re-render)
+          return state
+        }),
 
         toggleSidebar: () => set((state) => ({
           sidebarCollapsed: !state.sidebarCollapsed
@@ -308,6 +315,15 @@ export const useUIStore = create(
     }
   )
 )
+
+// Initialize resize listener when the store is created
+if (typeof window !== 'undefined') {
+  const handleResize = () => {
+    useUIStore.getState().updateScreenSize()
+  }
+  
+  window.addEventListener('resize', handleResize)
+}
 
 // Sélecteurs optimisés
 export const uiSelectors = {

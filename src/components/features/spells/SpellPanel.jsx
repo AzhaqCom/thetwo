@@ -12,7 +12,8 @@ import { SpellDetailModal } from './SpellDetailModal'
  * Panneau de gestion des sorts avec Zustand
  */
 export const SpellPanel = ({
-  className = ''
+  className = '',
+  character // Prop character prioritaire
 }) => {
   // Stores
   const {
@@ -21,6 +22,9 @@ export const SpellPanel = ({
     prepareSpell,
     unprepareSpell
   } = useCharacterStore()
+  
+  // Utiliser la prop character si fournie, sinon selectedCharacter du store
+  const activeCharacter = character || selectedCharacter
   
   const { addCombatMessage } = useGameStore()
   
@@ -38,7 +42,7 @@ export const SpellPanel = ({
   })
 
   // Vérifier si le personnage peut lancer des sorts
-  if (!selectedCharacter?.spellcasting) {
+  if (!activeCharacter?.spellcasting) {
     return (
       <Card className={`spell-panel ${className}`}>
         <CardBody>
@@ -53,21 +57,21 @@ export const SpellPanel = ({
 
   // Données des sorts
   const spellData = useMemo(() => {
-    const spellcasting = selectedCharacter.spellcasting
+    const spellcasting = activeCharacter.spellcasting
     
     // Statistiques de sort
     const spellcastingAbility = spellcasting.ability || 'intelligence'
-    const spellAttackBonus = spellService.getSpellAttackBonus(selectedCharacter)
-    const spellSaveDC = spellService.getSpellSaveDC(selectedCharacter)
+    const spellAttackBonus = spellService.getSpellAttackBonus(activeCharacter)
+    const spellSaveDC = spellService.getSpellSaveDC(activeCharacter)
     
     // Listes de sorts
-    const knownSpells = spellService.getKnownSpells(selectedCharacter)
-    const preparedSpells = spellService.getPreparedSpells(selectedCharacter)
-    const cantrips = spellService.getCantrips(selectedCharacter)
-    const maxPrepared = spellService.getMaxPreparedSpells(selectedCharacter)
+    const knownSpells = spellService.getKnownSpells(activeCharacter)
+    const preparedSpells = spellService.getPreparedSpells(activeCharacter)
+    const cantrips = spellService.getCantrips(activeCharacter)
+    const maxPrepared = spellService.getMaxPreparedSpells(activeCharacter)
     
     // Emplacements de sort
-    const spellSlots = spellService.getSpellSlots(selectedCharacter)
+    const spellSlots = spellService.getSpellSlots(activeCharacter)
     
     return {
       spellcastingAbility,
@@ -79,7 +83,7 @@ export const SpellPanel = ({
       maxPrepared,
       spellSlots
     }
-  }, [selectedCharacter, spellService])
+  }, [activeCharacter, spellService])
 
   // Filtrer et trier les sorts selon l'onglet actif
   const filteredSpells = useMemo(() => {
@@ -166,7 +170,7 @@ export const SpellPanel = ({
     <Card className={`spell-panel ${className}`}>
       <CardHeader>
         <div className="spell-panel__header">
-          <h3>🔮 Sorts de {selectedCharacter.name}</h3>
+          <h3>🔮 Sorts de {activeCharacter.name}</h3>
           
           {/* Statistiques de sort */}
           <div className="spell-panel__stats">
@@ -231,7 +235,7 @@ export const SpellPanel = ({
         {/* Liste de sorts */}
         <SpellList
           spells={filteredSpells}
-          character={selectedCharacter}
+          character={activeCharacter}
           activeTab={activeTab}
           spellSlots={spellData.spellSlots}
           onSpellClick={setSelectedSpell}
@@ -260,7 +264,7 @@ export const SpellPanel = ({
       {selectedSpell && (
         <SpellDetailModal
           spell={selectedSpell}
-          character={selectedCharacter}
+          character={activeCharacter}
           spellSlots={spellData.spellSlots}
           onClose={() => setSelectedSpell(null)}
           onCast={handleCastSpell}

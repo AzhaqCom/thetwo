@@ -15,8 +15,11 @@ export { SkillsList, ProficientSkillsList, useSkillBonus } from './SkillsList'
 // Barres de progression
 export { XPBar, CompactXPBar, CircularXPIndicator } from './XPBar'
 
-// Hooks utilitaires
-export { useSkillBonus } from './SkillsList'
+// Capacités spéciales
+export { SpecialAbilitiesPanel, CompactSpecialAbilitiesPanel, InteractiveSpecialAbilitiesPanel } from './SpecialAbilitiesPanel'
+
+// Compagnons
+export { CompanionDisplay, CompactCompanionDisplay, DetailedCompanionDisplay, InteractiveCompanionDisplay } from './CompanionDisplay'
 
 // Utilitaires et constants
 export const CHARACTER_CLASSES = {

@@ -3,7 +3,6 @@ import { useGameStore, useUIStore, gameSelectors } from '../../stores'
 import { getIconForType } from './Icons'
 import { Button } from './Button'
 import { MdClear, MdExpandLess, MdExpandMore } from 'react-icons/md'
-import '../CombatLog.css'
 
 const CombatLogEntry = React.memo(({ entry, showTimestamp = false }) => {
   const timestamp = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : ''

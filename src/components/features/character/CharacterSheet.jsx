@@ -24,10 +24,10 @@ export const CharacterSheet = ({
   compact = false,
   showControls = false 
 }) => {
-  const character = useCharacterStore(
+  const character = useCharacterStore(state =>
     characterType === 'player' 
-      ? characterSelectors.getPlayerCharacter
-      : characterSelectors.getPlayerCompanion
+      ? state.playerCharacter
+      : state.playerCompanion
   )
 
   // Calculs memoïsés du personnage
@@ -229,13 +229,13 @@ export const InteractiveCharacterSheet = ({
   onRest,
   onEditCharacter 
 }) => {
-  const character = useCharacterStore(
+  const character = useCharacterStore(state =>
     characterType === 'player' 
-      ? characterSelectors.getPlayerCharacter
-      : characterSelectors.getPlayerCompanion
+      ? state.playerCharacter
+      : state.playerCompanion
   )
   
-  const canLevelUp = useCharacterStore(characterSelectors.canLevelUp)
+  const canLevelUp = useCharacterStore(state => state.levelUpPending)
 
   if (!character) return <CharacterSheet characterType={characterType} />
 

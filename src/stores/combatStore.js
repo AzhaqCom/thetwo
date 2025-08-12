@@ -6,6 +6,7 @@ import { GameLogic } from '../services/gameLogic'
 import { rollD20WithModifier, getModifier, calculateDistance } from '../utils/calculations'
 import { isValidGridPosition, isPositionOccupied } from '../utils/validation'
 import { GRID_WIDTH, GRID_HEIGHT, COMBAT_PHASES } from '../utils/constants'
+import { enemyTemplates } from '../data/enemies'
 
 // Store pour la gestion du système de combat
 export const useCombatStore = create(
@@ -46,12 +47,26 @@ export const useCombatStore = create(
       // === ACTIONS D'INITIALISATION ===
 
       initializeCombat: (encounterData, playerCharacter, playerCompanion) => set((state) => {
-        // Créer les instances d'ennemis
-        const enemyInstances = encounterData.enemies.map((enemyTemplate, index) => ({
-          ...GameLogic.deepClone(enemyTemplate),
-          name: `${enemyTemplate.name} ${index + 1}`,
-          id: GameLogic.generateId('enemy')
-        }))
+        // Créer les instances d'ennemis à partir des références
+        const enemyInstances = []
+        
+        encounterData.enemies.forEach((enemyRef, encounterIndex) => {
+          const template = enemyTemplates[enemyRef.type]
+          if (!template) {
+            console.error('❌ Template ennemi non trouvé:', enemyRef.type)
+            return
+          }
+          
+          // Créer le nombre d'instances demandé
+          for (let i = 0; i < enemyRef.count; i++) {
+            enemyInstances.push({
+              ...GameLogic.deepClone(template),
+              name: `${template.name} ${i + 1}`,
+              id: GameLogic.generateId('enemy'),
+              type: 'enemy'
+            })
+          }
+        })
 
         // Calculer l'ordre d'initiative
         const initiativeOrder = []
@@ -66,7 +81,8 @@ export const useCombatStore = create(
         })
 
         // Initiative compagnon si présent
-        if (playerCompanion) {
+        console.log('🤝 playerCompanion dans initializeCombat:', playerCompanion);
+        if (playerCompanion && playerCompanion.stats) {
           const companionInitiative = rollD20WithModifier(getModifier(playerCompanion.stats.dexterite))
           initiativeOrder.push({
             type: 'companion',
@@ -74,10 +90,18 @@ export const useCombatStore = create(
             initiative: companionInitiative,
             character: playerCompanion
           })
+          console.log('✅ Compagnon ajouté à l\'initiative:', playerCompanion.name);
+        } else {
+          console.log('❌ Pas de compagnon valide, skip');
         }
 
         // Initiative ennemis
         enemyInstances.forEach(enemy => {
+          if (!enemy.stats || !enemy.stats.dexterite) {
+            console.error('❌ Enemy sans stats.dexterite:', enemy);
+            return; // Skip cet ennemi
+          }
+          
           const enemyInitiative = rollD20WithModifier(getModifier(enemy.stats.dexterite))
           initiativeOrder.push({
             type: 'enemy',

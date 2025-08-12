@@ -1,4 +1,4 @@
-import { getModifier } from '../components/utils/utils';
+import { getModifier } from '../utils/calculations';
 
 export const items = {
     potionOfHealing: {

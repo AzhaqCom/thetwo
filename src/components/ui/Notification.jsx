@@ -57,9 +57,9 @@ export const NotificationContainer = ({
   position = 'top-right', // 'top-right', 'top-left', 'bottom-right', 'bottom-left', 'top-center'
   maxNotifications = 5 
 }) => {
-  const notifications = useUIStore(uiSelectors.getNotifications)
+  const notifications = useUIStore(state => state.notifications)
   const removeNotification = useUIStore(state => state.removeNotification)
-  const isMobile = useUIStore(uiSelectors.isMobile)
+  const isMobile = useUIStore(state => state.isMobile)
 
   // Limiter le nombre de notifications affichées
   const visibleNotifications = notifications.slice(-maxNotifications)

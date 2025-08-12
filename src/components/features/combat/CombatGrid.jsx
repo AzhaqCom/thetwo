@@ -6,7 +6,7 @@ import { useCombatStore } from '../../../stores/combatStore'
  */
 export const CombatGrid = ({
   playerCharacter,
-  playerCompanion, 
+  playerCompanion,
   enemies,
   positions,
   selectedAction,
@@ -16,10 +16,12 @@ export const CombatGrid = ({
   onTargetSelect,
   onMoveCharacter
 }) => {
+  console.log('🎯 CombatGrid - enemies:', enemies);
+  console.log('🎯 CombatGrid - positions:', positions);
   const GRID_WIDTH = 8
   const GRID_HEIGHT = 6
   const MOVEMENT_RANGE = 6 // cases
-  
+
   const [hoveredCell, setHoveredCell] = useState(null)
   const [highlightedCells, setHighlightedCells] = useState([])
 
@@ -29,20 +31,20 @@ export const CombatGrid = ({
     if (positions.player?.x === x && positions.player?.y === y) {
       return { ...playerCharacter, id: 'player', type: 'player' }
     }
-    
+
     // Vérifier le compagnon
     if (positions.companion?.x === x && positions.companion?.y === y && playerCompanion) {
       return { ...playerCompanion, id: 'companion', type: 'companion' }
     }
-    
+
     // Vérifier les ennemis
     for (const enemy of enemies) {
-      const enemyPos = positions[enemy.id]
+      const enemyPos = positions[enemy.name] // Utiliser enemy.name au lieu de enemy.id
       if (enemyPos?.x === x && enemyPos?.y === y && enemy.currentHP > 0) {
         return enemy
       }
     }
-    
+
     return null
   }, [positions, playerCharacter, playerCompanion, enemies])
 
@@ -54,10 +56,10 @@ export const CombatGrid = ({
   // Vérifier si une case est dans la portée de mouvement
   const isValidMovementTarget = (x, y) => {
     if (phase !== 'player-movement') return false
-    
+
     const playerPos = positions.player
     if (!playerPos) return false
-    
+
     const distance = getManhattanDistance(playerPos.x, playerPos.y, x, y)
     return distance <= MOVEMENT_RANGE && !getCombatantAtPosition(x, y)
   }
@@ -65,32 +67,32 @@ export const CombatGrid = ({
   // Vérifier si une case est une cible valide pour l'action sélectionnée
   const isValidActionTarget = (x, y) => {
     if (!selectedAction || phase !== 'player-turn') return false
-    
+
     const combatant = getCombatantAtPosition(x, y)
-    
+
     // Pour les attaques, cibler les ennemis vivants
     if (selectedAction.type === 'attack') {
       return combatant?.type === 'enemy' && combatant.currentHP > 0
     }
-    
+
     // Pour les sorts avec zone d'effet, toute case valide
     if (selectedAction.areaOfEffect) {
       return true
     }
-    
+
     // Pour les autres sorts, cibler selon le type
     if (selectedAction.type === 'spell') {
       // TODO: Gérer les sorts de soin vs dégâts
       return combatant?.type === 'enemy' && combatant.currentHP > 0
     }
-    
+
     return false
   }
 
   // Calculer les cases affectées par une zone d'effet
   const getAoEAffectedCells = useCallback((centerX, centerY, aoeData) => {
     const cells = []
-    
+
     switch (aoeData.shape) {
       case 'sphere': {
         const radius = Math.floor(aoeData.radius / 5) // Convertir pieds en cases
@@ -122,14 +124,14 @@ export const CombatGrid = ({
         break
       }
     }
-    
+
     return cells
   }, [])
 
   // Gérer le survol des cases
   const handleCellHover = (x, y) => {
     setHoveredCell({ x, y })
-    
+
     // Afficher la preview de zone d'effet
     if (selectedAction?.areaOfEffect && phase === 'player-turn') {
       const affectedCells = getAoEAffectedCells(x, y, selectedAction.areaOfEffect)
@@ -152,7 +154,7 @@ export const CombatGrid = ({
       }
       return
     }
-    
+
     if (phase === 'player-turn' && selectedAction) {
       if (selectedAction.areaOfEffect) {
         // Ciblage de zone
@@ -171,12 +173,12 @@ export const CombatGrid = ({
   const getCellClasses = (x, y) => {
     const classes = ['combat-grid__cell']
     const combatant = getCombatantAtPosition(x, y)
-    
+
     // Case occupée
     if (combatant) {
       classes.push('combat-grid__cell--occupied')
       classes.push(`combat-grid__cell--${combatant.type}`)
-      
+
       // Combattant actuel
       if (currentTurn < positions.turnOrder?.length) {
         const currentCombatant = positions.turnOrder[currentTurn]
@@ -184,33 +186,33 @@ export const CombatGrid = ({
           classes.push('combat-grid__cell--current-turn')
         }
       }
-      
+
       // Cible sélectionnée
       if (selectedTargets.some(target => target.id === combatant.id)) {
         classes.push('combat-grid__cell--selected-target')
       }
     }
-    
+
     // Case survolée
     if (hoveredCell?.x === x && hoveredCell?.y === y) {
       classes.push('combat-grid__cell--hovered')
     }
-    
+
     // Case dans la zone d'effet
     if (highlightedCells.some(cell => cell.x === x && cell.y === y)) {
       classes.push('combat-grid__cell--aoe-highlight')
     }
-    
+
     // Cases de mouvement valides
     if (isValidMovementTarget(x, y)) {
       classes.push('combat-grid__cell--valid-movement')
     }
-    
+
     // Cases de ciblage valides
     if (isValidActionTarget(x, y)) {
       classes.push('combat-grid__cell--valid-target')
     }
-    
+
     return classes.join(' ')
   }
 
@@ -222,7 +224,9 @@ export const CombatGrid = ({
       case 'companion':
         return '🐺'
       case 'enemy':
-        return combatant.image || '👹'
+        // return combatant.image || '👹'
+        return '👹'
+
       default:
         return '❓'
     }
@@ -232,7 +236,7 @@ export const CombatGrid = ({
   const renderCell = (x, y) => {
     const combatant = getCombatantAtPosition(x, y)
     const cellKey = `${x}-${y}`
-    
+
     return (
       <div
         key={cellKey}
@@ -246,7 +250,7 @@ export const CombatGrid = ({
         <span className="combat-grid__coordinates">
           {x},{y}
         </span>
-        
+
         {/* Combattant */}
         {combatant && (
           <div className="combat-grid__combatant">
@@ -257,7 +261,7 @@ export const CombatGrid = ({
               {combatant.name}
             </span>
             <div className="combat-grid__health-bar">
-              <div 
+              <div
                 className="combat-grid__health-fill"
                 style={{
                   width: `${(combatant.currentHP / combatant.maxHP) * 100}%`
@@ -266,12 +270,12 @@ export const CombatGrid = ({
             </div>
           </div>
         )}
-        
+
         {/* Indicateur de case valide */}
         {isValidMovementTarget(x, y) && (
           <div className="combat-grid__movement-indicator">🏃</div>
         )}
-        
+
         {isValidActionTarget(x, y) && !combatant && (
           <div className="combat-grid__target-indicator">🎯</div>
         )}
@@ -297,9 +301,9 @@ export const CombatGrid = ({
           )}
         </div>
       </div>
-      
+
       {/* Grille principale */}
-      <div 
+      <div
         className="combat-grid__container"
         style={{
           gridTemplateColumns: `repeat(${GRID_WIDTH}, 1fr)`,
@@ -310,7 +314,7 @@ export const CombatGrid = ({
           Array.from({ length: GRID_WIDTH }, (_, x) => renderCell(x, y))
         )}
       </div>
-      
+
       {/* Légende */}
       <div className="combat-grid__legend">
         <div className="combat-grid__legend-item">

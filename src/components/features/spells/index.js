@@ -83,5 +83,3 @@ export const SPELL_DURATIONS = {
   DAYS_7: '7 jours',
   PERMANENT: 'Permanent'
 }
-
-export default SpellPanel

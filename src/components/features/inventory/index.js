@@ -52,5 +52,3 @@ export const INVENTORY_SORT_OPTIONS = {
   WEIGHT: 'weight',
   RARITY: 'rarity'
 }
-
-export default InventoryPanel

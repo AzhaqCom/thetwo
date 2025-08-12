@@ -51,5 +51,3 @@ export const calculateHitDiceRecovery = (characterLevel) => {
 export const calculateMaxHitDice = (characterLevel) => {
   return characterLevel
 }
-
-export default RestPanel

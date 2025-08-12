@@ -65,7 +65,8 @@ export const LoadingOverlay = ({
  * Composant de chargement connecté au store UI
  */
 export const GlobalLoading = () => {
-  const { loading, message } = useUIStore(uiSelectors.getLoadingState)
+  const loading = useUIStore(state => state.loading)
+  const message = useUIStore(state => state.loadingMessage)
 
   if (!loading) return null
 
@@ -141,7 +142,8 @@ export const CharacterCardSkeleton = () => (
  */
 export const useLoading = () => {
   const setLoading = useUIStore(state => state.setLoading)
-  const { loading, message } = useUIStore(uiSelectors.getLoadingState)
+  const loading = useUIStore(state => state.loading)
+  const message = useUIStore(state => state.loadingMessage)
 
   return {
     loading,
