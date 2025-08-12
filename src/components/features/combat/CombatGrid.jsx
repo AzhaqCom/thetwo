@@ -1,0 +1,335 @@
+import React, { useState, useCallback } from 'react'
+import { useCombatStore } from '../../../stores/combatStore'
+
+/**
+ * Grille de combat tactique
+ */
+export const CombatGrid = ({
+  playerCharacter,
+  playerCompanion, 
+  enemies,
+  positions,
+  selectedAction,
+  selectedTargets,
+  currentTurn,
+  phase,
+  onTargetSelect,
+  onMoveCharacter
+}) => {
+  const GRID_WIDTH = 8
+  const GRID_HEIGHT = 6
+  const MOVEMENT_RANGE = 6 // cases
+  
+  const [hoveredCell, setHoveredCell] = useState(null)
+  const [highlightedCells, setHighlightedCells] = useState([])
+
+  // Obtenir le combattant à une position donnée
+  const getCombatantAtPosition = useCallback((x, y) => {
+    // Vérifier le joueur
+    if (positions.player?.x === x && positions.player?.y === y) {
+      return { ...playerCharacter, id: 'player', type: 'player' }
+    }
+    
+    // Vérifier le compagnon
+    if (positions.companion?.x === x && positions.companion?.y === y && playerCompanion) {
+      return { ...playerCompanion, id: 'companion', type: 'companion' }
+    }
+    
+    // Vérifier les ennemis
+    for (const enemy of enemies) {
+      const enemyPos = positions[enemy.id]
+      if (enemyPos?.x === x && enemyPos?.y === y && enemy.currentHP > 0) {
+        return enemy
+      }
+    }
+    
+    return null
+  }, [positions, playerCharacter, playerCompanion, enemies])
+
+  // Calculer la distance Manhattan entre deux points
+  const getManhattanDistance = (x1, y1, x2, y2) => {
+    return Math.abs(x1 - x2) + Math.abs(y1 - y2)
+  }
+
+  // Vérifier si une case est dans la portée de mouvement
+  const isValidMovementTarget = (x, y) => {
+    if (phase !== 'player-movement') return false
+    
+    const playerPos = positions.player
+    if (!playerPos) return false
+    
+    const distance = getManhattanDistance(playerPos.x, playerPos.y, x, y)
+    return distance <= MOVEMENT_RANGE && !getCombatantAtPosition(x, y)
+  }
+
+  // Vérifier si une case est une cible valide pour l'action sélectionnée
+  const isValidActionTarget = (x, y) => {
+    if (!selectedAction || phase !== 'player-turn') return false
+    
+    const combatant = getCombatantAtPosition(x, y)
+    
+    // Pour les attaques, cibler les ennemis vivants
+    if (selectedAction.type === 'attack') {
+      return combatant?.type === 'enemy' && combatant.currentHP > 0
+    }
+    
+    // Pour les sorts avec zone d'effet, toute case valide
+    if (selectedAction.areaOfEffect) {
+      return true
+    }
+    
+    // Pour les autres sorts, cibler selon le type
+    if (selectedAction.type === 'spell') {
+      // TODO: Gérer les sorts de soin vs dégâts
+      return combatant?.type === 'enemy' && combatant.currentHP > 0
+    }
+    
+    return false
+  }
+
+  // Calculer les cases affectées par une zone d'effet
+  const getAoEAffectedCells = useCallback((centerX, centerY, aoeData) => {
+    const cells = []
+    
+    switch (aoeData.shape) {
+      case 'sphere': {
+        const radius = Math.floor(aoeData.radius / 5) // Convertir pieds en cases
+        for (let x = 0; x < GRID_WIDTH; x++) {
+          for (let y = 0; y < GRID_HEIGHT; y++) {
+            const distance = Math.sqrt(
+              Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
+            )
+            if (distance <= radius) {
+              cells.push({ x, y })
+            }
+          }
+        }
+        break
+      }
+      case 'cube': {
+        const size = Math.floor(aoeData.size / 5) // Convertir pieds en cases
+        for (let x = centerX; x < Math.min(centerX + size, GRID_WIDTH); x++) {
+          for (let y = centerY; y < Math.min(centerY + size, GRID_HEIGHT); y++) {
+            if (x >= 0 && y >= 0) {
+              cells.push({ x, y })
+            }
+          }
+        }
+        break
+      }
+      case 'line': {
+        // TODO: Implémenter les lignes
+        break
+      }
+    }
+    
+    return cells
+  }, [])
+
+  // Gérer le survol des cases
+  const handleCellHover = (x, y) => {
+    setHoveredCell({ x, y })
+    
+    // Afficher la preview de zone d'effet
+    if (selectedAction?.areaOfEffect && phase === 'player-turn') {
+      const affectedCells = getAoEAffectedCells(x, y, selectedAction.areaOfEffect)
+      setHighlightedCells(affectedCells)
+    } else {
+      setHighlightedCells([])
+    }
+  }
+
+  const handleCellLeave = () => {
+    setHoveredCell(null)
+    setHighlightedCells([])
+  }
+
+  // Gérer les clics sur les cases
+  const handleCellClick = (x, y) => {
+    if (phase === 'player-movement') {
+      if (isValidMovementTarget(x, y)) {
+        onMoveCharacter?.('player', { x, y })
+      }
+      return
+    }
+    
+    if (phase === 'player-turn' && selectedAction) {
+      if (selectedAction.areaOfEffect) {
+        // Ciblage de zone
+        onTargetSelect?.({ x, y, isPosition: true })
+      } else {
+        // Ciblage de combattant
+        const combatant = getCombatantAtPosition(x, y)
+        if (combatant && isValidActionTarget(x, y)) {
+          onTargetSelect?.(combatant)
+        }
+      }
+    }
+  }
+
+  // Obtenir les classes CSS pour une case
+  const getCellClasses = (x, y) => {
+    const classes = ['combat-grid__cell']
+    const combatant = getCombatantAtPosition(x, y)
+    
+    // Case occupée
+    if (combatant) {
+      classes.push('combat-grid__cell--occupied')
+      classes.push(`combat-grid__cell--${combatant.type}`)
+      
+      // Combattant actuel
+      if (currentTurn < positions.turnOrder?.length) {
+        const currentCombatant = positions.turnOrder[currentTurn]
+        if (currentCombatant?.id === combatant.id) {
+          classes.push('combat-grid__cell--current-turn')
+        }
+      }
+      
+      // Cible sélectionnée
+      if (selectedTargets.some(target => target.id === combatant.id)) {
+        classes.push('combat-grid__cell--selected-target')
+      }
+    }
+    
+    // Case survolée
+    if (hoveredCell?.x === x && hoveredCell?.y === y) {
+      classes.push('combat-grid__cell--hovered')
+    }
+    
+    // Case dans la zone d'effet
+    if (highlightedCells.some(cell => cell.x === x && cell.y === y)) {
+      classes.push('combat-grid__cell--aoe-highlight')
+    }
+    
+    // Cases de mouvement valides
+    if (isValidMovementTarget(x, y)) {
+      classes.push('combat-grid__cell--valid-movement')
+    }
+    
+    // Cases de ciblage valides
+    if (isValidActionTarget(x, y)) {
+      classes.push('combat-grid__cell--valid-target')
+    }
+    
+    return classes.join(' ')
+  }
+
+  // Obtenir l'icône d'un combattant
+  const getCombatantIcon = (combatant) => {
+    switch (combatant.type) {
+      case 'player':
+        return '🧙‍♂️'
+      case 'companion':
+        return '🐺'
+      case 'enemy':
+        return combatant.image || '👹'
+      default:
+        return '❓'
+    }
+  }
+
+  // Rendre une case de la grille
+  const renderCell = (x, y) => {
+    const combatant = getCombatantAtPosition(x, y)
+    const cellKey = `${x}-${y}`
+    
+    return (
+      <div
+        key={cellKey}
+        className={getCellClasses(x, y)}
+        onMouseEnter={() => handleCellHover(x, y)}
+        onMouseLeave={handleCellLeave}
+        onClick={() => handleCellClick(x, y)}
+        title={combatant ? `${combatant.name} (${combatant.currentHP}/${combatant.maxHP} PV)` : `Case (${x}, ${y})`}
+      >
+        {/* Coordonnées de la case (debug) */}
+        <span className="combat-grid__coordinates">
+          {x},{y}
+        </span>
+        
+        {/* Combattant */}
+        {combatant && (
+          <div className="combat-grid__combatant">
+            <span className="combat-grid__combatant-icon">
+              {getCombatantIcon(combatant)}
+            </span>
+            <span className="combat-grid__combatant-name">
+              {combatant.name}
+            </span>
+            <div className="combat-grid__health-bar">
+              <div 
+                className="combat-grid__health-fill"
+                style={{
+                  width: `${(combatant.currentHP / combatant.maxHP) * 100}%`
+                }}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Indicateur de case valide */}
+        {isValidMovementTarget(x, y) && (
+          <div className="combat-grid__movement-indicator">🏃</div>
+        )}
+        
+        {isValidActionTarget(x, y) && !combatant && (
+          <div className="combat-grid__target-indicator">🎯</div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="combat-grid">
+      {/* En-tête avec informations */}
+      <div className="combat-grid__header">
+        <h3>Champ de bataille</h3>
+        <div className="combat-grid__info">
+          {phase === 'player-movement' && (
+            <span className="combat-grid__phase-info">
+              🏃 Phase de mouvement (max {MOVEMENT_RANGE} cases)
+            </span>
+          )}
+          {phase === 'player-turn' && selectedAction && (
+            <span className="combat-grid__phase-info">
+              🎯 {selectedAction.name} sélectionné
+            </span>
+          )}
+        </div>
+      </div>
+      
+      {/* Grille principale */}
+      <div 
+        className="combat-grid__container"
+        style={{
+          gridTemplateColumns: `repeat(${GRID_WIDTH}, 1fr)`,
+          gridTemplateRows: `repeat(${GRID_HEIGHT}, 1fr)`
+        }}
+      >
+        {Array.from({ length: GRID_HEIGHT }, (_, y) =>
+          Array.from({ length: GRID_WIDTH }, (_, x) => renderCell(x, y))
+        )}
+      </div>
+      
+      {/* Légende */}
+      <div className="combat-grid__legend">
+        <div className="combat-grid__legend-item">
+          <span className="combat-grid__legend-icon">🧙‍♂️</span>
+          <span>Joueur</span>
+        </div>
+        {playerCompanion && (
+          <div className="combat-grid__legend-item">
+            <span className="combat-grid__legend-icon">🐺</span>
+            <span>Compagnon</span>
+          </div>
+        )}
+        <div className="combat-grid__legend-item">
+          <span className="combat-grid__legend-icon">👹</span>
+          <span>Ennemis</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default CombatGrid
