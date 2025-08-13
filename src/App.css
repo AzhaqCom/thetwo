@@ -16,12 +16,14 @@ body {
 p {
     margin: 5px;
 }
-.combat-container{
+
+.combat-container {
     overflow-y: auto;
     width: 100%;
     height: 100%;
 }
-.ability-scores .stat-group  {
+
+.ability-scores .stat-group {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -29,6 +31,7 @@ p {
     gap: 10px;
     margin-bottom: 20px;
 }
+
 /* Error Boundary Styles */
 .error-boundary {
     padding: 2rem;
@@ -169,27 +172,31 @@ p {
 
 
 /* Styles pour la barre de défilement */
-.sidebar::-webkit-scrollbar {
+.sidebar::-webkit-scrollbar,
+.combat-log__entries::-webkit-scrollbar {
     width: 8px;
     /* Largeur de la barre de défilement */
 }
 
-.sidebar::-webkit-scrollbar-track {
+.sidebar::-webkit-scrollbar-track,
+.combat-log__entries::-webkit-scrollbar-track {
     background: var(--color-magic-secondary);
     border-radius: 10px;
 }
 
-.sidebar::-webkit-scrollbar-thumb {
+.sidebar::-webkit-scrollbar-thumb,
+.combat-log__entries::-webkit-scrollbar {
     background-color: var(--color-magic-secondary);
     border-radius: 10px;
     border: 2px solid var(--color-bg-tertiary);
 }
 
-.sidebar::-webkit-scrollbar-thumb:hover {
+.sidebar::-webkit-scrollbar-thumb:hover,
+.combat-log__entries::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-border-accent);
 }
 
-.sidebar {
+.sidebar,.combat-log__entries {
     scrollbar-width: thin;
     scrollbar-color: var(--color-magic-secondary) var(--color-bg-tertiary);
 }
@@ -666,7 +673,7 @@ button:hover {
 }
 
 .companion-card {
-    background-color: #f3e5f5;
+    background-color: var(--color-bg-secondary);
     border-color: #7b1fa2;
 }
 
@@ -987,9 +994,11 @@ button:hover {
     background-color: #59aedf;
     transition: width 0.3s ease;
 }
-.health-bar__container{
+
+.health-bar__container {
     width: 100%;
 }
+
 .health-bar__background {
     width: 100%;
     height: 15px;
@@ -1004,19 +1013,23 @@ button:hover {
     background-color: #d32f2f;
     transition: width 0.3s ease;
 }
-.skills-list__items{
+
+.skills-list__items {
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
 }
-.skill-item__header{
+
+.skill-item__header {
     display: flex;
     gap: 3px;
 }
-.character-sheet__combat-info{
+
+.character-sheet__combat-info {
     display: grid;
     grid-template-columns: 1fr 1fr;
 }
+
 /* Styles de la fiche de personnage (conservent les styles généraux du CharacterSheet) */
 .character-sheet {
     background: #333333;
@@ -1049,6 +1062,7 @@ button:hover {
     gap: 5px;
     flex-wrap: wrap;
 }
+
 .character-sheet__combat-stats .stat-block {
     display: flex;
     flex-direction: row;
@@ -1056,10 +1070,11 @@ button:hover {
     gap: 3px;
     justify-content: center;
 }
+
 .character-sheet .stat-block {
     text-align: center;
- 
-   
+
+
     background: #222;
     min-width: 60px;
 }

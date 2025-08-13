@@ -47,6 +47,15 @@ export const CombatGrid = ({
     return null
   }, [positions, playerCharacter, playerCompanion, enemies])
 
+
+  const getHealthColor = (currentHP, maxHP) => {
+    const ratio = currentHP / maxHP
+
+    if (ratio > 0.6) return "#4caf50" // vert
+    if (ratio > 0.3) return "#ff9800" // orange
+    return "#f44336" // rouge
+  }
+
   // Calculer la distance Manhattan entre deux points
   const getManhattanDistance = (x1, y1, x2, y2) => {
     return Math.abs(x1 - x2) + Math.abs(y1 - y2)
@@ -62,7 +71,7 @@ export const CombatGrid = ({
 
     // Calculer le mouvement total si on va à cette case
     const moveDistance = getManhattanDistance(playerStartPos.x, playerStartPos.y, x, y)
-    
+
     // Vérifier que la case n'est pas occupée et qu'elle est dans la portée de mouvement
     return moveDistance <= MOVEMENT_RANGE && !getCombatantAtPosition(x, y)
   }
@@ -257,17 +266,25 @@ export const CombatGrid = ({
         {/* Combattant */}
         {combatant && (
           <div className="combat-grid__combatant">
-            <span className="combat-grid__combatant-icon">
-              {getCombatantIcon(combatant)}
-            </span>
+            {combatant.image ? (
+              <img src={combatant.image} alt={combatant.name} className="combat-grid__combatant-image" />
+            ) : (
+              <span className="combat-grid__combatant-icon">
+                {getCombatantIcon(combatant)}
+              </span>
+            )}
             <span className="combat-grid__combatant-name">
               {combatant.name}
+            </span>
+            <span className="combat-grid__combatant-ac">
+              ca {combatant.ac}
             </span>
             <div className="combat-grid__health-bar">
               <div
                 className="combat-grid__health-fill"
                 style={{
-                  width: `${(combatant.currentHP / combatant.maxHP) * 100}%`
+                  width: `${(combatant.currentHP / combatant.maxHP) * 100}%`,
+                  backgroundColor: getHealthColor(combatant.currentHP, combatant.maxHP),
                 }}
               />
             </div>
@@ -289,7 +306,7 @@ export const CombatGrid = ({
   return (
     <div className="combat-grid">
       {/* En-tête avec informations */}
-      
+
 
       {/* Grille principale */}
       <div

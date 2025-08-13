@@ -190,7 +190,7 @@ export const CombatActionPanel = ({
         {selectedTargets.length > 0 && (
           <div className="combat-selected-targets">
             <h5>Cibles sélectionnées:</h5>
-            <ul>
+            <ul className='combat-selected-targets__list'>
               {selectedTargets.map((target, index) => (
                 <li key={index} className="selected-target">
                   {target.name} (PV: {target.currentHP}/{target.maxHP})

@@ -161,7 +161,7 @@ const handleCombatVictory = () => {
     const handleShortRest = () => {
         shortRestPlayer();
         endShortRest();
-        addCombatMessage('Repos court terminé', 'rest');
+        
     };
 
     const handleLongRest = () => {
