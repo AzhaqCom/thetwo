@@ -1,4 +1,5 @@
 import { companions } from '../../data/companions';
+import { useCharacterStore } from '../../stores';
 
 /**
  * Processes scene actions and returns the appropriate result
@@ -40,12 +41,20 @@ export const processSceneAction = (action, handlers) => {
                     return null;
                 }
             case 'skillCheck':
+                // Récupérer le personnage actuel depuis le store
+                const playerCharacter = useCharacterStore.getState().playerCharacter;
+                if (!playerCharacter) {
+                    console.error('Aucun personnage joueur trouvé pour le test de compétence');
+                    return null;
+                }
+                
                 handlers.handleSkillCheck(
                     action.skill,
                     action.dc,
                     action.onSuccess,
                     action.onPartialSuccess,
-                    action.onFailure
+                    action.onFailure,
+                    playerCharacter
                 );
                 return null;
             default:

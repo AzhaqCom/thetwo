@@ -124,13 +124,7 @@ export const CharacterCard = ({
           />
         </div>
       </CardBody>
-      
-      <CardFooter>
-        <div className="character-card__ac">CA: {character.ac}</div>
-        {character.initiative !== undefined && (
-          <div className="character-card__initiative">Init: {character.initiative}</div>
-        )}
-      </CardFooter>
+    
     </Card>
   );
 };

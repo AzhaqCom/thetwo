@@ -34,8 +34,8 @@ export const CharacterSheet = ({
   const characterStats = useMemo(() => {
     if (!character) return null
 
-    const xpToNext = CharacterManager.getXPToNextLevel(character.level)
-    const xpCurrentLevel = CharacterManager.getXPToNextLevel(character.level - 1) // XP requis pour le niveau actuel
+    const xpToNext = CharacterManager.getXPToNextLevel(character.level) // XP pour niveau suivant
+    const xpCurrentLevel = CharacterManager.getXPForLevel(character.level) // XP total pour le niveau actuel
     const currentXP = character.currentXP || character.experience || 0 // Support des deux propriétés
     
     // Calcul correct de la progression dans le niveau actuel
@@ -100,7 +100,7 @@ export const CharacterSheet = ({
 
           {!compact && (
             <XPBar
-              currentXP={Math.max(0, (character.currentXP || character.experience || 0) - CharacterManager.getXPToNextLevel(character.level - 1))}
+              currentXP={Math.max(0, (character.currentXP || character.experience || 0) - CharacterManager.getXPForLevel(character.level))}
               nextLevelXP={characterStats.xpToNext}
               progress={characterStats.xpProgress}
               level={character.level}

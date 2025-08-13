@@ -223,7 +223,7 @@ export const CombatPanel = ({
 
       case 'victory':
         return (
-          <Card variant="success">
+          <Card >
             <div className="combat-phase-content">
               <h3>🎉 Victoire !</h3>
               <p>Tous les ennemis ont été vaincus !</p>

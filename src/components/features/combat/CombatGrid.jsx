@@ -279,7 +279,7 @@ export const CombatGrid = ({
             <span className="combat-grid__combatant-ac">
               ca {combatant.ac}
             </span>
-            <div className="combat-grid__health-bar">
+            <div className="combat-grid__health-bar w-95">
               <div
                 className="combat-grid__health-fill"
                 style={{

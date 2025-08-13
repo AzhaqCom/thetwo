@@ -15,32 +15,42 @@ export const CombatTurnManager = ({
   onPhaseChange,
   onNextTurn
 }) => {
-  const { combatEnemies: enemies, combatPositions: positions, dealDamageToEnemy, updateEnemyPosition } = useCombatStore()
+  const { combatEnemies: enemies, combatPositions: positions, dealDamageToEnemy, updateEnemyPosition, executeCompanionTurn, setDamageCallbacks } = useCombatStore()
   const { addCombatMessage } = useGameStore()
   const { takeDamagePlayer, takeDamageCompanion } = useCharacterStore()
   const { playerCharacter, playerCompanion } = useCharacterStore()
   const combatService = new CombatService()
+
+  // Configuration des callbacks de dégâts
+  useEffect(() => {
+    setDamageCallbacks(takeDamagePlayer, takeDamageCompanion)
+  }, [setDamageCallbacks, takeDamagePlayer, takeDamageCompanion])
 
   // Calculer le déplacement intelligent pour un ennemi
   const calculateEnemyMovement = useCallback((enemy, turnOrder, positions) => {
     const enemyPosition = positions[enemy.name]
     if (!enemyPosition) return { shouldMove: false, newPosition: null }
     
-    // Trouver tous les alliés vivants
-    const aliveAllies = turnOrder.filter(combatant => {
-      if (combatant.type !== 'player' && combatant.type !== 'companion') return false
-      
-      if (combatant.character) {
-        return combatant.character.currentHP > 0
-      } else {
-        return (combatant.currentHP || 0) > 0
-      }
-    })
+    // Trouver tous les alliés vivants (utiliser les données fraîches du store)
+    const aliveAllies = []
+    
+    if (playerCharacter && playerCharacter.currentHP > 0) {
+      aliveAllies.push({ type: 'player', name: playerCharacter.name })
+    }
+    
+    if (playerCompanion && playerCompanion.currentHP > 0) {
+      aliveAllies.push({ type: 'companion', name: playerCompanion.name })
+    }
     
     if (aliveAllies.length === 0) return { shouldMove: false, newPosition: null }
     
-    // Trouver la cible la plus proche (priorité au joueur)
-    const primaryTarget = aliveAllies.find(ally => ally.type === 'player') || aliveAllies[0]
+    // Trouver la cible la plus proche (priorité au joueur VIVANT, sinon compagnon)
+    let primaryTarget = aliveAllies.find(ally => ally.type === 'player')
+    if (!primaryTarget) {
+      primaryTarget = aliveAllies.find(ally => ally.type === 'companion')
+    }
+    if (!primaryTarget) return { shouldMove: false, newPosition: null }
+    
     const targetPosition = positions[primaryTarget.type === 'player' ? 'player' : 'companion']
     
     if (!targetPosition) return { shouldMove: false, newPosition: null }
@@ -324,12 +334,11 @@ export const CombatTurnManager = ({
 
   // Gestion automatique des tours d'IA
   useEffect(() => {
-    console.log('🎮 CombatTurnManager - phase actuelle:', phase);
+   
     if (phase !== 'turn') return
     
     const currentCombatant = getCurrentCombatant()
-    console.log('👤 Current combattant:', currentCombatant);
-    console.log('✅ Is alive:', isCurrentCombatantAlive());
+    
     
     if (!currentCombatant || !isCurrentCombatantAlive()) return
     
@@ -367,17 +376,164 @@ export const CombatTurnManager = ({
     }
   }, [phase, currentTurn, getCurrentCombatant, isCurrentCombatantAlive, onPhaseChange, addCombatMessage])
 
+  // Exécuter une attaque de compagnon
+  const executeCompanionAttack = useCallback((companion, attack, target) => {
+    // Jet d'attaque
+    const attackRoll = combatService.rollD20()
+    
+    const attackBonus = combatService.getAttackBonus(companion, attack)
+    if (isNaN(attackBonus)) {
+      console.error('❌ Attack bonus est NaN pour le compagnon:', companion, attack)
+      return
+    }
+    
+    const totalAttack = attackRoll + attackBonus
+    const criticalHit = attackRoll === 20
+    const targetAC = target.ac || 10
+    
+    const hit = totalAttack >= targetAC || criticalHit
+    
+    addCombatMessage(`${companion.name} attaque ${target.name} (${attackRoll} + ${attackBonus} = ${totalAttack} vs CA ${targetAC})`, 'action')
+    
+    if (hit) {
+      let damage = 0
+      if (attack.damageDice) {
+        damage = combatService.rollDamage(attack.damageDice) + (attack.damageBonus || 0)
+      }
+      
+      if (criticalHit) {
+        damage *= 2
+        addCombatMessage(`💥 Coup critique ! ${companion.name} inflige ${damage} dégâts à ${target.name} !`, 'critical')
+      } else {
+        addCombatMessage(`⚔️ ${companion.name} touche ${target.name} et inflige ${damage} dégâts`, 'damage')
+      }
+      
+      // Appliquer les dégâts à l'ennemi
+      dealDamageToEnemy(target.name, damage)
+    } else {
+      addCombatMessage(`❌ ${companion.name} manque ${target.name}`, 'miss')
+    }
+  }, [addCombatMessage, dealDamageToEnemy])
+
   // Gestion du tour du compagnon
   const handleCompanionTurn = useCallback((companion) => {
-    // TODO: Implémenter l'IA du compagnon
-    addCombatMessage(`${companion.name} observe la situation et attend le bon moment.`)
+    if (!playerCompanion || playerCompanion.currentHP <= 0) {
+      addCombatMessage(`${companion.name} est inconscient et ne peut pas agir.`)
+      setTimeout(() => {
+        onNextTurn()
+        onPhaseChange('turn')
+      }, 500)
+      return
+    }
+
+    if (!playerCompanion.attacks || playerCompanion.attacks.length === 0) {
+      addCombatMessage(`${companion.name} n'a pas d'attaque disponible.`)
+      setTimeout(() => {
+        onNextTurn()
+        onPhaseChange('turn')
+      }, 500)
+      return
+    }
+
+    addCombatMessage(`C'est au tour de ${companion.name}`, 'turn-start')
+
+    // 1. Trouver des ennemis vivants à cibler
+    const aliveEnemies = enemies.filter(enemy => enemy.currentHP > 0)
     
-    // Passer au tour suivant après un délai
-    setTimeout(() => {
-      onNextTurn()
-      onPhaseChange('turn')
-    }, 500)
-  }, [onNextTurn, onPhaseChange, addCombatMessage])
+    if (aliveEnemies.length === 0) {
+      addCombatMessage(`${companion.name} ne trouve aucun ennemi à attaquer.`)
+      setTimeout(() => {
+        onNextTurn()
+        onPhaseChange('turn')
+      }, 500)
+      return
+    }
+
+    // 2. Mouvement vers l'ennemi le plus proche (logique simple)
+    const companionPos = positions.companion
+    if (!companionPos) {
+      addCombatMessage(`Position du compagnon introuvable.`)
+      setTimeout(() => {
+        onNextTurn()
+        onPhaseChange('turn')
+      }, 500)
+      return
+    }
+
+    // Trouver l'ennemi le plus proche
+    let closestEnemy = null
+    let closestDistance = Infinity
+    
+    aliveEnemies.forEach(enemy => {
+      const enemyPos = positions[enemy.name]
+      if (enemyPos) {
+        const distance = Math.abs(companionPos.x - enemyPos.x) + Math.abs(companionPos.y - enemyPos.y)
+        if (distance < closestDistance) {
+          closestDistance = distance
+          closestEnemy = enemy
+        }
+      }
+    })
+
+    if (!closestEnemy) {
+      addCombatMessage(`${companion.name} ne peut pas localiser les ennemis.`)
+      setTimeout(() => {
+        onNextTurn()
+        onPhaseChange('turn')
+      }, 500)
+      return
+    }
+
+    // 3. Choisir une attaque (première disponible)
+    const attack = playerCompanion.attacks[0]
+
+    // 4. Vérifier si l'ennemi est à portée
+    const enemyPos = positions[closestEnemy.name]
+    const attackRange = attack.range || 1
+    
+    if (closestDistance <= attackRange) {
+      // Attaquer directement
+      addCombatMessage(`${companion.name} attaque ${closestEnemy.name} !`)
+      setTimeout(() => {
+        executeCompanionAttack(playerCompanion, attack, closestEnemy)
+        setTimeout(() => {
+          onNextTurn()
+          onPhaseChange('turn')
+        }, 800)
+      }, 500)
+    } else {
+      // Se déplacer vers l'ennemi
+      const moveDistance = Math.min(6, closestDistance - attackRange) // Se rapprocher autant que possible
+      const directionX = enemyPos.x > companionPos.x ? 1 : (enemyPos.x < companionPos.x ? -1 : 0)
+      const directionY = enemyPos.y > companionPos.y ? 1 : (enemyPos.y < companionPos.y ? -1 : 0)
+      
+      const newPosition = {
+        x: Math.max(0, Math.min(7, companionPos.x + directionX * Math.min(moveDistance, 3))),
+        y: Math.max(0, Math.min(5, companionPos.y + directionY * Math.min(moveDistance, 3)))
+      }
+        console.log(`🚶 ${companion.name} bouge de (${companionPos?.x}, ${companionPos?.y}) vers (${newPosition.x}, ${newPosition.y})`)
+      addCombatMessage(`${companion.name} se déplace vers ${closestEnemy.name}.`)
+      updateEnemyPosition('companion', newPosition) // Réutiliser cette fonction
+      
+      // Vérifier si maintenant à portée après déplacement
+      const newDistance = Math.abs(newPosition.x - enemyPos.x) + Math.abs(newPosition.y - enemyPos.y)
+      if (newDistance <= attackRange) {
+        setTimeout(() => {
+          executeCompanionAttack(playerCompanion, attack, closestEnemy)
+          setTimeout(() => {
+            onNextTurn()
+            onPhaseChange('turn')
+          }, 800)
+        }, 800)
+      } else {
+        addCombatMessage(`${companion.name} est encore trop loin pour attaquer.`)
+        setTimeout(() => {
+          onNextTurn()
+          onPhaseChange('turn')
+        }, 800)
+      }
+    }
+  }, [onNextTurn, onPhaseChange, executeCompanionAttack, addCombatMessage, playerCompanion, enemies, positions, updateEnemyPosition])
 
   // Gestion du tour de l'ennemi
   const handleEnemyTurn = useCallback((enemy) => {
@@ -421,8 +577,6 @@ export const CombatTurnManager = ({
       addCombatMessage(`${enemy.name} se déplace vers une meilleure position.`)
       updateEnemyPosition(enemy.name, movement.newPosition)
       
-      console.log(`✅ Position mise à jour pour ${enemy.name}:`, positions[enemy.name])
-      
       // Exécuter les attaques d'opportunité APRÈS le mouvement
       if (opportunityAttacks.length > 0) {
         opportunityAttacks.forEach(attackData => {
@@ -435,31 +589,71 @@ export const CombatTurnManager = ({
       console.log(`🚫 ${enemy.name} ne bouge pas - shouldMove: ${movement.shouldMove}, newPosition:`, movement.newPosition)
     }
 
-    // 2. Trouver des cibles vivantes (priorité: joueur > compagnon)
-    const possibleTargets = turnOrder.filter(combatant => {
-      if (combatant.type !== 'player' && combatant.type !== 'companion') return false
-      
-      // Vérifier les PV selon la structure du combattant
-      if (combatant.character) {
-        return combatant.character.currentHP > 0
-      } else {
-        return (combatant.currentHP || 0) > 0
-      }
-    })
+    // 2. Obtenir les positions ACTUELLES après mouvement
+    const updatedPositions = useCombatStore.getState().combatPositions
+    const currentEnemyPosition = updatedPositions[enemy.name]
+    
+    if (!currentEnemyPosition) {
+      addCombatMessage(`${enemy.name} ne peut pas se localiser.`)
+      setTimeout(() => {
+        onNextTurn()
+        onPhaseChange('turn')
+      }, 500)
+      return
+    }
+
+    // 3. Créer des cibles potentielles avec leurs positions actuelles
+    const possibleTargets = []
+    
+    // Ajouter le joueur si vivant
+    if (playerCharacter && playerCharacter.currentHP > 0 && updatedPositions.player) {
+      possibleTargets.push({
+        type: 'player',
+        name: playerCharacter.name,
+        character: playerCharacter,
+        position: updatedPositions.player
+      })
+    }
+    
+    // Ajouter le compagnon si vivant
+    if (playerCompanion && playerCompanion.currentHP > 0 && updatedPositions.companion) {
+      possibleTargets.push({
+        type: 'companion', 
+        name: playerCompanion.name,
+        character: playerCompanion,
+        position: updatedPositions.companion
+      })
+    }
     
     if (possibleTargets.length === 0) {
-      // Pas de cible, fin du combat
+      addCombatMessage(`${enemy.name} ne trouve aucune cible vivante.`)
       onPhaseChange('victory')
       return
     }
 
-    // Priorité au joueur
-    const target = possibleTargets.find(t => t.type === 'player') || possibleTargets[0]
-    const updatedPositions = useCombatStore.getState().combatPositions
-    const targetPosition = updatedPositions[target.type === 'player' ? 'player' : 'companion']
-    const currentEnemyPosition = updatedPositions[enemy.name]
+    // 4. Calculer les distances depuis la position ACTUELLE de l'ennemi
+    let closestTarget = null
+    let closestDistance = Infinity
     
-    if (!targetPosition || !currentEnemyPosition) {
+    console.log(`🎯 ${enemy.name} à la position (${currentEnemyPosition.x}, ${currentEnemyPosition.y}) évalue les cibles:`)
+    
+    possibleTargets.forEach(potentialTarget => {
+      const distance = Math.abs(currentEnemyPosition.x - potentialTarget.position.x) + Math.abs(currentEnemyPosition.y - potentialTarget.position.y)
+      console.log(`   - ${potentialTarget.name} (${potentialTarget.type}) à (${potentialTarget.position.x}, ${potentialTarget.position.y}) - distance: ${distance}`)
+      
+      // Prioriser strictement la DISTANCE d'abord
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestTarget = potentialTarget
+        console.log(`     ✅ Nouvelle cible la plus proche: ${potentialTarget.name} à distance ${distance}`)
+      } else if (distance === closestDistance && potentialTarget.type === 'player') {
+        // Priorité au joueur seulement si EXACTEMENT même distance
+        closestTarget = potentialTarget
+        console.log(`     ↔️ Même distance ${distance}, priorité au joueur: ${potentialTarget.name}`)
+      }
+    })
+    
+    if (!closestTarget) {
       addCombatMessage(`${enemy.name} ne peut pas localiser sa cible.`)
       setTimeout(() => {
         onNextTurn()
@@ -468,13 +662,26 @@ export const CombatTurnManager = ({
       return
     }
     
-    // 3. Calculer la distance à la cible
-    const distanceToTarget = Math.abs(currentEnemyPosition.x - targetPosition.x) + Math.abs(currentEnemyPosition.y - targetPosition.y)
+    const target = closestTarget
+    console.log(`🏹 ${enemy.name} choisit comme cible: ${target.name} (${target.type}) à distance ${closestDistance}`)
+    
+    const targetPosition = target.position
+    
+    if (!targetPosition) {
+      addCombatMessage(`${enemy.name} ne peut pas localiser sa cible.`)
+      setTimeout(() => {
+        onNextTurn()
+        onPhaseChange('turn')
+      }, 500)
+      return
+    }
+    
+    // 3. La distance à la cible est déjà calculée: closestDistance
     
     // 4. Choisir une attaque appropriée selon la distance
     const viableAttacks = enemyCharacter.attacks.filter(attack => {
       const attackRange = attack.range || 1
-      return distanceToTarget <= attackRange
+      return closestDistance <= attackRange
     })
     
     if (viableAttacks.length === 0) {
@@ -576,6 +783,7 @@ export const CombatTurnManager = ({
     }, 600)
   }, [onNextTurn, onPhaseChange, addCombatMessage])
 
+
   // Vérification de la mort du joueur (priorité sur les autres conditions)
   useEffect(() => {
     // Ne pas vérifier pendant l'initialisation
@@ -606,7 +814,7 @@ export const CombatTurnManager = ({
     
     // Si seul le joueur est mort mais le compagnon vit encore
     if (playerDead && !companionDead) {
-      console.log('⚰️ Joueur mort mais compagnon encore vivant')
+      
       addCombatMessage(`💀 ${playerCharacter.name} tombe au combat ! ${playerCompanion.name} continue seul...`, 'death')
       // Le combat continue avec le compagnon
       return
@@ -628,10 +836,10 @@ export const CombatTurnManager = ({
       return currentHP > 0
     })
     
-    console.log(`🏥 Check de fin de combat: ${aliveEnemies.length}/${enemies.length} ennemis vivants`)
+  
     
     if (aliveEnemies.length === 0 && enemies.length > 0) {
-      console.log('🎉 Victoire détectée!')
+      
       onPhaseChange('victory')
       addCombatMessage('🎉 Victoire ! Tous les ennemis ont été vaincus !', 'victory')
       return
@@ -649,7 +857,7 @@ export const CombatTurnManager = ({
       }
     })
     
-    console.log(`🏥 Check alliés: ${aliveAllies.length} alliés vivants`)
+   
     
     if (aliveAllies.length === 0) {
       console.log('💀 Défaite détectée!')

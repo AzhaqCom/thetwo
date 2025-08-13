@@ -43,6 +43,7 @@ export const useCombatStore = create(
       // === RÉSULTATS ===
       defeated: false,
       victory: false,
+      totalXpGained: 0,
 
       // === ACTIONS D'INITIALISATION ===
 
@@ -81,7 +82,7 @@ export const useCombatStore = create(
         })
 
         // Initiative compagnon si présent
-        console.log('🤝 playerCompanion dans initializeCombat:', playerCompanion);
+        
         if (playerCompanion && playerCompanion.stats) {
           const companionInitiative = rollD20WithModifier(getModifier(playerCompanion.stats.dexterite))
           initiativeOrder.push({
@@ -90,7 +91,7 @@ export const useCombatStore = create(
             initiative: companionInitiative,
             character: playerCompanion
           })
-          console.log('✅ Compagnon ajouté à l\'initiative:', playerCompanion.name);
+         
         } else {
           console.log('❌ Pas de compagnon valide, skip');
         }
@@ -118,7 +119,7 @@ export const useCombatStore = create(
           }
           return b.initiative - a.initiative
         })
-        console.log(sortedOrder)
+        
         // Initialiser les positions
         const positions = get().calculateInitialPositions(enemyInstances, !!playerCompanion, encounterData.enemyPositions)
         
@@ -142,7 +143,8 @@ export const useCombatStore = create(
           combatPositions: positions,
           hasMovedThisTurn: false,
           defeated: false,
-          victory: false
+          victory: false,
+          totalXpGained: 0
         }
       }),
 
@@ -190,7 +192,8 @@ export const useCombatStore = create(
         selectedAoESquares: [],
         aoeCenter: null,
         defeated: false,
-        victory: false
+        victory: false,
+        totalXpGained: 0
       }),
 
       // === GESTION DES TOURS ===
@@ -383,14 +386,32 @@ export const useCombatStore = create(
 
       // === GESTION DES DÉGÂTS ===
 
+      // Fonctions de callback pour les dégâts - seront assignées depuis l'extérieur
+      _onPlayerDamage: null,
+      _onCompanionDamage: null,
+
+      // Setter pour les callbacks
+      setDamageCallbacks: (onPlayerDamage, onCompanionDamage) => set({
+        _onPlayerDamage: onPlayerDamage,
+        _onCompanionDamage: onCompanionDamage
+      }),
+
       dealDamageToPlayer: (damage) => {
-        // Cette action sera gérée par le characterStore
-        console.log('Combat damage to player should be handled by characterStore')
+        const { _onPlayerDamage } = get()
+        if (_onPlayerDamage) {
+          _onPlayerDamage(damage)
+        } else {
+          console.warn('Player damage callback not set')
+        }
       },
 
       dealDamageToCompanion: (damage) => {
-        // Cette action sera gérée par le characterStore  
-        console.log('Combat damage to companion should be handled by characterStore')
+        const { _onCompanionDamage } = get()
+        if (_onCompanionDamage) {
+          _onCompanionDamage(damage)
+        } else {
+          console.warn('Companion damage callback not set')
+        }
       },
 
       dealDamageToEnemy: (enemyName, damage) => set((state) => {
@@ -422,15 +443,21 @@ export const useCombatStore = create(
         // TODO: Coordination avec characterStore pour vérifier l'état du joueur
       },
 
-      handleVictory: () => set((state) => {
-        const defeatedEnemies = state.combatEnemies
+      handleVictory: () => {
+        const { combatEnemies } = get()
         
-        return {
+        // Calculer l'XP total des ennemis vaincus
+        const totalXP = combatEnemies.reduce((total, enemy) => {
+          return total + (enemy.xp || 0)
+        }, 0)
+
+        set((state) => ({
           victory: true,
           combatPhase: 'end',
-          isActive: false
-        }
-      }),
+          isActive: false,
+          totalXpGained: totalXP // Store l'XP pour que d'autres composants puissent l'utiliser
+        }))
+      },
 
       handleDefeat: () => set({
         defeated: true,
@@ -447,38 +474,84 @@ export const useCombatStore = create(
       // === IA ET AUTOMATISATION ===
 
       executeEnemyTurn: (enemyName) => {
-        const { combatEnemies, combatPositions } = get()
+        const { combatEnemies, combatPositions, companionCharacter } = get()
         const enemy = combatEnemies.find(e => e.name === enemyName)
         if (!enemy || enemy.currentHP <= 0) return
 
         const enemyPosition = combatPositions[enemyName]
         if (!enemyPosition) return
 
+        console.log('👹 Executing enemy turn:', enemyName)
+
+        // Récupérer le personnage joueur - on aura besoin de le passer depuis l'extérieur
+        // Pour l'instant, on va utiliser une approche simplifiée
+        const playerCharacter = null // Sera géré différemment
+
         // 1. Calculer le mouvement optimal
+        const combatState = {
+          playerCharacter,
+          companionCharacter,
+          combatEnemies,
+          combatPositions
+        }
+
         const optimalPosition = CombatEngine.calculateOptimalMovement(
-          enemy,
+          { ...enemy, type: 'enemy' },
           enemyPosition,
-          { combatEnemies, combatPositions }
+          combatState
         )
 
         if (optimalPosition) {
+          console.log(`🏃 ${enemyName} moves to position (${optimalPosition.x}, ${optimalPosition.y})`)
           get().moveCharacter(enemyName, optimalPosition)
         }
 
         // 2. Calculer et exécuter la meilleure attaque
+        const finalPosition = optimalPosition || enemyPosition
+        const enemyAttack = enemy.attacks?.[0] || {
+          name: "Attaque de base",
+          type: "melee",
+          range: 1,
+          damageDice: "1d6",
+          damageBonus: 0
+        }
+
         const targets = CombatEngine.getTargetsInRange(
-          enemy,
-          optimalPosition || enemyPosition,
-          enemy.attacks[0], // Utiliser la première attaque par défaut
-          { combatEnemies, combatPositions }
+          { ...enemy, type: 'enemy' },
+          finalPosition,
+          enemyAttack,
+          combatState
         )
 
         if (targets.length > 0) {
-          // Choisir la cible (priorité au joueur)
-          const target = targets.find(t => t.type === 'player') || targets[0]
+          // Choisir la cible - priorité au joueur, sinon compagnon
+          let target = targets.find(t => combatPositions.player && 
+            t.position.x === combatPositions.player.x && 
+            t.position.y === combatPositions.player.y)
           
-          // TODO: Exécuter l'attaque via le CombatEngine
-          console.log(`${enemyName} attacks ${target.name}`)
+          if (!target) {
+            target = targets[0] // Prendre le premier disponible (compagnon)
+          }
+          
+          console.log(`⚔️ ${enemyName} attacks ${target.name || 'target'}`)
+          
+          // 3. Exécuter l'attaque simplifiée
+          const damageResult = CombatEngine.calculateDamage(enemyAttack)
+          console.log(`💥 ${enemyName} inflige ${damageResult.damage} dégâts à ${target.name}`)
+          
+          // 4. Appliquer les dégâts selon le type de cible
+          const targetPos = combatPositions.player
+          const companionPos = combatPositions.companion
+          
+          if (targetPos && target.position.x === targetPos.x && target.position.y === targetPos.y) {
+            // Cible = joueur
+            get().dealDamageToPlayer(damageResult.damage)
+          } else if (companionPos && target.position.x === companionPos.x && target.position.y === companionPos.y) {
+            // Cible = compagnon
+            get().dealDamageToCompanion(damageResult.damage)
+          }
+        } else {
+          console.log(`🤷 ${enemyName} has no targets in range`)
         }
       },
 
@@ -486,8 +559,78 @@ export const useCombatStore = create(
         const { companionCharacter, combatPositions, combatEnemies } = get()
         if (!companionCharacter || companionCharacter.currentHP <= 0) return
 
-        // Logique similaire aux ennemis mais ciblant les ennemis
-        console.log('Executing companion turn')
+        const companionPosition = combatPositions.companion
+        if (!companionPosition) return
+
+        console.log('🤝 Executing companion turn:', companionCharacter.name)
+
+        // 1. Calculer le mouvement optimal vers les ennemis
+        const combatState = {
+          playerCharacter: null, // Le compagnon ne cible pas le joueur
+          companionCharacter,
+          combatEnemies,
+          combatPositions
+        }
+        
+        const optimalPosition = CombatEngine.calculateOptimalMovement(
+          { ...companionCharacter, type: 'companion' },
+          companionPosition,
+          combatState
+        )
+
+        if (optimalPosition) {
+          console.log(`🏃 ${companionCharacter.name} moves to position (${optimalPosition.x}, ${optimalPosition.y})`)
+          get().moveCharacter('companion', optimalPosition)
+        }
+
+        // 2. Trouver les cibles à portée d'attaque
+        const finalPosition = optimalPosition || companionPosition
+        const companionAttack = companionCharacter.attacks?.[0] || {
+          name: "Attaque de base",
+          type: "melee", 
+          range: 1,
+          damageDice: "1d6",
+          damageBonus: 0
+        }
+
+        const targets = CombatEngine.getTargetsInRange(
+          { ...companionCharacter, type: 'companion' },
+          finalPosition,
+          companionAttack,
+          combatState
+        )
+
+        console.log('🎯 Companion targets found:', targets)
+
+        if (targets.length > 0) {
+          // Choisir la cible (ennemi le plus faible ou le plus proche)
+          const target = targets.reduce((chosen, current) => {
+            if (!chosen) return current
+            // Vérifier que les entités ont des PV valides
+            const currentHP = current.currentHP ?? 0
+            const chosenHP = chosen.currentHP ?? 0
+            // Priorité aux ennemis avec moins de PV
+            if (currentHP < chosenHP && currentHP > 0) return current
+            return chosen
+          })
+          
+          // Vérifier que la cible est valide
+          if (!target || !target.name) {
+            console.log(`🤷 ${companionCharacter.name} found no valid target`)
+            return
+          }
+          
+          console.log(`⚔️ ${companionCharacter.name} attacks ${target.name}`)
+          
+          // 3. Exécuter l'attaque simplifiée
+          const damageResult = CombatEngine.calculateDamage(companionAttack)
+          console.log(`💥 ${companionCharacter.name} inflige ${damageResult.damage} dégâts à ${target.name}`)
+          
+          // 4. Appliquer les dégâts à l'ennemi
+          get().dealDamageToEnemy(target.name, damageResult.damage)
+        } else {
+          console.log(`🤷 ${companionCharacter.name} has no targets in range`)
+        }
       },
 
       // === UTILITAIRES ===

@@ -273,14 +273,25 @@ export class CharacterManager {
    * @returns {Object} Updated character (may include level up)
    */
   static addExperience(character, xp) {
-    const newXP = character.experience + xp
+    const currentXP = character.currentXP || character.experience || 0
+    const newXP = currentXP + xp
     const xpToNext = this.getXPToNextLevel(character.level)
     
     if (newXP >= xpToNext) {
-      return this.levelUp({ ...character, experience: newXP })
+      return this.levelUp({ ...character, currentXP: newXP })
     }
     
-    return { ...character, experience: newXP }
+    return { ...character, currentXP: newXP }
+  }
+
+  /**
+   * Gets XP total required to reach a level
+   * @param {number} level - The target level
+   * @returns {number} Total XP required to reach that level
+   */
+  static getXPForLevel(level) {
+    const xpTable = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000]
+    return xpTable[level - 1] || 0
   }
 
   /**
@@ -289,7 +300,6 @@ export class CharacterManager {
    * @returns {number} XP required for next level
    */
   static getXPToNextLevel(currentLevel) {
-    const xpTable = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000]
-    return xpTable[currentLevel + 1] || 100000
+    return this.getXPForLevel(currentLevel + 1)
   }
 }

@@ -86,7 +86,8 @@ function App() {
         castSpellPlayer,
         shortRestPlayer,
         longRestPlayer,
-        longRestAll
+        longRestAll,
+        addExperience
     } = useCharacterStore();
 
     const {
@@ -109,10 +110,26 @@ function App() {
 
    // Combat victory handler
 const handleCombatVictory = () => {
-    // 1. Récupérer l'action post-victoire depuis la scène de combat actuelle
+    // 1. Récupérer l'XP gagné depuis le combat
+    const { totalXpGained, combatEnemies } = useCombatStore.getState()
+    const xpGained = totalXpGained || combatEnemies.reduce((total, enemy) => total + (enemy.xp || 0), 0)
+    
+    // 2. Donner l'expérience au joueur
+    if (xpGained > 0) {
+      addExperience(xpGained, 'player')
+      addCombatMessage(`Vous gagnez ${xpGained} points d'expérience !`, 'victory')
+      
+      // Si il y a un compagnon, lui donner aussi l'XP
+      if (playerCompanion) {
+        addExperience(xpGained, 'companion')
+        addCombatMessage(`${playerCompanion.name} gagne aussi ${xpGained} points d'expérience !`, 'victory')
+      }
+    }
+
+    // 3. Récupérer l'action post-victoire depuis la scène de combat actuelle
     const nextAction = currentScene.next;
 
-    // 2. Réinitialiser l'état du combat
+    // 4. Réinitialiser l'état du combat
     resetCombat();
     addCombatMessage('Combat terminé ! Victoire !', 'victory');
 

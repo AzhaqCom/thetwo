@@ -91,7 +91,7 @@ Récemment, tu as entendu des murmures concernant une ancienne prophétie liée 
         choices: [
             {
                 text: "Ouvrir le coffre",
-                next: { type: "item", item: "potionVieSup", nextScene: "scene7" }
+                next: { type: "item", item: "potionOfSuperiorHealing", nextScene: "scene7" }
             }
         ]
     },

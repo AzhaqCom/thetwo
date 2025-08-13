@@ -33,7 +33,7 @@ export const useGameStore = create(
     (set, get) => ({
       // État initial
       gamePhase: 'character-selection',
-      currentScene: 'scene3',
+      currentScene: 'scene8',
       sceneHistory: [],
       combatLog: [],
       isShortResting: false,
@@ -126,7 +126,7 @@ export const useGameStore = create(
         const { addCombatMessage, setCurrentScene } = get()
 
         addCombatMessage(
-          `Test de ${skill} (${statName}): ${roll} (${skillBonus} de bonus) = ${totalRoll}. DD: ${dc}`,
+          `Test de ${skill} (${statName}): ${roll-skillBonus} (+${skillBonus} de bonus) = ${totalRoll}. DD: ${dc}`,
           'skill-check'
         )
 
