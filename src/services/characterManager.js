@@ -128,7 +128,7 @@ export class CharacterManager {
       level: newLevel,
       maxHP: character.maxHP + hpGain,
       currentHP: character.currentHP + hpGain,
-      experience: 0, // Reset XP after leveling
+      currentXP: character.currentXP || character.experience || 0, // Conserver l'XP, ne pas reset
       proficiencyBonus: this.getProficiencyBonus(newLevel),
       
       // Update spell slots if spellcaster
@@ -274,14 +274,30 @@ export class CharacterManager {
    */
   static addExperience(character, xp) {
     const currentXP = character.currentXP || character.experience || 0
-    const newXP = currentXP + xp
-    const xpToNext = this.getXPToNextLevel(character.level)
+    let newXP = currentXP + xp
+    let updatedCharacter = { ...character, currentXP: newXP }
     
-    if (newXP >= xpToNext) {
-      return this.levelUp({ ...character, currentXP: newXP })
+    // Gérer les montées de niveau multiples (avec sécurité anti-boucle)
+    let levelUpCount = 0
+    const maxLevelUps = 10 // Sécurité
+    
+    while (levelUpCount < maxLevelUps && updatedCharacter.level < 20) {
+      const xpToNext = this.getXPToNextLevel(updatedCharacter.level)
+      
+      if (updatedCharacter.currentXP >= xpToNext) {
+        console.log(`🎯 Level up ! ${updatedCharacter.level} → ${updatedCharacter.level + 1} (XP: ${updatedCharacter.currentXP}/${xpToNext})`)
+        updatedCharacter = this.levelUp(updatedCharacter)
+        levelUpCount++
+      } else {
+        break
+      }
     }
     
-    return { ...character, currentXP: newXP }
+    if (levelUpCount >= maxLevelUps) {
+      console.warn('⚠️ Limite de montées de niveau atteinte pour éviter une boucle infinie')
+    }
+    
+    return updatedCharacter
   }
 
   /**

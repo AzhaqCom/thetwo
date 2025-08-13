@@ -257,4 +257,138 @@ export class CombatEngine {
 
     return squares
   }
+
+  /**
+   * Finds the best target for an entity based on distance and priorities
+   * @param {Object} attacker - The attacking entity
+   * @param {Object} attackerPos - Attacker's current position
+   * @param {Object} combatState - Current combat state
+   * @returns {Object|null} Best target or null
+   */
+  static findBestTarget(attacker, attackerPos, combatState) {
+    const { playerCharacter, companionCharacter, combatPositions } = combatState
+    
+    if (!attackerPos) {
+      console.warn(`⚠️ Pas de position pour ${attacker.name}`)
+      return null
+    }
+
+    const potentialTargets = []
+
+    // Pour les ennemis : cibler joueur et compagnon
+    if (attacker.type === ENTITY_TYPES.ENEMY) {
+      // Ajouter le joueur si vivant
+      if (playerCharacter && playerCharacter.currentHP > 0 && combatPositions.player) {
+        potentialTargets.push({
+          type: ENTITY_TYPES.PLAYER,
+          name: playerCharacter.name,
+          character: playerCharacter,
+          position: combatPositions.player
+        })
+      }
+
+      // Ajouter le compagnon si vivant
+      if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
+        potentialTargets.push({
+          type: ENTITY_TYPES.COMPANION,
+          name: companionCharacter.name,
+          character: companionCharacter,
+          position: combatPositions.companion
+        })
+      }
+    }
+    
+    // Pour le compagnon : cibler les ennemis
+    else if (attacker.type === ENTITY_TYPES.COMPANION || attacker.type === 'companion') {
+      // Ajouter tous les ennemis vivants
+      if (combatState.combatEnemies) {
+        combatState.combatEnemies.forEach(enemy => {
+          if (enemy.currentHP > 0 && combatPositions[enemy.name]) {
+            potentialTargets.push({
+              type: ENTITY_TYPES.ENEMY,
+              name: enemy.name,
+              character: enemy,
+              position: combatPositions[enemy.name]
+            })
+          }
+        })
+      }
+    }
+
+    if (potentialTargets.length === 0) {
+      console.log(`🎯 ${attacker.name}: Aucune cible vivante trouvée`)
+      return null
+    }
+
+    // Trouver la cible la plus proche (priorité stricte à la distance)
+    let bestTarget = null
+    let shortestDistance = Infinity
+
+    console.log(`🎯 ${attacker.name} à (${attackerPos.x}, ${attackerPos.y}) évalue les cibles:`)
+    
+    potentialTargets.forEach(target => {
+      const distance = calculateDistance(attackerPos, target.position)
+      console.log(`   - ${target.name} (${target.type}) à (${target.position.x}, ${target.position.y}) - distance: ${distance}`)
+      
+      // Prioriser strictement la distance
+      if (distance < shortestDistance) {
+        shortestDistance = distance
+        bestTarget = target
+        console.log(`     ✅ Nouvelle cible la plus proche: ${target.name} à distance ${distance}`)
+      } else if (distance === shortestDistance && target.type === ENTITY_TYPES.PLAYER) {
+        // En cas d'égalité exacte, préférer le joueur
+        bestTarget = target
+        console.log(`     ↔️ Même distance ${distance}, priorité au joueur: ${target.name}`)
+      }
+    })
+
+    if (bestTarget) {
+      bestTarget.distance = shortestDistance
+      console.log(`🏹 ${attacker.name} choisit: ${bestTarget.name} (${bestTarget.type}) à distance ${shortestDistance}`)
+    }
+
+    return bestTarget
+  }
+
+  /**
+   * Validates movement to ensure position is valid and not occupied
+   * @param {Object} entity - The entity trying to move
+   * @param {Object} currentPos - Current position
+   * @param {Object} targetPos - Target position
+   * @param {Object} combatState - Combat state
+   * @returns {boolean} Whether movement is valid
+   */
+  static validateMovement(entity, currentPos, targetPos, combatState) {
+    // Vérifier que la position cible est dans la grille
+    if (!isValidGridPosition(targetPos.x, targetPos.y)) {
+      console.warn(`❌ Position invalide pour ${entity.name}: (${targetPos.x}, ${targetPos.y})`)
+      return false
+    }
+
+    // Vérifier que la position n'est pas occupée
+    const { combatPositions, combatEnemies } = combatState
+    const isOccupied = isPositionOccupied(
+      targetPos.x, 
+      targetPos.y, 
+      combatPositions, 
+      combatEnemies,
+      entity.name // Exclure l'entité elle-même
+    )
+
+    if (isOccupied) {
+      console.warn(`❌ Position occupée pour ${entity.name}: (${targetPos.x}, ${targetPos.y})`)
+      return false
+    }
+
+    // Vérifier la portée de mouvement
+    const distance = calculateDistance(currentPos, targetPos)
+    const maxMovement = entity.movement || 6
+    
+    if (distance > maxMovement) {
+      console.warn(`❌ Mouvement trop loin pour ${entity.name}: ${distance} > ${maxMovement}`)
+      return false
+    }
+
+    return true
+  }
 }

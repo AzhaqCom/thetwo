@@ -277,8 +277,9 @@ export const CombatGrid = ({
               {combatant.name}
             </span>
             <span className="combat-grid__combatant-ac">
-              ca {combatant.ac}
+              CA{combatant.ac}
             </span>
+            <span className="combat-gird-health">{combatant.currentHP}/{combatant.maxHP}❤️</span>
             <div className="combat-grid__health-bar w-95">
               <div
                 className="combat-grid__health-fill"

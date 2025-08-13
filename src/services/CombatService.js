@@ -1,5 +1,6 @@
 import { enemyTemplates } from '../data/enemies'
 import { getModifier } from '../utils/calculations'
+import { CombatEngine } from './combatEngine'
 
 /**
  * Service gérant toute la logique métier du combat
@@ -415,5 +416,96 @@ export class CombatService {
     }
     
     return null
+  }
+
+  /**
+   * Exécute une attaque d'entité (ennemi ou compagnon)
+   */
+  executeEntityAttack(attacker, attack, target, addCombatMessage) {
+    // Validation des paramètres
+    if (!attacker || !attack || !target) {
+      console.error('❌ Paramètres manquants pour executeEntityAttack')
+      return { success: false, damage: 0 }
+    }
+
+    // Vérifier que la cible est vivante
+    if (target.character && target.character.currentHP <= 0) {
+      console.warn(`⚠️ ${attacker.name} tente d'attaquer ${target.name} qui est déjà mort`)
+      addCombatMessage(`${attacker.name} réalise que ${target.name} est déjà tombé au combat.`)
+      return { success: false, damage: 0 }
+    }
+
+    // Jet d'attaque
+    const attackRoll = this.rollD20()
+    const attackBonus = this.getAttackBonus(attacker, attack)
+    
+    if (isNaN(attackBonus)) {
+      console.error('❌ Attack bonus est NaN pour:', attacker, attack)
+      return { success: false, damage: 0 }
+    }
+    
+    const totalAttack = attackRoll + attackBonus
+    const criticalHit = attackRoll === 20
+    const targetAC = target.character ? target.character.ac : (target.ac || 10)
+    
+    if (isNaN(targetAC)) {
+      console.error('❌ Target AC est NaN pour:', target)
+      return { success: false, damage: 0 }
+    }
+    
+    const hit = totalAttack >= targetAC || criticalHit
+    
+    if (hit) {
+      // Calculer les dégâts
+      let damage = 0
+      if (attack.damageDice) {
+        damage = this.rollDamage(attack.damageDice) + (attack.damageBonus || 0)
+      } else if (attack.damage) {
+        damage = this.rollDamage(attack.damage)
+      } else {
+        damage = 1 // Fallback
+      }
+      
+      if (criticalHit) {
+        damage *= 2
+        addCombatMessage(
+          `💥 Coup critique ! ${attacker.name} utilise ${attack.name} et inflige ${damage} dégâts à ${target.name} !`,
+          'critical'
+        )
+      } else {
+        addCombatMessage(
+          `⚔️ ${attacker.name} utilise ${attack.name} et inflige ${damage} dégâts à ${target.name}`,
+          attacker.type === 'enemy' ? 'enemy-hit' : 'companion-hit'
+        )
+      }
+      
+      return { success: true, damage, critical: criticalHit }
+    } else {
+      addCombatMessage(
+        `❌ ${attacker.name} manque ${target.name} avec ${attack.name} (${totalAttack} vs CA ${targetAC})`,
+        'miss'
+      )
+      return { success: false, damage: 0 }
+    }
+  }
+
+  /**
+   * Valide et exécute un mouvement d'entité
+   */
+  executeEntityMovement(entity, currentPos, targetPos, combatState, addCombatMessage) {
+    // Valider le mouvement
+    const isValid = CombatEngine.validateMovement(entity, currentPos, targetPos, combatState)
+    
+    if (!isValid) {
+      console.warn(`❌ Mouvement invalide pour ${entity.name}`)
+      addCombatMessage(`${entity.name} ne peut pas se déplacer à cette position.`)
+      return false
+    }
+
+    // Log du mouvement
+    const distance = Math.abs(targetPos.x - currentPos.x) + Math.abs(targetPos.y - currentPos.y)
+    console.log(`🚶 ${entity.name} bouge de (${currentPos.x}, ${currentPos.y}) vers (${targetPos.x}, ${targetPos.y}) - distance: ${distance}`)
+    
+    return true
   }
 }

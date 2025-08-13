@@ -210,19 +210,32 @@ export const useCombatStore = create(
         }
 
         // Skip les personnages morts
-        while (nextIndex !== state.currentTurnIndex) {
+        const maxLoops = state.turnOrder.length // Sécurité pour éviter les boucles infinies
+        let loopCount = 0
+        
+        while (nextIndex !== state.currentTurnIndex && loopCount < maxLoops) {
           const currentTurnData = state.turnOrder[nextIndex]
+          let shouldSkip = false
           
           if (currentTurnData.type === 'enemy') {
             const enemy = state.combatEnemies.find(e => e.name === currentTurnData.name)
             if (!enemy || enemy.currentHP <= 0) {
-              nextIndex++
-              if (nextIndex >= state.turnOrder.length) {
-                nextIndex = 0
-                state.turnCounter++
-              }
-              continue
+              shouldSkip = true
             }
+          } else if (currentTurnData.type === 'companion') {
+            // Vérifier si le compagnon est mort via useCharacterStore
+            // Pour l'instant, on assume qu'il faut le gérer différemment
+            // Le CombatTurnManager gérera cette logique
+          }
+          
+          if (shouldSkip) {
+            nextIndex++
+            loopCount++
+            if (nextIndex >= state.turnOrder.length) {
+              nextIndex = 0
+              state.turnCounter++
+            }
+            continue
           }
           break
         }

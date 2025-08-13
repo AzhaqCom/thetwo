@@ -81,6 +81,37 @@ export const CombatPanel = ({
     }
   }, [phase]);
 
+  // Gestion automatique des transitions de phase selon le type de tour
+  useEffect(() => {
+    if (phase === 'turn' && currentTurn) {
+      console.log(`🎮 Phase 'turn' détectée pour ${currentTurn.name} (${currentTurn.type})`)
+      
+      // Vérification de fin de combat AVANT de continuer
+      const allEnemiesDead = enemies.every(e => e.currentHP <= 0)
+      const playerDead = !playerCharacter || playerCharacter.currentHP <= 0
+      
+      if (allEnemiesDead) {
+        console.log(`🎉 Victoire détectée dans la transition de phase !`)
+        setPhase('victory')
+        return
+      } else if (playerDead) {
+        console.log(`💀 Défaite détectée dans la transition de phase !`)
+        setPhase('defeat')
+        return
+      }
+      
+      if (currentTurn.type === 'player') {
+        // Tour du joueur : passer à player-turn pour afficher l'interface
+        console.log(`👤 Passage en phase player-turn pour ${currentTurn.name}`)
+        setPhase('player-turn')
+      } else if (currentTurn.type === 'enemy' || currentTurn.type === 'companion') {
+        // Tour automatique : passer à executing-turn pour déclencher l'IA
+        console.log(`🤖 Passage en phase executing-turn pour ${currentTurn.name}`)
+        setPhase('executing-turn')
+      }
+    }
+  }, [phase, currentTurn, setPhase, enemies, playerCharacter, playerCompanion]);
+
   // Gestion des actions de combat
   const handleActionSelect = useCallback((action) => {
     selectAction(action)
@@ -257,12 +288,26 @@ export const CombatPanel = ({
 
       case 'enemy-turn':
       case 'companion-turn':
+      case 'executing-turn':
+        return (
+          <Card>
+            <div className="combat-phase-content">
+              <h3>Tour en cours</h3>
+              <p>
+                {currentTurn?.type === 'enemy' && `${currentTurn.name} réfléchit...`}
+                {currentTurn?.type === 'companion' && `${currentTurn.name} agit...`}
+                {(!currentTurn || currentTurn.type === 'player') && 'Attendez la fin du tour en cours...'}
+              </p>
+            </div>
+          </Card>
+        )
+
       default:
         return (
           <Card>
             <div className="combat-phase-content">
               <h3>Combat en cours</h3>
-              <p>Attendez la fin du tour en cours...</p>
+              <p>Phase: {phase} - Attendez...</p>
             </div>
           </Card>
         )
@@ -285,7 +330,7 @@ export const CombatPanel = ({
     <div className="combat-container">
       {/* Gestionnaire de tours automatique */}
       <CombatTurnManager
-        currentTurn={currentTurnIndex}
+        currentTurn={currentTurn}
         turnOrder={turnOrder}
         phase={phase}
         onPhaseChange={setPhase}
