@@ -88,7 +88,7 @@ export class SpellService {
    * Obtient les emplacements de sorts d'un personnage
    */
   getSpellSlots(character) {
-    if (!character.spellcasting?.spellSlots) {
+    if (!character.spellcasting?.spellSlots || Object.keys(character.spellcasting.spellSlots).length === 0) {
       return this.generateDefaultSpellSlots(character)
     }
     

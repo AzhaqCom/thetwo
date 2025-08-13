@@ -33,7 +33,7 @@ export const useGameStore = create(
     (set, get) => ({
       // État initial
       gamePhase: 'character-selection',
-      currentScene: 'scene1',
+      currentScene: 'scene3',
       sceneHistory: [],
       combatLog: [],
       isShortResting: false,
@@ -249,8 +249,8 @@ export const gameSelectors = {
   
   getCurrentPhase: (state) => state.gamePhase,
   
-  getRecentMessages: (state, count = 10) =>
-    state.combatLog.slice(-count),
+  // Utiliser directement combatLog, le composant gérera le slicing avec useMemo
+  getCombatLog: (state) => state.combatLog,
     
   hasMessages: (state) => state.combatLog.length > 0
 }

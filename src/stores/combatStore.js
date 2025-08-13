@@ -118,9 +118,15 @@ export const useCombatStore = create(
           }
           return b.initiative - a.initiative
         })
-
+        console.log(sortedOrder)
         // Initialiser les positions
         const positions = get().calculateInitialPositions(enemyInstances, !!playerCompanion, encounterData.enemyPositions)
+        
+        // Sauvegarder les positions initiales comme positions de début de tour
+        positions.playerStartPos = { ...positions.player }
+        if (positions.companion) {
+          positions.companionStartPos = { ...positions.companion }
+        }
 
         return {
           ...state,
@@ -218,6 +224,16 @@ export const useCombatStore = create(
           break
         }
 
+        // Sauvegarder la position de début de tour pour le joueur
+        const newCombatant = state.turnOrder[nextIndex]
+        const newPositions = { ...state.combatPositions }
+        
+        if (newCombatant?.type === 'player') {
+          newPositions.playerStartPos = { ...state.combatPositions.player }
+        } else if (newCombatant?.type === 'companion') {
+          newPositions.companionStartPos = { ...state.combatPositions.companion }
+        }
+
         return {
           currentTurnIndex: nextIndex,
           turnCounter: state.turnCounter,
@@ -226,7 +242,8 @@ export const useCombatStore = create(
           showMovementFor: null,
           showTargetingFor: null,
           playerAction: null,
-          actionTargets: []
+          actionTargets: [],
+          combatPositions: newPositions
         }
       }),
 

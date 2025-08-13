@@ -3,6 +3,7 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import { CharacterManager } from '../services/characterManager'
 import { SpellSystem } from '../services/spellSystem'
 import { GameLogic } from '../services/gameLogic'
+import { items } from '../data/items'
 
 // Store pour la gestion des personnages (joueur et compagnon)
 // Helper pour synchroniser playerCharacter et selectedCharacter
@@ -116,6 +117,37 @@ export const useCharacterStore = create(
           longRestCompanion()
         },
 
+        // Dépenser un dé de vie pendant un repos court
+        spendHitDie: (targetCharacter = 'player') => set((state) => {
+          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          if (!character) return state
+
+          // Vérifications
+          if (character.hitDice <= 0) return state
+          if (character.currentHP >= character.maxHP) return state
+
+          // Calculer la guérison
+          const hitDieSize = character.hitDiceType || 8
+          const constitutionModifier = Math.floor((character.stats.constitution - 10) / 2)
+          const roll = Math.floor(Math.random() * hitDieSize) + 1
+          const healing = Math.max(1, roll + constitutionModifier)
+          
+          // Appliquer la guérison
+          const newHP = Math.min(character.maxHP, character.currentHP + healing)
+          
+          const updatedCharacter = {
+            ...character,
+            currentHP: newHP,
+            hitDice: character.hitDice - 1
+          }
+
+          if (targetCharacter === 'player') {
+            return syncCharacter({ playerCharacter: updatedCharacter })
+          } else {
+            return { playerCompanion: updatedCharacter }
+          }
+        }),
+
         // === GESTION DE L'EXPÉRIENCE ET NIVEAUX ===
 
         addExperience: (xp, targetCharacter = 'player') => set((state) => {
@@ -167,6 +199,7 @@ export const useCharacterStore = create(
           if (!state.playerCharacter) return state
 
           const result = SpellSystem.castSpell(state.playerCharacter, spell, [], options)
+          
           
           return {
             playerCharacter: result.character
@@ -249,37 +282,83 @@ export const useCharacterStore = create(
         }),
 
         useItem: (itemId, targetCharacter = 'player') => {
-          const { removeItemFromInventory, healPlayer, healCompanion } = get()
+          // Cette fonction retourne des informations pour que le composant puisse afficher le bon message
           const character = targetCharacter === 'player' ? get().playerCharacter : get().playerCompanion
-          if (!character) return false
+          if (!character) return { success: false, message: 'Personnage non trouvé' }
 
-          const item = character.inventory.find(i => i.id === itemId)
-          if (!item) return false
+          // D'abord chercher l'item dans l'inventaire du personnage
+          const item = character.inventory.find(i => (i.id || i.name || i.nom) === itemId)
+          if (!item) return { success: false, message: 'Objet non trouvé dans l\'inventaire' }
 
-          // Traiter les effets de l'objet
-          if (item.effects) {
-            item.effects.forEach(effect => {
-              switch (effect.type) {
-                case 'heal':
-                  if (targetCharacter === 'player') {
-                    healPlayer(effect.value)
-                  } else {
-                    healCompanion(effect.value)
-                  }
-                  break
-                // Ajouter d'autres types d'effets selon les besoins
-                default:
-                  console.warn(`Unknown item effect type: ${effect.type}`)
+          // Chercher la définition de l'objet dans data/items.js
+          const itemData = items[itemId] || items[item.id] || items[item.name] || items[item.nom]
+          
+          if (itemData && itemData.use) {
+            try {
+              // Utiliser la fonction use de l'objet
+              const updatedCharacter = itemData.use(character)
+              
+              // Mettre à jour le personnage
+              if (targetCharacter === 'player') {
+                set({ 
+                  playerCharacter: updatedCharacter,
+                  selectedCharacter: updatedCharacter
+                })
+              } else {
+                set({ playerCompanion: updatedCharacter })
               }
-            })
-          }
+              
+              // Retirer l'objet s'il est consommable
+              if (itemData.type === 'consumable') {
+                get().removeItemFromInventory(itemId, targetCharacter)
+              }
+              
+              // Retourner le message pour affichage
+              const message = typeof itemData.message === 'function' ? itemData.message() : itemData.message
+              return { success: true, message, item: itemData }
+              
+            } catch (error) {
+              console.error('Erreur lors de l\'utilisation de l\'objet:', error)
+              return { success: false, message: `Erreur: ${error.message}` }
+            }
+          } else {
+            // Fallback vers l'ancien système avec effects
+            if (item.effects) {
+              let updatedCharacter = { ...character }
+              let message = `${item.name || item.nom} utilisé`
+              
+              item.effects.forEach(effect => {
+                switch (effect.type) {
+                  case 'heal':
+                    const healAmount = effect.value
+                    updatedCharacter.currentHP = Math.min(character.maxHP, character.currentHP + healAmount)
+                    message = `Vous récupérez ${healAmount} PV`
+                    break
+                  default:
+                    console.warn(`Unknown item effect type: ${effect.type}`)
+                }
+              })
 
-          // Retirer l'objet de l'inventaire s'il est consommable
-          if (item.consumable) {
-            removeItemFromInventory(itemId, targetCharacter)
-          }
+              // Mettre à jour le personnage
+              if (targetCharacter === 'player') {
+                set({ 
+                  playerCharacter: updatedCharacter,
+                  selectedCharacter: updatedCharacter
+                })
+              } else {
+                set({ playerCompanion: updatedCharacter })
+              }
 
-          return true
+              // Retirer l'objet s'il est consommable
+              if (item.consumable || item.type === 'consumable') {
+                get().removeItemFromInventory(itemId, targetCharacter)
+              }
+              
+              return { success: true, message }
+            }
+
+            return { success: false, message: 'Cet objet ne peut pas être utilisé' }
+          }
         },
 
         // === GESTION DES EFFETS TEMPORAIRES ===

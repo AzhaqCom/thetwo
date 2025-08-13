@@ -35,7 +35,7 @@ export const CombatLog = ({
   className = '' 
 }) => {
   const logRef = useRef(null)
-  const combatLog = useGameStore(gameSelectors.getRecentMessages)
+  const combatLog = useGameStore(state => state.combatLog)
   const clearCombatLog = useGameStore(state => state.clearCombatLog)
   const autoScrollLogs = useUIStore(state => state.autoScrollLogs)
   const isCompactMode = useUIStore(state => state.compactMode)
@@ -147,7 +147,7 @@ export const CombatLog = ({
  * Mini journal pour les interfaces compactes
  */
 export const MiniCombatLog = ({ maxEntries = 3 }) => {
-  const recentMessages = useGameStore(state => gameSelectors.getRecentMessages(state, maxEntries))
+  const recentMessages = useGameStore(state => state.combatLog.slice(-maxEntries))
   
   if (recentMessages.length === 0) return null
 
@@ -170,7 +170,7 @@ export const useCombatLog = () => {
   const addCombatMessage = useGameStore(state => state.addCombatMessage)
   const clearCombatLog = useGameStore(state => state.clearCombatLog)
   const combatLog = useGameStore(state => state.combatLog)
-  const hasMessages = useGameStore(gameSelectors.hasMessages)
+  const hasMessages = useGameStore(state => state.combatLog.length > 0)
 
   return {
     addMessage: addCombatMessage,

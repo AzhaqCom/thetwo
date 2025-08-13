@@ -14,7 +14,10 @@
   max-width: 100%;
   padding: var(--spacing-sm);
 }
-
+.character-selection__actions{
+  display: flex;
+  justify-content: center;
+}
 /* === SYSTÈME DE GRILLE === */
 
 .grid {

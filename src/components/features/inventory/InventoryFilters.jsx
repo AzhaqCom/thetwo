@@ -9,6 +9,7 @@ export const InventoryFilters = ({
   onFilterChange,
   sortBy = 'name',
   onSortChange,
+  availableItems = [], // Nouvel prop pour les objets disponibles
   className = ''
 }) => {
   const handleSearchChange = (e) => {
@@ -31,7 +32,18 @@ export const InventoryFilters = ({
     })
   }
 
-  const categories = [
+  // Fonction utilitaire pour déterminer la catégorie d'un objet
+  const getItemCategory = (item) => {
+    // Supporter les formats modernes et legacy
+    if (item.type === 'weapon' || item.type === 'arme' || item.degats) return 'weapons'
+    if (item.type === 'armor' || item.type === 'armure' || item.ca) return 'armor'
+    if (item.type === 'consumable' || item.type === 'potion' || item.effet) return 'consumables'
+    if (item.type === 'accessoire') return 'accessories'
+    return 'misc'
+  }
+
+  // Générer les catégories disponibles dynamiquement
+  const allCategories = [
     { value: 'all', label: 'Tout', icon: '📦' },
     { value: 'weapons', label: 'Armes', icon: '⚔️' },
     { value: 'armor', label: 'Armures', icon: '🛡️' },
@@ -40,7 +52,16 @@ export const InventoryFilters = ({
     { value: 'misc', label: 'Divers', icon: '🎒' }
   ]
 
-  const rarities = [
+  const availableCategories = React.useMemo(() => {
+    const usedCategories = new Set(['all']) // Toujours inclure "Tout"
+    availableItems.forEach(item => {
+      usedCategories.add(getItemCategory(item))
+    })
+    return allCategories.filter(cat => usedCategories.has(cat.value))
+  }, [availableItems])
+
+  // Générer les raretés disponibles dynamiquement
+  const allRarities = [
     { value: 'all', label: 'Toutes', color: '#9e9e9e' },
     { value: 'commun', label: 'Commun', color: '#9e9e9e' },
     { value: 'peu commun', label: 'Peu commun', color: '#4caf50' },
@@ -48,6 +69,15 @@ export const InventoryFilters = ({
     { value: 'très rare', label: 'Très rare', color: '#9c27b0' },
     { value: 'légendaire', label: 'Légendaire', color: '#ff9800' }
   ]
+
+  const availableRarities = React.useMemo(() => {
+    const usedRarities = new Set(['all']) // Toujours inclure "Toutes"
+    availableItems.forEach(item => {
+      const rarity = item.rarity || 'commun'
+      usedRarities.add(rarity)
+    })
+    return allRarities.filter(rarity => usedRarities.has(rarity.value))
+  }, [availableItems])
 
   const sortOptions = [
     { value: 'name', label: 'Nom', icon: '🔤' },
@@ -85,7 +115,7 @@ export const InventoryFilters = ({
       <div className="inventory-filters__section">
         <h5 className="inventory-filters__label">Catégories</h5>
         <ButtonGroup className="inventory-filters__category-buttons">
-          {categories.map(category => (
+          {availableCategories.map(category => (
             <Button
               key={category.value}
               variant={filters.category === category.value ? 'primary' : 'ghost'}
@@ -103,7 +133,7 @@ export const InventoryFilters = ({
       <div className="inventory-filters__section">
         <h5 className="inventory-filters__label">Rareté</h5>
         <ButtonGroup className="inventory-filters__rarity-buttons">
-          {rarities.map(rarity => (
+          {availableRarities.map(rarity => (
             <Button
               key={rarity.value}
               variant={filters.rarity === rarity.value ? 'primary' : 'ghost'}

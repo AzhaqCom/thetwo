@@ -12,12 +12,9 @@ export const ShortRestManager = ({
   onCancelRest,
   className = ''
 }) => {
-  const [hitDiceSpent, setHitDiceSpent] = useState(0)
-  const [totalHealing, setTotalHealing] = useState(0)
-
   const canSpendHitDie = () => {
     return (
-      restData.hitDiceAvailable > hitDiceSpent &&
+      restData.hitDiceAvailable > 0 &&
       restData.currentHP < restData.maxHP
     )
   }
@@ -27,22 +24,12 @@ export const ShortRestManager = ({
 
     try {
       await onSpendHitDie()
-      setHitDiceSpent(prev => prev + 1)
-      
-      // Calculer la guérison (simulation ici, devrait venir du service)
-      const roll = Math.floor(Math.random() * restData.hitDiceType) + 1
-      const constitutionMod = Math.floor((character.stats.constitution - 10) / 2)
-      const healing = Math.max(1, roll + constitutionMod)
-      
-      setTotalHealing(prev => prev + healing)
     } catch (error) {
       console.error('Erreur lors de la dépense du dé de vie:', error)
     }
   }
 
-  const remainingHitDice = restData.hitDiceAvailable - hitDiceSpent
   const isFullyHealed = restData.currentHP >= restData.maxHP
-  const hasSpentDice = hitDiceSpent > 0
 
   return (
     <Card className={`short-rest-manager ${className}`}>
@@ -63,28 +50,16 @@ export const ShortRestManager = ({
               <div className="rest-status-item">
                 <span className="rest-status-label">Points de vie</span>
                 <span className="rest-status-value">
-                  {restData.currentHP + totalHealing}/{restData.maxHP}
-                  {totalHealing > 0 && (
-                    <span className="healing-indicator"> (+{totalHealing})</span>
-                  )}
+                  {restData.currentHP}/{restData.maxHP}
                 </span>
               </div>
               
               <div className="rest-status-item">
                 <span className="rest-status-label">Dés de vie restants</span>
                 <span className="rest-status-value">
-                  {remainingHitDice} (d{restData.hitDiceType})
+                  {restData.hitDiceAvailable} (d{restData.hitDiceType})
                 </span>
               </div>
-              
-              {hasSpentDice && (
-                <div className="rest-status-item">
-                  <span className="rest-status-label">Dés de vie utilisés</span>
-                  <span className="rest-status-value">
-                    {hitDiceSpent}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -97,18 +72,9 @@ export const ShortRestManager = ({
                   width: `${(restData.currentHP / restData.maxHP) * 100}%` 
                 }}
               />
-              {totalHealing > 0 && (
-                <div 
-                  className="health-bar-healing"
-                  style={{ 
-                    left: `${(restData.currentHP / restData.maxHP) * 100}%`,
-                    width: `${(totalHealing / restData.maxHP) * 100}%`
-                  }}
-                />
-              )}
             </div>
             <span className="health-bar-label">
-              PV : {restData.currentHP + totalHealing}/{restData.maxHP}
+              PV : {restData.currentHP}/{restData.maxHP}
             </span>
           </div>
 
@@ -129,13 +95,13 @@ export const ShortRestManager = ({
                 🎲 Dépenser un dé de vie
                 {!canSpendHitDie() && (
                   <span className="button-disabled-reason">
-                    {remainingHitDice === 0 ? ' (aucun restant)' : ' (PV au maximum)'}
+                    {restData.hitDiceAvailable === 0 ? ' (aucun restant)' : ' (PV au maximum)'}
                   </span>
                 )}
               </Button>
               
               <div className="hit-dice-info">
-                <span>Dés restants : {remainingHitDice}</span>
+                <span>Dés restants : {restData.hitDiceAvailable}</span>
               </div>
             </div>
           </div>
@@ -165,7 +131,7 @@ export const ShortRestManager = ({
             </div>
           )}
           
-          {hasSpentDice && !isFullyHealed && (
+          {!isFullyHealed && restData.hitDiceAvailable > 0 && (
             <div className="rest-message rest-message--info">
               <span className="rest-message-icon">💡</span>
               <span>Vous pouvez dépenser d'autres dés de vie ou terminer le repos maintenant.</span>

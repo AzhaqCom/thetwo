@@ -11,17 +11,21 @@ import { RestTypeSelector } from './RestTypeSelector'
  * Panneau de gestion des repos avec Zustand
  */
 export const RestPanel = ({
+  type,
+  character,
   onRestComplete,
   className = ''
 }) => {
   // Stores
   const { 
-    selectedCharacter,
-    takeShortRest,
-    takeLongRest,
-    spendHitDie,
-    restoreSpellSlot
+    playerCharacter,
+    shortRestPlayer,
+    longRestPlayer,
+    spendHitDie
   } = useCharacterStore()
+  
+  // Use prop character or fallback to playerCharacter from store
+  const activeCharacter = character || playerCharacter
   
   const { addCombatMessage, gamePhase, setGamePhase } = useGameStore()
   
@@ -29,10 +33,10 @@ export const RestPanel = ({
   const restService = useMemo(() => new RestService(), [])
   
   // État local
-  const [restType, setRestType] = useState(null) // null, 'short', 'long'
+  const [restType, setRestType] = useState(type || null) // null, 'short', 'long'
   const [restInProgress, setRestInProgress] = useState(false)
 
-  if (!selectedCharacter) {
+  if (!activeCharacter) {
     return (
       <Card className={`rest-panel ${className}`}>
         <CardBody>
@@ -48,18 +52,18 @@ export const RestPanel = ({
   // Données de repos
   const restData = useMemo(() => {
     return {
-      canTakeShortRest: restService.canTakeShortRest(selectedCharacter),
-      canTakeLongRest: restService.canTakeLongRest(selectedCharacter),
-      shortRestBenefits: restService.getShortRestBenefits(selectedCharacter),
-      longRestBenefits: restService.getLongRestBenefits(selectedCharacter),
-      hitDiceAvailable: selectedCharacter.hitDice || 0,
-      hitDiceType: selectedCharacter.hitDiceType || 8,
-      currentHP: selectedCharacter.currentHP || 0,
-      maxHP: selectedCharacter.maxHP || 0,
-      needsRest: selectedCharacter.currentHP < selectedCharacter.maxHP || 
-                 (selectedCharacter.spellcasting && restService.hasUsedSpellSlots(selectedCharacter))
+      canTakeShortRest: restService.canTakeShortRest(activeCharacter),
+      canTakeLongRest: restService.canTakeLongRest(activeCharacter),
+      shortRestBenefits: restService.getShortRestBenefits(activeCharacter),
+      longRestBenefits: restService.getLongRestBenefits(activeCharacter),
+      hitDiceAvailable: activeCharacter.hitDice || 0,
+      hitDiceType: activeCharacter.hitDiceType || 8,
+      currentHP: activeCharacter.currentHP || 0,
+      maxHP: activeCharacter.maxHP || 0,
+      needsRest: activeCharacter.currentHP < activeCharacter.maxHP || 
+                 (activeCharacter.spellcasting && restService.hasUsedSpellSlots(activeCharacter))
     }
-  }, [selectedCharacter, restService])
+  }, [activeCharacter, restService])
 
   // Gestionnaires d'événements
   const handleRestTypeSelect = (type) => {
@@ -71,59 +75,41 @@ export const RestPanel = ({
     setGamePhase('rest')
     
     addCombatMessage(
-      `${selectedCharacter.name} commence un ${restType === 'short' ? 'repos court' : 'repos long'}`,
+      `${activeCharacter.name} commence un ${restType === 'short' ? 'repos court' : 'repos long'}`,
       'rest-start'
     )
   }
 
-  const handleCompleteShortRest = async () => {
+  const handleCompleteShortRest = () => {
     try {
-      const result = await takeShortRest()
-      
-      if (result.success) {
-        addCombatMessage('Repos court terminé !', 'rest-complete')
-        setRestInProgress(false)
-        setRestType(null)
-        onRestComplete?.('short')
-      } else {
-        addCombatMessage(result.message, 'error')
-      }
+      shortRestPlayer()
+      addCombatMessage('Repos court terminé !', 'rest-complete')
+      setRestInProgress(false)
+      setRestType(null)
+      onRestComplete?.('short')
     } catch (error) {
       console.error('Erreur lors du repos court:', error)
       addCombatMessage('Erreur lors du repos court', 'error')
     }
   }
 
-  const handleCompleteLongRest = async () => {
+  const handleCompleteLongRest = () => {
     try {
-      const result = await takeLongRest()
-      
-      if (result.success) {
-        addCombatMessage('Repos long terminé ! Tous vos points de vie et emplacements de sorts ont été restaurés.', 'rest-complete')
-        setRestInProgress(false)
-        setRestType(null)
-        onRestComplete?.('long')
-      } else {
-        addCombatMessage(result.message, 'error')
-      }
+      longRestPlayer()
+      addCombatMessage('Repos long terminé ! Tous vos points de vie et emplacements de sorts ont été restaurés.', 'rest-complete')
+      setRestInProgress(false)
+      setRestType(null)
+      onRestComplete?.('long')
     } catch (error) {
       console.error('Erreur lors du repos long:', error)
       addCombatMessage('Erreur lors du repos long', 'error')
     }
   }
 
-  const handleSpendHitDie = async () => {
+  const handleSpendHitDie = () => {
     try {
-      const result = await spendHitDie()
-      
-      if (result.success) {
-        addCombatMessage(
-          `Dé de vie dépensé ! +${result.healing} PV récupérés.`,
-          'healing'
-        )
-      } else {
-        addCombatMessage(result.message, 'error')
-      }
+      spendHitDie('player')
+      addCombatMessage('Dé de vie dépensé !', 'healing')
     } catch (error) {
       console.error('Erreur lors de la dépense du dé de vie:', error)
       addCombatMessage('Impossible de dépenser le dé de vie', 'error')
@@ -142,7 +128,7 @@ export const RestPanel = ({
     return (
       <Card className={`rest-panel ${className}`}>
         <CardHeader>
-          <h3>😴 Repos pour {selectedCharacter.name}</h3>
+          <h3>😴 Repos pour {activeCharacter.name}</h3>
           
           {/* Indicateurs de besoin de repos */}
           <div className="rest-panel__status">
@@ -171,7 +157,7 @@ export const RestPanel = ({
 
         <CardBody>
           <RestTypeSelector
-            character={selectedCharacter}
+            character={activeCharacter}
             restData={restData}
             onSelect={handleRestTypeSelect}
           />
@@ -192,7 +178,7 @@ export const RestPanel = ({
       <CardBody>
         {restType === 'short' ? (
           <ShortRestManager
-            character={selectedCharacter}
+            character={activeCharacter}
             restData={restData}
             onSpendHitDie={handleSpendHitDie}
             onCompleteRest={handleCompleteShortRest}
@@ -200,7 +186,7 @@ export const RestPanel = ({
           />
         ) : (
           <LongRestManager
-            character={selectedCharacter}
+            character={activeCharacter}
             restData={restData}
             onCompleteRest={handleCompleteLongRest}
             onCancelRest={handleCancelRest}

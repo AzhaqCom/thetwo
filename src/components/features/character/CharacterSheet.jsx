@@ -19,13 +19,13 @@ import { XPBar } from './XPBar'
 /**
  * Fiche de personnage modernisée avec stores Zustand
  */
-export const CharacterSheet = ({ 
+export const CharacterSheet = ({
   characterType = 'player', // 'player' ou 'companion'
   compact = false,
-  showControls = false 
+  showControls = false
 }) => {
   const character = useCharacterStore(state =>
-    characterType === 'player' 
+    characterType === 'player'
       ? state.playerCharacter
       : state.playerCompanion
   )
@@ -35,7 +35,13 @@ export const CharacterSheet = ({
     if (!character) return null
 
     const xpToNext = CharacterManager.getXPToNextLevel(character.level)
-    const xpProgress = xpToNext > 0 ? (character.experience / xpToNext) * 100 : 100
+    const xpCurrentLevel = CharacterManager.getXPToNextLevel(character.level - 1) // XP requis pour le niveau actuel
+    const currentXP = character.currentXP || character.experience || 0 // Support des deux propriétés
+    
+    // Calcul correct de la progression dans le niveau actuel
+    const xpInCurrentLevel = currentXP - xpCurrentLevel // XP gagné dans le niveau actuel
+    const xpNeededForLevel = xpToNext - xpCurrentLevel // XP total nécessaire pour passer au niveau suivant
+    const xpProgress = xpNeededForLevel > 0 ? (xpInCurrentLevel / xpNeededForLevel) * 100 : 100
 
     // Bonus d'attaque de sorts
     const spellAttackBonus = character.spellcasting
@@ -44,16 +50,16 @@ export const CharacterSheet = ({
 
     // Bonus d'attaque d'armes (utilise la stat primaire)
     const primaryStat = character.class === 'Roublard' ? 'dexterite' : 'force'
-    const weaponAttackBonus = getModifier(character.stats[primaryStat]) + 
+    const weaponAttackBonus = getModifier(character.stats[primaryStat]) +
       CharacterManager.getProficiencyBonus(character.level)
 
     // DD des sorts
-    const spellSaveDC = character.spellcasting 
+    const spellSaveDC = character.spellcasting
       ? CharacterManager.getSpellSaveDC(character)
       : null
 
     return {
-      xpToNext,
+      xpToNext: xpNeededForLevel, // XP nécessaire pour le niveau suivant (pas le total)
       xpProgress,
       spellAttackBonus,
       weaponAttackBonus,
@@ -91,10 +97,10 @@ export const CharacterSheet = ({
               <p className="character-sheet__background">{character.historic}</p>
             )}
           </div>
-          
+
           {!compact && (
             <XPBar
-              currentXP={character.experience || 0}
+              currentXP={Math.max(0, (character.currentXP || character.experience || 0) - CharacterManager.getXPToNextLevel(character.level - 1))}
               nextLevelXP={characterStats.xpToNext}
               progress={characterStats.xpProgress}
               level={character.level}
@@ -107,18 +113,18 @@ export const CharacterSheet = ({
         {/* Stats principales */}
         <div className="character-sheet__main-stats">
           <div className="character-sheet__combat-stats">
-            <StatBlock 
-              label="CA" 
-              value={character.ac} 
+            <StatBlock
+              label="CA"
+              value={character.ac}
               tooltip="Classe d'Armure"
             />
-            <StatBlock 
-              label="Initiative" 
+            <StatBlock
+              label="Initiative"
               value={`+${getModifier(character.stats.dexterite)}`}
               tooltip="Modificateur d'initiative"
             />
           </div>
-          
+
           {/* Barre de vie */}
           <HealthBar
             current={character.currentHP}
@@ -133,13 +139,13 @@ export const CharacterSheet = ({
         <CollapsibleSection
           id={`${characterType}-abilities`}
           title="Caractéristiques"
-          defaultExpanded={!compact}
+          defaultExpanded={compact}
         >
-          <AbilityScores 
+          <AbilityScores
             stats={character.stats}
             saves={character.proficiencies?.saves || []}
             proficiencyBonus={characterStats.proficiencyBonus}
-            compact={compact}
+            compact={!compact}
           />
         </CollapsibleSection>
 
@@ -157,14 +163,18 @@ export const CharacterSheet = ({
               />
             </div>
 
-            <div className="character-sheet__attack-bonuses">
-              {characterStats.spellAttackBonus !== null && (
+
+            {characterStats.spellAttackBonus !== null && (
+              <div className="character-sheet__attack-bonuses">
                 <StatBlock
                   label="Att. Sorts"
                   value={`+${characterStats.spellAttackBonus}`}
                   tooltip="Bonus d'attaque des sorts"
                 />
-              )}
+              </div>
+            )}
+
+            <div className="character-sheet__attack-bonuses">
               <StatBlock
                 label="Att. Armes"
                 value={`+${characterStats.weaponAttackBonus}`}
@@ -186,7 +196,7 @@ export const CharacterSheet = ({
         <CollapsibleSection
           id={`${characterType}-skills`}
           title="Compétences"
-          defaultExpanded={false}
+          defaultExpanded={compact}
         >
           <SkillsList
             character={character}
@@ -223,18 +233,18 @@ export const CompactCharacterSheet = ({ characterType = 'player' }) => (
 /**
  * Fiche de personnage avec contrôles
  */
-export const InteractiveCharacterSheet = ({ 
+export const InteractiveCharacterSheet = ({
   characterType = 'player',
   onLevelUp,
   onRest,
-  onEditCharacter 
+  onEditCharacter
 }) => {
   const character = useCharacterStore(state =>
-    characterType === 'player' 
+    characterType === 'player'
       ? state.playerCharacter
       : state.playerCompanion
   )
-  
+
   const canLevelUp = useCharacterStore(state => state.levelUpPending)
 
   if (!character) return <CharacterSheet characterType={characterType} />
@@ -242,7 +252,7 @@ export const InteractiveCharacterSheet = ({
   return (
     <div className="interactive-character-sheet">
       <CharacterSheet characterType={characterType} showControls={true} />
-      
+
       {/* Contrôles additionnels */}
       <div className="character-sheet__controls">
         {canLevelUp && (
@@ -253,14 +263,14 @@ export const InteractiveCharacterSheet = ({
             🎯 Monter de niveau !
           </button>
         )}
-        
+
         <button
           className="btn btn--secondary"
           onClick={() => onRest?.(character)}
         >
           😴 Se reposer
         </button>
-        
+
         {onEditCharacter && (
           <button
             className="btn btn--ghost"

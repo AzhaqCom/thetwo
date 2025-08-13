@@ -86,8 +86,8 @@ export const CharacterSelection = ({ onCharacterSelect }) => {
   }
 
   return (
-    <div className="character-selection">
-      <div className="character-selection__header">
+    <div className="character-selection-screen">
+      <div className="selection-header">
         <h1 className="character-selection__title">
           ✨ Choisis ton Héros ✨
         </h1>
@@ -96,7 +96,7 @@ export const CharacterSelection = ({ onCharacterSelect }) => {
         </p>
       </div>
 
-      <div className="character-selection__grid">
+      <div className="character-grid">
         {availableCharacters.map((character, index) => (
           <CharacterSelectionCard
             key={`${character.name}-${index}`}
@@ -111,8 +111,8 @@ export const CharacterSelection = ({ onCharacterSelect }) => {
       </div>
 
       {selectedCharacter && (
-        <div className="character-selection__confirmation">
-          <Card className="character-selection__selected-info">
+        
+          <Card className="character-details">
             <CardHeader>
               <h3>
                 {getClassIcon(selectedCharacter.class)} {selectedCharacter.name}
@@ -126,32 +126,28 @@ export const CharacterSelection = ({ onCharacterSelect }) => {
               </p>
               
               {/* Mini aperçu des stats */}
-              <div className="character-selection__quick-stats">
-                <div className="quick-stat">
-                  <span className="quick-stat__label">❤️ PV</span>
+              <div className="character-stats-preview">
+                <div className="stat-preview">
+                  <span className="quick-stat__label">❤️ PV </span>
                   <span className="quick-stat__value">{selectedCharacter.maxHP}</span>
                 </div>
-                <div className="quick-stat">
-                  <span className="quick-stat__label">🛡️ CA</span>
+                <div className="stat-preview">
+                  <span className="quick-stat__label">🛡️ CA </span>
                   <span className="quick-stat__value">{selectedCharacter.ac}</span>
                 </div>
-                <div className="quick-stat">
-                  <span className="quick-stat__label">⚡ Initiative</span>
+                <div className="stat-preview">
+                  <span className="quick-stat__label">⚡ Initiative </span>
                   <span className="quick-stat__value">
-                    +{Math.floor((selectedCharacter.stats.dexterite - 10) / 2)}
+                     + {Math.floor((selectedCharacter.stats.dexterite - 10) / 2)}
                   </span>
                 </div>
               </div>
+              
             </CardBody>
             
             <CardFooter>
               <div className="character-selection__actions">
-                <Button
-                  variant="secondary"
-                  onClick={() => handlePreviewCharacter(selectedCharacter)}
-                >
-                  👁️ Voir les détails
-                </Button>
+                
                 
                 <Button
                   variant="primary"
@@ -165,7 +161,7 @@ export const CharacterSelection = ({ onCharacterSelect }) => {
               </div>
             </CardFooter>
           </Card>
-        </div>
+     
       )}
 
       {!selectedCharacter && (

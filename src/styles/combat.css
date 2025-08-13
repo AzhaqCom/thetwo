@@ -1,14 +1,14 @@
 /* === INTERFACE DE COMBAT AMÉLIORÉE === */
 
-.combat-interface {
+.combat-layout {
   display: flex;
   flex-direction: row;
-  height: 100%;
+  height: calc(100% - 15px);
   gap: var(--spacing-md);
 }
 
 /* === GRILLE DE COMBAT === */
-.combat-grid-container {
+.combat-grid-section {
   width: 60%;
   height: 100%;
   display: flex;
@@ -20,7 +20,9 @@
   box-shadow: var(--shadow-large);
 
 }
-
+.combat-grid{
+  width: 100%;
+}
 .combat-grid__container{
   display: grid;
   grid-template-columns: repeat(8, 1fr);
@@ -111,8 +113,13 @@
 }
 
 /* === CARTES DE PERSONNAGES AMÉLIORÉES === */
-
-
+.combat-grid__health-bar{
+  height: 3px;
+  width: 100%;
+}
+.combat-grid__health-fill{
+  height: 3px;
+}
 .character-card.current-turn {
   z-index: 10;
 }

@@ -1,11 +1,12 @@
 import React, { useEffect, useCallback } from 'react'
 import { useCombatStore } from '../../../stores/combatStore'
 import { useGameStore } from '../../../stores/gameStore'
+import { CombatService } from '../../../services/CombatService'
 import { Card, Button } from '../../ui'
 import { CombatGrid } from './CombatGrid'
 import { CombatTurnManager } from './CombatTurnManager'
 import { CombatActionPanel } from './CombatActionPanel'
-import { CombatLog } from './CombatLog'
+import { CombatLog } from '../../ui/CombatLog'
 
 /**
  * Panneau de combat moderne utilisant Zustand
@@ -31,7 +32,7 @@ export const CombatPanel = ({
     defeated,
     victory,
     isInitialized,
-    
+
     // Actions
     initializeCombat,
     startCombat,
@@ -39,40 +40,46 @@ export const CombatPanel = ({
     nextTurn,
     setPlayerAction: selectAction,
     setActionTargets,
-    resetCombat
+    resetCombat,
+    moveCharacter
   } = useCombatStore()
-  
+
   // Calcul du tour actuel
   const currentTurn = turnOrder[currentTurnIndex]
-  
+
   // Fonctions pour gérer les cibles
   const clearTargets = () => setActionTargets([])
   const selectTarget = (target) => {
     setActionTargets([...selectedTargets, target])
   }
-  
+
   const { addCombatMessage, combatLog, clearCombatLog } = useGameStore()
 
   // Initialisation du combat
   useEffect(() => {
     if (!encounterData || !encounterData.enemies?.length) return
-    
+
     // Reset pour nouveau combat
     if (combatKey !== undefined) {
       resetCombat()
     }
-    
+
     // Initialiser le combat
     if (!isInitialized) {
       initializeCombat(encounterData, playerCharacter, playerCompanion)
-      addCombatMessage('Un combat commence !', 'combat-start')
-      
-      // Démarrer le combat après un délai pour l'initiative
-      setTimeout(() => {
-        startCombat()
-      }, 2000) // 2 secondes pour voir l'initiative
     }
-  }, [encounterData, combatKey, isInitialized, playerCharacter, playerCompanion, initializeCombat, startCombat, resetCombat, addCombatMessage])
+  }, [encounterData, combatKey, isInitialized, playerCharacter, playerCompanion, initializeCombat, startCombat, resetCombat, addCombatMessage, turnOrder])
+
+  useEffect(() => {
+    // On se déclenche UNIQUEMENT quand la phase est la bonne.
+    if (phase === 'initiative-display') {
+      addCombatMessage('Un combat commence !', 'combat-start');
+      turnOrder.forEach(element => {
+        const message = `${element.name} a obtenu ${element.initiative} en initiative !`;
+        addCombatMessage(message, 'combat-start');
+      });
+    }
+  }, [phase]);
 
   // Gestion des actions de combat
   const handleActionSelect = useCallback((action) => {
@@ -81,23 +88,62 @@ export const CombatPanel = ({
 
   const handleTargetSelect = useCallback((target) => {
     if (!selectedAction) return
-    
-    selectTarget(target)
-    
+
+    // Ajouter la cible à la liste
+    const newTargets = [...selectedTargets, target]
+    setActionTargets(newTargets)
+
     // Auto-exécution si assez de cibles
     const maxTargets = selectedAction.projectiles || 1
-    const currentTargets = selectedTargets.length + 1
-    
-    if (currentTargets >= maxTargets) {
+
+    if (newTargets.length >= maxTargets) {
+      // Exécuter immédiatement avec les nouvelles cibles
       setTimeout(() => {
-        handleExecuteAction()
-      }, 100)
+        const combatService = new CombatService()
+        const result = combatService.executePlayerAction(
+          playerCharacter,
+          selectedAction,
+          newTargets,
+          enemies,
+          positions
+        )
+
+        // Appliquer les résultats
+        result.messages.forEach(message => addCombatMessage(message.text, message.type))
+
+        // Appliquer les dégâts
+        if (result.damage && result.damage.length > 0) {
+          result.damage.forEach(damageData => {
+            // Trouver la cible et appliquer les dégâts
+            const target = enemies.find(e => e.name === damageData.targetId || e.id === damageData.targetId)
+            if (target) {
+              // Utiliser le store pour appliquer les dégâts
+              const { dealDamageToEnemy } = useCombatStore.getState()
+              dealDamageToEnemy(target.name, damageData.damage)
+
+              // Message de mort si nécessaire
+              setTimeout(() => {
+                const updatedEnemy = enemies.find(e => e.name === target.name)
+                if (updatedEnemy && updatedEnemy.currentHP <= 0 && target.currentHP > 0) {
+                  addCombatMessage(`💀 ${target.name} tombe au combat !`, 'enemy-death')
+                }
+              }, 100)
+            }
+          })
+        }
+
+        // Passer au tour suivant
+        clearTargets()
+        selectAction(null)
+        nextTurn()
+      }, 500) // Petit délai pour que l'utilisateur voie la sélection
     }
-  }, [selectedAction, selectTarget, selectedTargets.length])
+  }, [selectedAction, selectedTargets, setActionTargets, playerCharacter, enemies, positions, addCombatMessage, clearTargets, selectAction, nextTurn])
 
   const handleExecuteAction = useCallback(() => {
     if (!selectedAction || !selectedTargets.length) return
-    
+
+    const combatService = new CombatService()
     const result = combatService.executePlayerAction(
       playerCharacter,
       selectedAction,
@@ -105,15 +151,15 @@ export const CombatPanel = ({
       enemies,
       positions
     )
-    
+
     // Appliquer les résultats
     result.messages.forEach(message => addCombatMessage(message.text, message.type))
-    
+
     // Passer au tour suivant
     clearTargets()
     selectAction(null)
     nextTurn()
-  }, [selectedAction, selectedTargets, playerCharacter, enemies, addCombatMessage, clearTargets, selectAction, nextTurn])
+  }, [selectedAction, selectedTargets, playerCharacter, enemies, positions, addCombatMessage, clearTargets, selectAction, nextTurn])
 
   const handlePassTurn = () => {
     addCombatMessage(`${playerCharacter.name} passe son tour.`)
@@ -135,13 +181,13 @@ export const CombatPanel = ({
           </Card>
         )
 
-      case 'initiative':
+      case 'initiative-display':
         return (
           <Card>
             <div className="combat-phase-content">
               <h3>Initiative lancée !</h3>
               <p>Les jets d'initiative ont été effectués. Prêt à commencer le combat ?</p>
-              <Button onClick={() => setPhase('combat')}>
+              <Button onClick={() => startCombat()}>
                 Commencer le combat
               </Button>
             </div>
@@ -198,7 +244,7 @@ export const CombatPanel = ({
               <h3>💀 Défaite</h3>
               <p>Vous avez été vaincu...</p>
               <div className="combat-defeat-actions">
-                <Button 
+                <Button
                   variant="secondary"
                   onClick={onReplayCombat}
                 >
@@ -239,9 +285,8 @@ export const CombatPanel = ({
     <div className="combat-container">
       {/* Gestionnaire de tours automatique */}
       <CombatTurnManager
-        currentTurn={currentTurn}
+        currentTurn={currentTurnIndex}
         turnOrder={turnOrder}
-        enemies={enemies}
         phase={phase}
         onPhaseChange={setPhase}
         onNextTurn={nextTurn}
@@ -261,13 +306,13 @@ export const CombatPanel = ({
             phase={phase}
             onTargetSelect={handleTargetSelect}
             onMoveCharacter={(characterId, newPosition) => {
-              // TODO: Implémenter le mouvement
+              moveCharacter(characterId, newPosition)
             }}
           />
         </div>
 
         {/* Panneau latéral */}
-        <div className="combat-sidebar">
+        <div className="combat-side-container">
           {/* Contrôles de phase */}
           <div className="combat-controls">
             {renderPhaseContent()}
@@ -275,7 +320,7 @@ export const CombatPanel = ({
 
           {/* Journal de combat */}
           <div className="combat-log-section">
-            <CombatLog messages={combatLog} />
+            <CombatLog title="Combat" maxEntries={10} showTimestamps={false} />
           </div>
         </div>
       </div>

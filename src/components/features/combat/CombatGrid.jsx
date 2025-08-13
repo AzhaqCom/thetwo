@@ -16,8 +16,7 @@ export const CombatGrid = ({
   onTargetSelect,
   onMoveCharacter
 }) => {
-  console.log('🎯 CombatGrid - enemies:', enemies);
-  console.log('🎯 CombatGrid - positions:', positions);
+
   const GRID_WIDTH = 8
   const GRID_HEIGHT = 6
   const MOVEMENT_RANGE = 6 // cases
@@ -58,10 +57,14 @@ export const CombatGrid = ({
     if (phase !== 'player-movement') return false
 
     const playerPos = positions.player
-    if (!playerPos) return false
+    const playerStartPos = positions.playerStartPos || playerPos // Position de début de tour
+    if (!playerPos || !playerStartPos) return false
 
-    const distance = getManhattanDistance(playerPos.x, playerPos.y, x, y)
-    return distance <= MOVEMENT_RANGE && !getCombatantAtPosition(x, y)
+    // Calculer le mouvement total si on va à cette case
+    const moveDistance = getManhattanDistance(playerStartPos.x, playerStartPos.y, x, y)
+    
+    // Vérifier que la case n'est pas occupée et qu'elle est dans la portée de mouvement
+    return moveDistance <= MOVEMENT_RANGE && !getCombatantAtPosition(x, y)
   }
 
   // Vérifier si une case est une cible valide pour l'action sélectionnée
@@ -286,21 +289,7 @@ export const CombatGrid = ({
   return (
     <div className="combat-grid">
       {/* En-tête avec informations */}
-      <div className="combat-grid__header">
-        <h3>Champ de bataille</h3>
-        <div className="combat-grid__info">
-          {phase === 'player-movement' && (
-            <span className="combat-grid__phase-info">
-              🏃 Phase de mouvement (max {MOVEMENT_RANGE} cases)
-            </span>
-          )}
-          {phase === 'player-turn' && selectedAction && (
-            <span className="combat-grid__phase-info">
-              🎯 {selectedAction.name} sélectionné
-            </span>
-          )}
-        </div>
-      </div>
+      
 
       {/* Grille principale */}
       <div

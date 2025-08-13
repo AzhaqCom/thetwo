@@ -10,9 +10,9 @@ import {
   CompanionDisplay
 } from './components/features/character';
 import {
-  CombatPanel,
-  CombatLog
+  CombatPanel
 } from './components/features/combat';
+import { CombatLog } from './components/ui/CombatLog';
 import {
   InventoryPanel
 } from './components/features/inventory';
@@ -107,12 +107,36 @@ function App() {
         setGamePhase('game');
     };
 
-    // Combat victory handler
-    const handleCombatVictory = () => {
-        resetCombat();
-        setCurrentScene('scene1'); // Or next scene
-        addCombatMessage('Combat terminé ! Victoire !', 'victory');
-    };
+   // Combat victory handler
+const handleCombatVictory = () => {
+    // 1. Récupérer l'action post-victoire depuis la scène de combat actuelle
+    const nextAction = currentScene.next;
+
+    // 2. Réinitialiser l'état du combat
+    resetCombat();
+    addCombatMessage('Combat terminé ! Victoire !', 'victory');
+
+    // 3. Utiliser processSceneAction pour gérer la suite
+ 
+    if (nextAction) {
+        const result = processSceneAction(nextAction, {
+            startLongRest,
+            startShortRest,
+            handleItemGain,
+            setPlayerCompanion,
+            addCombatMessage,
+            handleSkillCheck
+        });
+
+        if (result) {
+            setCurrentScene(result);
+        }
+    } else {
+        // S'il n'y a pas de scène suivante définie, on peut aller à une scène par défaut ou terminer le jeu.
+        console.warn("Aucune scène suivante n'est définie après le combat.");
+        setCurrentScene('fin_du_jeu'); // ou une autre scène par défaut
+    }
+};
 
     // Item gain handler
     const handleItemGain = (itemIdOrArray) => {
@@ -147,11 +171,13 @@ function App() {
     };
 
     // Spell casting out of combat
-    const handleCastSpellOutOfCombat = (spell) => {
+    const handleCastSpellOutOfCombat = (spell, level = null) => {
         try {
-            castSpellPlayer(spell);
+            const options = level ? { spellLevel: level } : {};
+            castSpellPlayer(spell, options);
             addCombatMessage(`Sort lancé : ${spell.name}`, 'spell');
         } catch (error) {
+            console.error('Erreur lors du lancement du sort:', error);
             showError(`Impossible de lancer le sort : ${error.message}`);
         }
     };
@@ -188,9 +214,10 @@ function App() {
                 <div className='long-rest-panel'>
                     <RestPanel
                         type="long"
+                        character={playerCharacter}
                         onRestComplete={handleLongRest}
                     />
-                    <CombatLog logMessages={combatLog} />
+                    <CombatLog title="Journal" compact={true} />
                 </div>
             );
         }
@@ -203,7 +230,7 @@ function App() {
                         character={playerCharacter}
                         onRestComplete={handleShortRest}
                     />
-                    <CombatLog logMessages={combatLog} />
+                    <CombatLog title="Journal" compact={true} />
                 </div>
             );
         }
@@ -217,8 +244,33 @@ function App() {
                     encounterData={currentScene}
                     onCombatEnd={handleCombatVictory}
                     onReplayCombat={() => {
+                        // 1. Restaurer les PV du joueur et du compagnon pour le rejeu
+                        if (playerCharacter) {
+                            setPlayerCharacter({
+                                ...playerCharacter,
+                                currentHP: playerCharacter.maxHP
+                            });
+                        }
+                        
+                        if (playerCompanion) {
+                            setPlayerCompanion({
+                                ...playerCompanion,
+                                currentHP: playerCompanion.maxHP
+                            });
+                        }
+
+                        // 2. Réinitialiser complètement le combat
+                        resetCombat();
                         incrementCombatKey();
-                        initializeCombat(currentScene, playerCharacter, playerCompanion);
+                        addCombatMessage('🔄 Combat réinitialisé !', 'info');
+                        
+                        // 3. Attendre un tick pour que les changements soient appliqués
+                        setTimeout(() => {
+                            // Utiliser les personnages avec les PV restaurés
+                            const restoredPlayer = { ...playerCharacter, currentHP: playerCharacter.maxHP };
+                            const restoredCompanion = playerCompanion ? { ...playerCompanion, currentHP: playerCompanion.maxHP } : null;
+                            initializeCombat(currentScene, restoredPlayer, restoredCompanion);
+                        }, 100);
                     }}
                 />
             );
@@ -248,7 +300,7 @@ function App() {
                             }
                         }}
                     />
-                    <CombatLog logMessages={combatLog} />
+                    <CombatLog title="Journal" compact={true} />
                 </div>
             );
         }
@@ -286,6 +338,7 @@ function App() {
                         <SpellPanel
                             character={playerCharacter}
                             onCastSpell={handleCastSpellOutOfCombat}
+                            isOutOfCombat={true}
                         />
                     )}
                     {shouldShowWeapons && (

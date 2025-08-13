@@ -50,12 +50,12 @@ export const CharacterSelectionCard = ({
       variant={isSelected ? 'primary' : 'default'}
     >
       <CardHeader>
-        <div className="character-selection-card__header">
-          <div className="character-selection-card__icon">
+        <div className="character-portrait">
+          <div className="character-avatar">
             {icon}
           </div>
           
-          <div className="character-selection-card__identity">
+          <div className="character-info">
             <h3 className="character-selection-card__name">{character.name}</h3>
             <p className="character-selection-card__class">
               {character.race} {character.class}
@@ -65,95 +65,48 @@ export const CharacterSelectionCard = ({
             </p>
           </div>
 
-          {isSelected && (
-            <div className="character-selection-card__selected-indicator">
-              ✓
-            </div>
-          )}
+        
         </div>
       </CardHeader>
 
       <CardBody>
-        {description && (
-          <p className="character-selection-card__description">
-            {description}
-          </p>
-        )}
+      
 
         {/* Stats principales visibles */}
-        <div className="character-selection-card__main-stats">
-          <div className="main-stat">
+        <div className="character-stats-preview">
+          <div className="stat-preview">
             <span className="main-stat__label">❤️</span>
             <span className="main-stat__value">{character.maxHP} PV</span>
           </div>
-          <div className="main-stat">
+          <div className="stat-preview">
             <span className="main-stat__label">🛡️</span>
             <span className="main-stat__value">CA {character.ac}</span>
           </div>
         </div>
 
-        {showStats && (
-          <div className="character-selection-card__stats">
-            <div className="character-selection-card__stats-grid">
-              {primaryStats.map(stat => (
-                <div 
-                  key={stat.short} 
-                  className={`character-stat ${getStatColor(stat.value)}`}
-                  title={`${stat.name}: ${stat.value} (${getModifier(stat.value) >= 0 ? '+' : ''}${getModifier(stat.value)})`}
-                >
-                  <span className="character-stat__label">{stat.short}</span>
-                  <span className="character-stat__value">{stat.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+       
 
         {/* Points forts du personnage */}
-        <div className="character-selection-card__highlights">
+        <div className="character-specialties">
           {character.class === 'Magicien' && (
-            <div className="character-highlight">
+            <div className="specialty">
               🔮 Sorts puissants
             </div>
           )}
           {character.class === 'Guerrier' && (
-            <div className="character-highlight">
+            <div className="specialty">
               ⚔️ Combat rapproché
             </div>
           )}
           {character.class === 'Roublard' && (
-            <div className="character-highlight">
+            <div className="specialty">
               🎯 Attaques précises
             </div>
           )}
         </div>
       </CardBody>
 
-      <CardFooter>
-        <div className="character-selection-card__actions">
-          <Button
-            variant="ghost"
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation()
-              onPreview?.(character)
-            }}
-          >
-            👁️ Détails
-          </Button>
-
-          <Button
-            variant={isSelected ? 'primary' : 'secondary'}
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation()
-              onSelect?.(character)
-            }}
-          >
-            {isSelected ? '✓ Sélectionné' : 'Choisir'}
-          </Button>
-        </div>
-      </CardFooter>
+   
     </Card>
   )
 }

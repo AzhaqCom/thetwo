@@ -1,6 +1,8 @@
 import React from 'react'
 import { Card, CardHeader, CardBody, CardFooter, Button } from '../../ui'
 import { ActionButton } from '../../ui/ActionButton'
+import { weapons } from '../../../data/weapons'
+import { spells } from '../../../data/spells'
 
 /**
  * Panneau d'actions de combat pour le joueur
@@ -16,52 +18,99 @@ export const CombatActionPanel = ({
   onMoveToggle
 }) => {
   // Actions d'attaque disponibles
-  const attackActions = playerCharacter.equipement?.armes?.map(weapon => ({
-    id: `attack_${weapon.nom}`,
-    type: 'attack',
-    name: weapon.nom,
-    description: `Attaque avec ${weapon.nom}`,
-    damage: weapon.degats,
-    range: weapon.portee || 5,
-    icon: '⚔️'
-  })) || []
+  const attackActions = (playerCharacter.weapons || [])
+    .map(weaponId => weapons[weaponId])
+    .filter(weapon => weapon) // Filtrer les armes inexistantes
+    .map(weapon => ({
+      id: `attack_${weapon.id}`,
+      type: 'attack',
+      name: weapon.name,
+      description: `Attaque avec ${weapon.name}`,
+      damage: weapon.damage,
+      damageType: weapon.damageType,
+      range: weapon.range?.melee || 1,
+      stat: weapon.stat,
+      icon: weapon.category === 'ranged' ? '🏹' : '⚔️'
+    }))
 
-  // Actions de sort disponibles (sorts préparés avec emplacements)
-  const spellActions = playerCharacter.spells
-    ?.filter(spell => spell.prepared && playerCharacter.spellSlots?.[spell.level] > 0)
-    ?.map(spell => ({
-      id: `spell_${spell.id}`,
-      type: 'spell', 
-      name: spell.name,
-      description: spell.description,
-      level: spell.level,
-      range: spell.range,
-      areaOfEffect: spell.areaOfEffect,
-      icon: '🔮'
-    })) || []
+  // Actions de sort disponibles (cantrips et sorts préparés avec emplacements)
+  const spellActions = []
+  
+  if (playerCharacter.spellcasting) {
+    // Ajouter les cantrips (niveau 0, utilisables à volonté)
+    const cantrips = (playerCharacter.spellcasting.cantrips || []).map(spellName => {
+      // Récupérer les données du sort depuis spells.js
+      const spellData = spells[spellName] || {}
+      
+      return {
+        id: `cantrip_${spellName}`,
+        type: 'spell',
+        name: spellName,
+        description: `Cantrip: ${spellName}`,
+        level: 0,
+        range: spellData.range || 60,
+        projectiles: spellData.projectiles || 1,
+        damage: spellData.damage,
+        requiresAttackRoll: spellData.requiresAttackRoll,
+        icon: '✨'
+      }
+    })
+    
+    // Ajouter les sorts préparés (si l'on a des emplacements)
+    const preparedSpells = (playerCharacter.spellcasting.preparedSpells || [])
+      .filter(spellName => {
+        // Vérifier qu'on a des emplacements de niveau 1 ou plus
+        const spellSlots = playerCharacter.spellcasting.spellSlots || {}
+        return Object.keys(spellSlots).some(level => {
+          const slot = spellSlots[level]
+          return level > 0 && slot && slot.used < slot.total
+        })
+      })
+      .map(spellName => {
+        // Récupérer les données du sort depuis spells.js
+        const spellData = spells[spellName] || {}
+        return {
+          id: `spell_${spellName}`,
+          type: 'spell',
+          name: spellName,
+          description: `Sort: ${spellName}`,
+          level: spellData.level || 1,
+          range: spellData.range || 30,
+          projectiles: spellData.projectiles || 1,
+          damage: spellData.damage,
+          requiresAttackRoll: spellData.requiresAttackRoll,
+          icon: '🔮'
+        }
+      })
+    
+    spellActions.push(...cantrips, ...preparedSpells)
+  }
 
   const allActions = [...attackActions, ...spellActions]
 
   const renderActionButton = (action) => (
-    <ActionButton
-      key={action.id}
-      variant={selectedAction?.id === action.id ? 'primary' : 'secondary'}
-      onClick={() => onSelectAction(action)}
-      disabled={selectedAction && selectedAction.id !== action.id}
-    >
-      <div className="action-button__content">
-        <span className="action-button__icon">{action.icon}</span>
-        <div className="action-button__details">
-          <span className="action-button__name">{action.name}</span>
-          {action.damage && (
-            <span className="action-button__damage">Dégâts: {action.damage}</span>
-          )}
-          {action.level && (
-            <span className="action-button__level">Niveau {action.level}</span>
-          )}
+      <ActionButton
+        key={action.id}
+        variant={selectedAction?.id === action.id ? 'primary' : 'secondary'}
+        onClick={() => onSelectAction(action)}
+        disabled={selectedAction && selectedAction.id !== action.id}
+      >
+        <div className="action-button__content">
+          <span className="action-button__icon">{action.icon}</span>
+          <div className="action-button__details">
+            <span className="action-button__name">{action.name}</span>
+            {action.damage?.dice && (
+              <span className="action-button__damage">
+                Dégâts: {action.damage.dice}
+                {action.damage.bonus > 0 && `+${action.damage.bonus}`}
+              </span>
+            )}
+            {action.level > 0 && (
+              <span className="action-button__level">Niveau {action.level}</span>
+            )}
+          </div>
         </div>
-      </div>
-    </ActionButton>
+      </ActionButton>
   )
 
   const canExecute = selectedAction && selectedTargets.length > 0
@@ -131,8 +180,8 @@ export const CombatActionPanel = ({
               {selectedAction.areaOfEffect
                 ? "Cliquez sur une case pour cibler la zone d'effet"
                 : needsMoreTargets
-                ? `Sélectionnez ${maxTargets - selectedTargets.length} cible(s) supplémentaire(s)`
-                : "Cliquez sur 'Exécuter' pour lancer l'action"}
+                ? `Sélectionnez ${maxTargets - selectedTargets.length} cible(s) pour exécuter l'action`
+                : "Action prête à être exécutée"}
             </p>
           </div>
         )}
@@ -162,14 +211,6 @@ export const CombatActionPanel = ({
               Annuler
             </Button>
           )}
-
-          <Button
-            variant="primary"
-            onClick={onExecuteAction}
-            disabled={!canExecute}
-          >
-            {canExecute ? 'Exécuter' : 'Sélectionner une action'}
-          </Button>
 
           <Button
             variant="secondary"

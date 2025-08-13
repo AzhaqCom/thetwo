@@ -13,7 +13,8 @@ export { CombatTurnManager } from './CombatTurnManager'
 export { CombatActionPanel } from './CombatActionPanel'
 
 // Journal et interface
-export { CombatLog, CompactCombatLog } from './CombatLog'
+// Note: CombatLog est maintenant dans components/ui/CombatLog
+// export { CombatLog, CompactCombatLog } from './CombatLog'
 
 // Cartes de combat (à créer)
 // export { CombatantCard, PlayerCombatCard, EnemyCombatCard } from './CombatantCard'

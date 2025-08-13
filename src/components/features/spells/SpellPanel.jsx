@@ -13,7 +13,9 @@ import { SpellDetailModal } from './SpellDetailModal'
  */
 export const SpellPanel = ({
   className = '',
-  character // Prop character prioritaire
+  character, // Prop character prioritaire
+  onCastSpell, // Callback pour lancer des sorts hors combat
+  isOutOfCombat = false // Indique si on est hors combat
 }) => {
   // Stores
   const {
@@ -64,10 +66,17 @@ export const SpellPanel = ({
     const spellAttackBonus = spellService.getSpellAttackBonus(activeCharacter)
     const spellSaveDC = spellService.getSpellSaveDC(activeCharacter)
     
-    // Listes de sorts
-    const knownSpells = spellService.getKnownSpells(activeCharacter)
-    const preparedSpells = spellService.getPreparedSpells(activeCharacter)
-    const cantrips = spellService.getCantrips(activeCharacter)
+    // Listes de sorts (filtrées selon le contexte)
+    let knownSpells = spellService.getKnownSpells(activeCharacter)
+    let preparedSpells = spellService.getPreparedSpells(activeCharacter)
+    let cantrips = spellService.getCantrips(activeCharacter)
+    
+    // Si hors combat, filtrer pour ne montrer que les sorts castables hors combat
+    if (isOutOfCombat || onCastSpell) {
+      knownSpells = knownSpells.filter(spell => spell.castableOutOfCombat === true)
+      preparedSpells = preparedSpells.filter(spell => spell.castableOutOfCombat === true)
+      cantrips = cantrips.filter(spell => spell.castableOutOfCombat === true)
+    }
     const maxPrepared = spellService.getMaxPreparedSpells(activeCharacter)
     
     // Emplacements de sort
@@ -109,6 +118,13 @@ export const SpellPanel = ({
   // Gestionnaires d'événements
   const handleCastSpell = async (spell, level = null) => {
     try {
+      // Si une fonction de callback est fournie, l'utiliser (pour hors combat)
+      if (onCastSpell) {
+        onCastSpell(spell, level)
+        return
+      }
+      
+      // Sinon utiliser la logique interne (pour en combat)
       const result = await castSpell(spell.id, level)
       
       if (result.success) {

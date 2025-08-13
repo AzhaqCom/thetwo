@@ -17,9 +17,7 @@ export const InventoryPanel = ({
   // Stores
   const { 
     selectedCharacter,
-    useItem,
-    equipItem,
-    unequipItem 
+    useItem
   } = useCharacterStore()
   
   // Utiliser selectedCharacter du store (qui est maintenant synchronisé avec playerCharacter)
@@ -39,7 +37,7 @@ export const InventoryPanel = ({
 
   // Calculs dérivés
   const inventoryData = useMemo(() => {
-    if (!activeCharacter) return { items: [], totalWeight: 0, maxWeight: 0 }
+    if (!activeCharacter) return { items: [], totalWeight: 0, maxWeight: 0, allItems: [] }
     
     // Utiliser inventory moderne + équipement legacy si disponible
     const allItems = [
@@ -90,19 +88,26 @@ export const InventoryPanel = ({
       items: filteredItems,
       totalWeight,
       maxWeight,
-      allItemsCount: allItems.length
+      allItemsCount: allItems.length,
+      allItems // Garder tous les objets pour les filtres dynamiques
     }
   }, [activeCharacter?.inventory, activeCharacter?.equipement, filters, sortBy])
 
   // Gestionnaires d'événements
-  const handleUseItem = async (item) => {
+  const handleUseItem = (item) => {
     try {
-      const result = await useItem(item.id || item.nom || item.name)
+      const result = useItem(item.id || item.nom || item.name)
       
       if (result.success) {
-        addCombatMessage(result.message || `${item.nom || item.name} utilisé avec succès`, 'item-use')
+        // Afficher le message retourné par le système d'objet
+        addCombatMessage(result.message, 'item')
+        
+        // Utiliser la fonction legacy si elle existe pour compatibilité
+        if (onUseItem) {
+          onUseItem(item.id || item.nom || item.name)
+        }
       } else {
-        addCombatMessage(result.message || `Impossible d'utiliser ${item.nom || item.name}`, 'error')
+        addCombatMessage(result.message, 'error')
       }
     } catch (error) {
       console.error('Erreur lors de l\'utilisation de l\'objet:', error)
@@ -110,34 +115,14 @@ export const InventoryPanel = ({
     }
   }
 
-  const handleEquipItem = async (item) => {
-    try {
-      const result = await equipItem(item.id || item.nom || item.name)
-      
-      if (result.success) {
-        addCombatMessage(`${item.nom || item.name} équipé`, 'item-equip')
-      } else {
-        addCombatMessage(result.message, 'error')
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'équipement:', error)
-      addCombatMessage(`Impossible d'équiper ${item.nom || item.name}`, 'error')
-    }
+  const handleEquipItem = (item) => {
+    // TODO: Implémenter l'équipement d'objets
+    addCombatMessage(`Équipement non encore implémenté: ${item.nom || item.name}`, 'info')
   }
 
-  const handleUnequipItem = async (item) => {
-    try {
-      const result = await unequipItem(item.id || item.nom || item.name)
-      
-      if (result.success) {
-        addCombatMessage(`${item.nom || item.name} déséquipé`, 'item-unequip')
-      } else {
-        addCombatMessage(result.message, 'error')
-      }
-    } catch (error) {
-      console.error('Erreur lors du déséquipement:', error)
-      addCombatMessage(`Impossible de déséquiper ${item.nom || item.name}`, 'error')
-    }
+  const handleUnequipItem = (item) => {
+    // TODO: Implémenter le déséquipement d'objets
+    addCombatMessage(`Déséquipement non encore implémenté: ${item.nom || item.name}`, 'info')
   }
 
   const handleFilterChange = (newFilters) => {
@@ -204,6 +189,7 @@ export const InventoryPanel = ({
           onFilterChange={handleFilterChange}
           sortBy={sortBy}
           onSortChange={handleSort}
+          availableItems={inventoryData.allItems}
         />
 
         {/* Grille d'inventaire */}
@@ -246,9 +232,10 @@ export const InventoryPanel = ({
 
 // Fonctions utilitaires
 function getItemCategory(item) {
-  if (item.type === 'arme' || item.degats) return 'weapons'
-  if (item.type === 'armure' || item.ca) return 'armor'
-  if (item.type === 'potion' || item.effet) return 'consumables'
+  // Supporter les formats modernes et legacy
+  if (item.type === 'weapon' || item.type === 'arme' || item.degats) return 'weapons'
+  if (item.type === 'armor' || item.type === 'armure' || item.ca) return 'armor'
+  if (item.type === 'consumable' || item.type === 'potion' || item.effet) return 'consumables'
   if (item.type === 'accessoire') return 'accessories'
   return 'misc'
 }

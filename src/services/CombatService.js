@@ -258,10 +258,55 @@ export class CombatService {
    * Exécute un sort
    */
   executeSpell(caster, spell, targets, results) {
-    // TODO: Implémenter la logique des sorts
     results.messages.push({
       text: `🔮 ${caster.name} lance ${spell.name}`,
       type: 'spell'
+    })
+    
+    // Traiter chaque cible
+    targets.forEach(target => {
+      if (spell.requiresAttackRoll) {
+        // Sorts nécessitant un jet d'attaque (comme Rayon de givre)
+        const attackRoll = this.rollD20()
+        const spellAttackBonus = this.getSpellAttackBonus(caster)
+        const totalAttack = attackRoll + spellAttackBonus
+        
+        const criticalHit = attackRoll === 20
+        const hit = totalAttack >= target.ac || criticalHit
+        
+        if (hit) {
+          let damage = 0
+          if (spell.damage) {
+            damage = this.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
+            if (criticalHit) damage *= 2
+          }
+          
+          results.messages.push({
+            text: `⚔️ ${spell.name} touche ${target.name} et inflige ${damage} dégâts`,
+            type: criticalHit ? 'critical' : 'hit'
+          })
+          
+          results.damage.push({ targetId: target.id || target.name, damage })
+        } else {
+          results.messages.push({
+            text: `❌ ${spell.name} manque ${target.name} (${totalAttack} vs CA ${target.ac})`,
+            type: 'miss'
+          })
+        }
+      } else {
+        // Sorts à touche automatique (comme Projectile Magique)
+        let damage = 0
+        if (spell.damage) {
+          damage = this.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
+        }
+        
+        results.messages.push({
+          text: `💥 ${spell.name} touche automatiquement ${target.name} et inflige ${damage} dégâts`,
+          type: 'spell-hit'
+        })
+        
+        results.damage.push({ targetId: target.id || target.name, damage })
+      }
     })
     
     return results
@@ -271,12 +316,52 @@ export class CombatService {
    * Calcule le bonus d'attaque
    */
   getAttackBonus(character, weapon) {
-    const proficiencyBonus = Math.ceil(character.level / 4) + 1
+    // Pour les ennemis, utiliser le bonus d'attaque défini dans l'arme si disponible
+    if (weapon.attackBonus !== undefined) {
+      return weapon.attackBonus
+    }
     
-    // Utiliser FOR pour les armes de mêlée, DEX pour les armes à distance
-    const abilityMod = weapon.range > 5 
-      ? getModifier(character.stats.dexterite)
-      : getModifier(character.stats.force)
+    // Pour les personnages joueurs, calculer le bonus
+    const proficiencyBonus = character.level ? Math.ceil(character.level / 4) + 1 : 2
+    
+    // Vérifier que character.stats existe
+    if (!character.stats) {
+      console.error('❌ Character.stats manquant dans getAttackBonus:', character)
+      return 0
+    }
+    
+    // Utiliser le stat défini dans l'arme, ou FOR par défaut pour mêlée, DEX pour distance
+    let stat = 'force'
+    if (weapon.stat) {
+      stat = weapon.stat
+    } else if (weapon.category === 'ranged' || weapon.type === 'ranged' || (weapon.range && weapon.range > 1)) {
+      stat = 'dexterite'
+    }
+    
+    const statValue = character.stats[stat]
+    if (statValue === undefined) {
+      console.error(`❌ Stat ${stat} manquante pour character:`, character)
+      return proficiencyBonus // Retourner au moins le bonus de maîtrise
+    }
+    
+    const abilityMod = getModifier(statValue)
+    
+    return abilityMod + proficiencyBonus
+  }
+
+  /**
+   * Calcule le bonus d'attaque de sort
+   */
+  getSpellAttackBonus(caster) {
+    const proficiencyBonus = caster.level ? Math.ceil(caster.level / 4) + 1 : 2
+    
+    if (!caster.spellcasting || !caster.spellcasting.ability) {
+      return proficiencyBonus // Fallback
+    }
+    
+    const spellcastingAbility = caster.spellcasting.ability
+    const abilityScore = caster.stats[spellcastingAbility]
+    const abilityMod = getModifier(abilityScore || 10)
     
     return abilityMod + proficiencyBonus
   }

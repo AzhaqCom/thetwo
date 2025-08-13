@@ -34,6 +34,7 @@ export const HealthBar = ({
     'health-bar',
     `health-bar--${size}`,
     `health-bar--${variant}`,
+    'flex flex--column flex--center',
     colorClass,
     animated && animationsEnabled && 'health-bar--animated',
     className

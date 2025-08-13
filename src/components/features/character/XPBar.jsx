@@ -33,17 +33,13 @@ export const XPBar = ({
       {showNumbers && (
         <div className="xp-bar__info">
           <div className="xp-bar__current">
-            <span className="xp-bar__label">Expérience:</span>
+          
             <span className="xp-bar__value">
-              {currentXP} / {nextLevelXP} XP
+              XP {Math.max(0, Math.round(currentXP))} / {Math.max(0, Math.round(nextLevelXP))}
             </span>
           </div>
           
-          {level && (
-            <div className="xp-bar__level">
-              Niveau {level}
-            </div>
-          )}
+          
         </div>
       )}
 

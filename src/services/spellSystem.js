@@ -4,6 +4,7 @@
 
 import { rollDice } from '../utils/calculations'
 import { CharacterManager } from './characterManager'
+import { SpellService } from './SpellService'
 
 export class SpellSystem {
   /**
@@ -31,13 +32,17 @@ export class SpellSystem {
 
     // Consume spell slot (cantrips don't consume slots)
     if (spell.level > 0) {
-      result.character = CharacterManager.consumeSpellSlot(character, spell.level)
+      result.character = this.consumeSpellSlot(result.character, spell.level)
     }
 
     // Process spell effects
     const spellEffects = this.processSpellEffects(spell, targets, character, options)
     result.effects = spellEffects.effects
     result.messages = [...result.messages, ...spellEffects.messages]
+    
+    // Apply effects to the character (for self-target spells)
+    result.character = this.applySpellEffectsToCharacter(result.character, spell, spellEffects)
+    
     result.success = true
 
     return result
@@ -66,8 +71,20 @@ export class SpellSystem {
 
     // Check spell slot availability (cantrips don't require slots)
     if (spell.level > 0) {
-      const availableSlots = character.spellcasting.slotsRemaining[spell.level] || 0
-      if (availableSlots <= 0) {
+      // Use SpellService to get available slots
+      const spellService = new SpellService()
+      const spellSlots = spellService.getSpellSlots(character)
+      
+      let hasAvailableSlot = false
+      for (let level = spell.level; level <= 9; level++) {
+        const slot = spellSlots[level]
+        if (slot && slot.available > 0) {
+          hasAvailableSlot = true
+          break
+        }
+      }
+      
+      if (!hasAvailableSlot) {
         return { success: false, message: "Aucun emplacement de sort disponible" }
       }
     }
@@ -260,6 +277,93 @@ export class SpellSystem {
     if (!character.spellcasting) return {}
     
     return character.spellcasting.slotsRemaining || {}
+  }
+
+  /**
+   * Applies spell effects to a character (for self-target spells)
+   * @param {Object} character - The character to apply effects to
+   * @param {Object} spell - The spell being cast
+   * @param {Object} spellEffects - The effects data from processSpellEffects
+   * @returns {Object} Updated character
+   */
+  static applySpellEffectsToCharacter(character, spell, spellEffects) {
+    let updatedCharacter = { ...character }
+    
+    // Handle Armure du Mage specifically
+    if (spell.name === "Armure du Mage") {
+      const dexModifier = Math.floor((character.stats.dexterite - 10) / 2)
+      const newAC = 13 + dexModifier
+      
+      
+      updatedCharacter = {
+        ...updatedCharacter,
+        ac: newAC,
+        armorClass: newAC  // Ensure both properties are set
+      }
+    }
+    
+    // Handle other spell effects that modify character stats
+    spellEffects.effects.forEach(effect => {
+      if (effect.target === character || effect.target?.id === character.id) {
+        switch (effect.type) {
+          case 'ac_modifier':
+            updatedCharacter.armorClass = (updatedCharacter.armorClass || 10) + effect.modifier
+            break
+          case 'healing':
+            updatedCharacter.currentHP = Math.min(
+              updatedCharacter.maxHP, 
+              updatedCharacter.currentHP + effect.amount
+            )
+            break
+          // Add other effect types as needed
+        }
+      }
+    })
+    
+    return updatedCharacter
+  }
+
+  /**
+   * Consumes a spell slot of the specified level
+   * @param {Object} character - The character
+   * @param {number} spellLevel - The level of spell slot to consume
+   * @returns {Object} Updated character
+   */
+  static consumeSpellSlot(character, spellLevel) {
+    if (!character.spellcasting || spellLevel <= 0) return character
+
+    const spellService = new SpellService()
+    const spellSlots = spellService.getSpellSlots(character)
+    
+    // Find the lowest available slot that can cast this spell
+    let slotLevelToUse = null
+    for (let level = spellLevel; level <= 9; level++) {
+      const slot = spellSlots[level]
+      if (slot && slot.available > 0) {
+        slotLevelToUse = level
+        break
+      }
+    }
+    
+    if (!slotLevelToUse) return character // No available slots
+    
+    // Update the spell slots
+    const updatedSlots = {
+      ...spellSlots,
+      [slotLevelToUse]: {
+        ...spellSlots[slotLevelToUse],
+        used: spellSlots[slotLevelToUse].used + 1,
+        available: spellSlots[slotLevelToUse].available - 1
+      }
+    }
+    
+    return {
+      ...character,
+      spellcasting: {
+        ...character.spellcasting,
+        spellSlots: updatedSlots
+      }
+    }
   }
 
   /**

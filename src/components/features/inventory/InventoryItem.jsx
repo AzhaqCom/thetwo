@@ -80,7 +80,7 @@ export const InventoryItem = ({
 
   // Vérifier si l'objet peut être utilisé
   const canBeUsed = () => {
-    return item.effet || item.action || itemType === 'potion'
+    return item.effet || item.action || itemType === 'potion' || itemType === 'consumable'
   }
 
   // Rendu pour le mode grille

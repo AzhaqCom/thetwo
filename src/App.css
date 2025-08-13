@@ -18,6 +18,8 @@ p {
 }
 .combat-container{
     overflow-y: auto;
+    width: 100%;
+    height: 100%;
 }
 .ability-scores .stat-group  {
     display: flex;
@@ -735,7 +737,7 @@ button:hover {
 .character-selection-screen {
     min-height: 100vh;
     background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-    padding: 40px 20px;
+    padding: 20px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -766,7 +768,7 @@ button:hover {
     gap: 30px;
     max-width: 1200px;
     width: 100%;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
 }
 
 .character-selection-card {
@@ -785,7 +787,7 @@ button:hover {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
-.character-selection-card.selected {
+.character-selection-card--selected {
     border-color: #4caf50;
     background: #2d3a2d;
     box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
@@ -856,7 +858,7 @@ button:hover {
     padding: 30px;
     max-width: 800px;
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
 }
 
 .character-details h3 {
@@ -959,7 +961,7 @@ button:hover {
     margin-bottom: 5px;
 }
 
-.xp-bar-container {
+.xp-bar__container {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -971,8 +973,8 @@ button:hover {
     margin-bottom: 5px;
 }
 
-.xp-bar-background {
-    width: 80%;
+.xp-bar__background {
+    width: 100%;
     height: 15px;
     background-color: #555;
     border: 1px solid #333;
@@ -980,14 +982,16 @@ button:hover {
     overflow: hidden;
 }
 
-.xp-bar-fill {
+.xp-bar__fill {
     height: 100%;
     background-color: #59aedf;
     transition: width 0.3s ease;
 }
-
-.hp-bar-background {
-    width: 80%;
+.health-bar__container{
+    width: 100%;
+}
+.health-bar__background {
+    width: 100%;
     height: 15px;
     background-color: #555;
     border: 1px solid #333;
@@ -995,14 +999,24 @@ button:hover {
     overflow: hidden;
 }
 
-.hp-bar-fill {
+.health-bar__fill {
     height: 100%;
     background-color: #d32f2f;
     transition: width 0.3s ease;
 }
-
-
-
+.skills-list__items{
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+}
+.skill-item__header{
+    display: flex;
+    gap: 3px;
+}
+.character-sheet__combat-info{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
 /* Styles de la fiche de personnage (conservent les styles généraux du CharacterSheet) */
 .character-sheet {
     background: #333333;
@@ -1035,11 +1049,17 @@ button:hover {
     gap: 5px;
     flex-wrap: wrap;
 }
-
+.character-sheet__combat-stats .stat-block {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 3px;
+    justify-content: center;
+}
 .character-sheet .stat-block {
     text-align: center;
-    border: 1px solid #666;
-    padding: 5px;
+ 
+   
     background: #222;
     min-width: 60px;
 }
