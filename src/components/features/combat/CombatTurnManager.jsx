@@ -353,7 +353,7 @@ export const CombatTurnManager = ({
         // Auto-gérer le tour du compagnon après un délai
         setTimeout(() => {
           handleCompanionTurn(currentCombatant)
-        }, 1000)
+        }, 500)
         break
         
       case 'enemy':
@@ -362,7 +362,7 @@ export const CombatTurnManager = ({
         // Auto-gérer le tour de l'ennemi après un délai
         setTimeout(() => {
           handleEnemyTurn(currentCombatant)
-        }, 1500)
+        }, 500)
         break
     }
   }, [phase, currentTurn, getCurrentCombatant, isCurrentCombatantAlive, onPhaseChange, addCombatMessage])
@@ -376,7 +376,7 @@ export const CombatTurnManager = ({
     setTimeout(() => {
       onNextTurn()
       onPhaseChange('turn')
-    }, 1000)
+    }, 500)
   }, [onNextTurn, onPhaseChange, addCombatMessage])
 
   // Gestion du tour de l'ennemi
@@ -390,7 +390,7 @@ export const CombatTurnManager = ({
       setTimeout(() => {
         onNextTurn()
         onPhaseChange('turn')
-      }, 1000)
+      }, 500)
       return
     }
 
@@ -399,7 +399,7 @@ export const CombatTurnManager = ({
       setTimeout(() => {
         onNextTurn()
         onPhaseChange('turn')
-      }, 1000)
+      }, 500)
       return
     }
 
@@ -464,7 +464,7 @@ export const CombatTurnManager = ({
       setTimeout(() => {
         onNextTurn()
         onPhaseChange('turn')
-      }, 1000)
+      }, 500)
       return
     }
     
@@ -482,7 +482,7 @@ export const CombatTurnManager = ({
       setTimeout(() => {
         onNextTurn()
         onPhaseChange('turn')
-      }, 1000)
+      }, 500)
       return
     }
     
@@ -573,7 +573,7 @@ export const CombatTurnManager = ({
     setTimeout(() => {
       onNextTurn()
       onPhaseChange('turn')
-    }, 2000)
+    }, 600)
   }, [onNextTurn, onPhaseChange, addCombatMessage])
 
   // Vérification de la mort du joueur (priorité sur les autres conditions)
@@ -600,7 +600,7 @@ export const CombatTurnManager = ({
       addCombatMessage('💀 Défaite... Tous les alliés ont été vaincus.', 'defeat')
       setTimeout(() => {
         onPhaseChange('defeat')
-      }, 1500) // Délai pour laisser voir les messages
+      }, 500) // Délai pour laisser voir les messages
       return
     }
     
