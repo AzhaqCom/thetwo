@@ -35,7 +35,7 @@ export const SpellPanel = ({
   
   // État local
   const [selectedSpell, setSelectedSpell] = useState(null)
-  const [activeTab, setActiveTab] = useState('prepared') // prepared, known, cantrips
+  const [activeTab, setActiveTab] = useState('prepared') // prepared, grimoire, cantrips
   const [filters, setFilters] = useState({
     school: 'all',
     level: 'all',
@@ -67,14 +67,25 @@ export const SpellPanel = ({
     const spellSaveDC = spellService.getSpellSaveDC(activeCharacter)
     
     // Listes de sorts (filtrées selon le contexte)
-    let knownSpells = spellService.getKnownSpells(activeCharacter)
     let preparedSpells = spellService.getPreparedSpells(activeCharacter)
+    let grimoireSpells = spellService.getGrimoireSpells(activeCharacter)
+    let unpreparedSpells = spellService.getUnpreparedSpells(activeCharacter)
     let cantrips = spellService.getCantrips(activeCharacter)
     
-    // Si hors combat, filtrer pour ne montrer que les sorts castables hors combat
+    // Filtrage conditionnel pour les contextes hors combat
     if (isOutOfCombat || onCastSpell) {
-      knownSpells = knownSpells.filter(spell => spell.castableOutOfCombat === true)
-      preparedSpells = preparedSpells.filter(spell => spell.castableOutOfCombat === true)
+      // Filtrer les sorts préparés pour masquer ceux déjà actifs hors combat
+      preparedSpells = preparedSpells.filter(spell => {
+        // Si c'est un sort castable hors combat, vérifier s'il n'est pas déjà actif
+        if (spell.castableOutOfCombat === true) {
+          return !spellService.isSpellActive(spell.id, activeCharacter)
+        }
+        // Les autres sorts restent visibles (pas de bouton lancer de toute façon)
+        return true
+      })
+      
+      // Le grimoire reste complet pour permettre la préparation
+      // Seuls les cantrips castables hors combat sont affichés
       cantrips = cantrips.filter(spell => spell.castableOutOfCombat === true)
     }
     const maxPrepared = spellService.getMaxPreparedSpells(activeCharacter)
@@ -86,8 +97,9 @@ export const SpellPanel = ({
       spellcastingAbility,
       spellAttackBonus,
       spellSaveDC,
-      knownSpells,
+      grimoireSpells,
       preparedSpells,
+      unpreparedSpells,
       cantrips,
       maxPrepared,
       spellSlots
@@ -102,8 +114,9 @@ export const SpellPanel = ({
       case 'prepared':
         spells = spellData.preparedSpells
         break
-      case 'known':
-        spells = spellData.knownSpells
+      case 'grimoire':
+        // Le grimoire affiche UNIQUEMENT les sorts non-préparés
+        spells = spellData.unpreparedSpells
         break
       case 'cantrips':
         spells = spellData.cantrips
@@ -178,7 +191,7 @@ export const SpellPanel = ({
   // Compteurs pour les onglets
   const tabCounts = {
     prepared: spellData.preparedSpells.length,
-    known: spellData.knownSpells.length,
+    grimoire: spellData.unpreparedSpells.length, // Seuls les sorts non-préparés
     cantrips: spellData.cantrips.length
   }
 
@@ -227,10 +240,10 @@ export const SpellPanel = ({
           </Button>
           
           <Button
-            variant={activeTab === 'known' ? 'primary' : 'ghost'}
-            onClick={() => handleTabChange('known')}
+            variant={activeTab === 'grimoire' ? 'primary' : 'ghost'}
+            onClick={() => handleTabChange('grimoire')}
           >
-            📚 Connus ({tabCounts.known})
+            📜 Grimoire ({tabCounts.grimoire})
           </Button>
           
           <Button
@@ -246,6 +259,19 @@ export const SpellPanel = ({
           filters={filters}
           onFilterChange={handleFilterChange}
           activeTab={activeTab}
+          availableSpells={(() => {
+            // Passer les sorts de l'onglet actuel (avant filtrage par filtres utilisateur)
+            switch (activeTab) {
+              case 'prepared':
+                return spellData.preparedSpells
+              case 'grimoire':
+                return spellData.unpreparedSpells
+              case 'cantrips':
+                return spellData.cantrips
+              default:
+                return []
+            }
+          })()}
         />
 
         {/* Liste de sorts */}
@@ -254,6 +280,7 @@ export const SpellPanel = ({
           character={activeCharacter}
           activeTab={activeTab}
           spellSlots={spellData.spellSlots}
+          isOutOfCombat={isOutOfCombat || !!onCastSpell}
           onSpellClick={setSelectedSpell}
           onCastSpell={handleCastSpell}
           onPrepareSpell={handlePrepareSpell}
@@ -265,8 +292,8 @@ export const SpellPanel = ({
           <div className="spell-panel__empty">
             {activeTab === 'prepared' && spellData.preparedSpells.length === 0 ? (
               <p>🔮 Aucun sort préparé. Préparez des sorts depuis votre grimoire.</p>
-            ) : activeTab === 'known' && spellData.knownSpells.length === 0 ? (
-              <p>📚 Aucun sort connu. Vous apprendrez de nouveaux sorts en montant de niveau.</p>
+            ) : activeTab === 'grimoire' && spellData.grimoireSpells.length === 0 ? (
+              <p>📜 Aucun sort disponible dans le grimoire. Montez de niveau pour débloquer plus de sorts.</p>
             ) : activeTab === 'cantrips' && spellData.cantrips.length === 0 ? (
               <p>✨ Aucun tour de magie connu.</p>
             ) : (

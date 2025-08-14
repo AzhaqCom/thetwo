@@ -59,12 +59,21 @@ export const CombatActionPanel = ({
     // Ajouter les sorts préparés (si l'on a des emplacements)
     const preparedSpells = (playerCharacter.spellcasting.preparedSpells || [])
       .filter(spellName => {
-        // Vérifier qu'on a des emplacements de niveau 1 ou plus
+        // Récupérer les données du sort pour vérifier son niveau
+        const spellData = spells[spellName] || {}
+        const spellLevel = spellData.level || 1
+        
+        // Vérifier qu'on a des emplacements disponibles pour ce sort
         const spellSlots = playerCharacter.spellcasting.spellSlots || {}
-        return Object.keys(spellSlots).some(level => {
+        
+        // Chercher un emplacement disponible du niveau du sort ou plus élevé
+        for (let level = spellLevel; level <= 9; level++) {
           const slot = spellSlots[level]
-          return level > 0 && slot && slot.used < slot.total
-        })
+          if (slot && slot.available > 0) {
+            return true
+          }
+        }
+        return false
       })
       .map(spellName => {
         // Récupérer les données du sort depuis spells.js

@@ -108,22 +108,67 @@ export const CombatTurnManager = ({
   }, [playerCharacter, playerCompanion, addCombatMessage])
 
   /**
-   * GESTION DES ATTAQUES
-   * Exécute une attaque et applique les dégâts
+   * Applique les dégâts à une cible selon son type
    */
-  const executeAttack = useCallback((attacker, target, gameState) => {
-    if (!target || !target.character) {
-      console.warn(`⚠️ Cible invalide pour ${attacker.name}`)
-      return false
+  const applyDamageToTarget = useCallback((target, damage) => {
+    if (target.type === 'player') {
+      takeDamagePlayer(damage)
+    } else if (target.type === 'companion') {
+      takeDamageCompanion(damage)
+    } else if (target.type === 'enemy') {
+      dealDamageToEnemy(target.name, damage)
+      
+      // Vérifier si l'ennemi est mort
+      setTimeout(() => {
+        const enemyAfter = enemies.find(e => e.name === target.name)
+        if (enemyAfter && enemyAfter.currentHP <= 0) {
+          addCombatMessage(`💀 ${target.name} tombe au combat !`, 'enemy-death')
+        }
+      }, 100)
     }
+  }, [takeDamagePlayer, takeDamageCompanion, dealDamageToEnemy, addCombatMessage, enemies])
 
-    // Vérifier que la cible est toujours vivante
-    if (target.character.currentHP <= 0) {
-      console.log(`💀 ${target.name} est déjà mort, ${attacker.name} passe son tour`)
-      addCombatMessage(`${attacker.name} réalise que ${target.name} est déjà tombé au combat.`)
-      return false
+  /**
+   * Sélectionne le meilleur attackSet selon la distance
+   */
+  const selectAttackSet = useCallback((attackSets, distance) => {
+    // Filtrer les sets qui ont au moins une attaque à portée
+    const viableSets = attackSets.filter(set => 
+      set.attacks.some(attack => {
+        const attackRange = attack.range || 1
+        return distance <= attackRange
+      })
+    )
+
+    if (viableSets.length === 0) return null
+
+    // Prioriser selon la distance et le type d'attaque
+    const meleeSets = viableSets.filter(set => 
+      set.attacks.some(attack => attack.type === 'melee' && distance <= (attack.range || 1))
+    )
+    
+    const rangedSets = viableSets.filter(set => 
+      set.attacks.some(attack => attack.type === 'ranged' && distance <= (attack.range || 6))
+    )
+
+    // Si le joueur est proche (distance <= 1), privilégier le mêlée
+    if (distance <= 1 && meleeSets.length > 0) {
+      return meleeSets[0] // Prendre le premier set de mêlée disponible
     }
+    
+    // Sinon, privilégier la distance si disponible
+    if (rangedSets.length > 0) {
+      return rangedSets[0] // Prendre le premier set à distance disponible
+    }
+    
+    // Sinon prendre le premier set viable
+    return viableSets[0]
+  }, [])
 
+  /**
+   * Exécute une attaque simple traditionnelle
+   */
+  const executeSingleAttack = useCallback((attacker, target, gameState, distance) => {
     // Choisir une attaque appropriée
     const availableAttacks = attacker.attacks || [{
       name: "Attaque de base",
@@ -131,11 +176,6 @@ export const CombatTurnManager = ({
       damageBonus: 0,
       range: 1
     }]
-
-    // Calculer la distance à la cible (gérer les différents types)
-    const attackerPosKey = attacker.type === 'companion' ? 'companion' : attacker.name
-    const attackerPos = gameState.combatPositions[attackerPosKey]
-    const distance = calculateDistance(attackerPos, target.position)
 
     // Filtrer les attaques viables selon la distance
     const viableAttacks = availableAttacks.filter(attack => {
@@ -156,26 +196,85 @@ export const CombatTurnManager = ({
     const result = combatService.executeEntityAttack(attacker, attack, target, addCombatMessage)
 
     if (result.success) {
-      // Appliquer les dégâts selon le type de cible
-      if (target.type === 'player') {
-        takeDamagePlayer(result.damage)
-      } else if (target.type === 'companion') {
-        takeDamageCompanion(result.damage)
-      } else if (target.type === 'enemy') {
-        dealDamageToEnemy(target.name, result.damage)
-        
-        // Vérifier si l'ennemi est mort
-        setTimeout(() => {
-          const enemyAfter = enemies.find(e => e.name === target.name)
-          if (enemyAfter && enemyAfter.currentHP <= 0) {
-            addCombatMessage(`💀 ${target.name} tombe au combat !`, 'enemy-death')
-          }
-        }, 100)
-      }
+      applyDamageToTarget(target, result.damage)
     }
 
     return result.success
-  }, [combatService, takeDamagePlayer, takeDamageCompanion, dealDamageToEnemy, addCombatMessage, enemies])
+  }, [combatService, addCombatMessage, applyDamageToTarget])
+
+  /**
+   * Exécute plusieurs attaques d'un attackSet
+   */
+  const executeMultipleAttacks = useCallback((attacker, target, gameState, distance) => {
+    // Sélectionner intelligemment un attackSet selon la distance
+    const selectedSet = selectAttackSet(attacker.attackSets, distance)
+    
+    if (!selectedSet) {
+      console.log(`🤷 ${attacker.name} n'a pas d'attaque viable à distance ${distance}`)
+      addCombatMessage(`${attacker.name} ne peut pas attaquer à cette distance.`)
+      return false
+    }
+
+    console.log(`⚔️ ${attacker.name} utilise: ${selectedSet.name}`)
+    addCombatMessage(`${attacker.name} lance ${selectedSet.name}.`)
+
+    let overallSuccess = false
+    let attackCount = 0
+
+    // Exécuter toutes les attaques du set sélectionné
+    for (const attack of selectedSet.attacks) {
+      // Vérifier si la cible est encore vivante avant chaque attaque
+      if (target.character.currentHP <= 0) {
+        console.log(`💀 ${target.name} est mort, arrêt des attaques restantes`)
+        break
+      }
+
+      attackCount++
+      const result = combatService.executeEntityAttack(attacker, attack, target, addCombatMessage)
+
+      if (result.success) {
+        overallSuccess = true
+        applyDamageToTarget(target, result.damage)
+        
+        // Petit délai entre les attaques multiples pour la lisibilité
+        if (attackCount < selectedSet.attacks.length) {
+          setTimeout(() => {}, 200)
+        }
+      }
+    }
+
+    return overallSuccess
+  }, [combatService, addCombatMessage, selectAttackSet, applyDamageToTarget])
+
+  /**
+   * GESTION DES ATTAQUES
+   * Exécute une ou plusieurs attaques et applique les dégâts
+   */
+  const executeAttack = useCallback((attacker, target, gameState) => {
+    if (!target || !target.character) {
+      console.warn(`⚠️ Cible invalide pour ${attacker.name}`)
+      return false
+    }
+
+    // Vérifier que la cible est toujours vivante
+    if (target.character.currentHP <= 0) {
+      console.log(`💀 ${target.name} est déjà mort, ${attacker.name} passe son tour`)
+      addCombatMessage(`${attacker.name} réalise que ${target.name} est déjà tombé au combat.`)
+      return false
+    }
+
+    // Calculer la distance à la cible (gérer les différents types)
+    const attackerPosKey = attacker.type === 'companion' ? 'companion' : attacker.name
+    const attackerPos = gameState.combatPositions[attackerPosKey]
+    const distance = calculateDistance(attackerPos, target.position)
+
+    // Gérer les attaques multiples (attackSets) ou simples (attacks)
+    if (attacker.attackSets && attacker.attackSets.length > 0) {
+      return executeMultipleAttacks(attacker, target, gameState, distance)
+    } else {
+      return executeSingleAttack(attacker, target, gameState, distance)
+    }
+  }, [executeMultipleAttacks, executeSingleAttack, addCombatMessage])
 
   /**
    * EXECUTION DU TOUR D'ENNEMI
@@ -184,14 +283,14 @@ export const CombatTurnManager = ({
   const handleEnemyTurn = useCallback((enemy) => {
     console.log(`👹 === Tour de ${enemy.name} ===`)
     
-    // Vérifier que l'ennemi est vivant
+    // Vérifier que l'ennemi est vivant AU DÉBUT du tour
     const enemyCharacter = enemies.find(e => e.name === enemy.name)
     if (!enemyCharacter || enemyCharacter.currentHP <= 0) {
       console.log(`💀 ${enemy.name} est mort, tour passé`)
       setTimeout(() => {
         setIsExecuting(false)
         onNextTurn()
-      }, 500)
+      }, 200)
       return
     }
 
@@ -206,6 +305,17 @@ export const CombatTurnManager = ({
     // 1. MOUVEMENT
     const movementResult = handleMovement(enemyCharacter, gameState)
     
+    // VÉRIFICATION après mouvement : est-il toujours vivant ?
+    const enemyAfterMovement = enemies.find(e => e.name === enemy.name)
+    if (!enemyAfterMovement || enemyAfterMovement.currentHP <= 0) {
+      console.log(`💀 ${enemy.name} est mort pendant le mouvement, tour annulé`)
+      setTimeout(() => {
+        setIsExecuting(false)
+        onNextTurn()
+      }, 200)
+      return
+    }
+    
     // Mettre à jour l'état du jeu après mouvement
     const updatedGameState = {
       ...gameState,
@@ -213,20 +323,29 @@ export const CombatTurnManager = ({
     }
 
     // 2. CIBLAGE
-    const target = getTarget(enemyCharacter, updatedGameState)
+    const target = getTarget(enemyAfterMovement, updatedGameState)
     
     if (!target) {
       // Pas de cible, fin de tour
       setTimeout(() => {
         setIsExecuting(false)
         onNextTurn()
-      }, 500)
+      }, 200)
       return
     }
 
-    // 3. ATTAQUE
+    // 3. ATTAQUE (vérification finale avant attaque)
     setTimeout(() => {
-      const attackSuccess = executeAttack(enemyCharacter, target, updatedGameState)
+      // VÉRIFICATION FINALE : ennemi toujours vivant avant attaque ?
+      const enemyBeforeAttack = enemies.find(e => e.name === enemy.name)
+      if (!enemyBeforeAttack || enemyBeforeAttack.currentHP <= 0) {
+        console.log(`💀 ${enemy.name} est mort avant l'attaque, tour annulé`)
+        setIsExecuting(false)
+        onNextTurn()
+        return
+      }
+
+      const attackSuccess = executeAttack(enemyBeforeAttack, target, updatedGameState)
       
       if (attackSuccess) {
         console.log(`✅ ${enemy.name} a terminé son attaque`)
@@ -234,12 +353,12 @@ export const CombatTurnManager = ({
         console.log(`❌ ${enemy.name} n'a pas pu attaquer`)
       }
 
-      // Fin de tour
+      // Fin de tour avec délai réduit
       setTimeout(() => {
         setIsExecuting(false)
-        onNextTurn() // nextTurn() dans le store remet déjà la phase à 'turn'
-      }, 500)
-    }, movementResult.moved ? 1000 : 500)
+        onNextTurn()
+      }, 300)
+    }, movementResult.moved ? 800 : 400)
 
   }, [enemies, playerCharacter, playerCompanion, handleMovement, getTarget, executeAttack, onNextTurn, onPhaseChange])
 

@@ -91,6 +91,7 @@ export const items = {
         description: "Augmente ton Intelligence de 2 de manière permanente.",
         type: "consumable",
         iconType: "upgrade",
+        rarity:"légendaire",
         use: (playerCharacter) => {
             return {
                 ...playerCharacter,

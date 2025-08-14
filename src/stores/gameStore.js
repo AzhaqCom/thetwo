@@ -33,7 +33,7 @@ export const useGameStore = create(
     (set, get) => ({
       // État initial
       gamePhase: 'character-selection',
-      currentScene: 'scene8',
+      currentScene: 'scene2b',
       sceneHistory: [],
       combatLog: [],
       isShortResting: false,

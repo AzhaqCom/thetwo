@@ -57,7 +57,14 @@ export class SpellService {
     if (!character.spellcasting?.preparedSpells) return []
     
     return character.spellcasting.preparedSpells
-      .map(spellId => this.getSpellData(spellId))
+      .map(spellId => {
+        // Utiliser getSpellData qui peut trouver les sorts par nom ou ID
+        const spellData = this.getSpellData(spellId)
+        if (spellData && this.isSpellAvailableForClass(spellData, character)) {
+          return spellData
+        }
+        return null
+      })
       .filter(Boolean)
   }
 
@@ -149,7 +156,7 @@ export class SpellService {
     }
     
     // Chercher par nom si l'ID n'existe pas
-    const spellEntry = Object.entries(spells).find(([_, spell]) => 
+    const spellEntry = Object.entries(spells).find(([spellKey, spell]) => 
       spell.name === spellId || spell.name?.toLowerCase() === spellId?.toLowerCase()
     )
     
@@ -314,5 +321,125 @@ export class SpellService {
       'Nécromancie',
       'Transmutation'
     ]
+  }
+
+  /**
+   * Obtient tous les sorts disponibles pour le grimoire (selon la classe et le niveau)
+   */
+  getGrimoireSpells(character) {
+    if (!character.spellcasting) return []
+    
+    const allAvailableSpells = []
+    
+    // Obtenir tous les sorts de la base de données
+    Object.entries(spells).forEach(([spellId, spellData]) => {
+      // Filtrer selon la classe et le niveau
+      if (this.isSpellAvailableForClass(spellData, character)) {
+        allAvailableSpells.push({ 
+          id: spellId, 
+          ...spellData,
+          isPrepared: character.spellcasting.preparedSpells?.includes(spellId) || false
+        })
+      }
+    })
+    
+    return this.sortSpells(allAvailableSpells, 'level')
+  }
+
+  /**
+   * Obtient les sorts du grimoire qui ne sont pas encore préparés
+   */
+  getUnpreparedSpells(character) {
+    if (!character.spellcasting) return []
+    
+    const grimoireSpells = this.getGrimoireSpells(character)
+    const preparedSpellIds = character.spellcasting.preparedSpells || []
+    
+    return grimoireSpells.filter(spell => 
+      // Exclure les cantrips (toujours disponibles) et les sorts déjà préparés
+      spell.level > 0 && !preparedSpellIds.includes(spell.id)
+    )
+  }
+
+  /**
+   * Vérifie si un sort est disponible pour une classe donnée
+   */
+  isSpellAvailableForClass(spell, character) {
+    // Logique basique - dans un vrai jeu, cela dépendrait des listes de sorts par classe
+    // Pour l'instant, on considère que tous les sorts sont disponibles selon le niveau du personnage
+    
+    // Les cantrips sont disponibles dès le niveau 1
+    if (spell.level === 0) return character.level >= 1
+    
+    // Les autres sorts selon une progression simple
+    const requiredLevels = {
+      1: 1,
+      2: 3,
+      3: 5,
+      4: 7,
+      5: 9,
+      6: 11,
+      7: 13,
+      8: 15,
+      9: 17
+    }
+    
+    return character.level >= (requiredLevels[spell.level] || 20)
+  }
+
+  /**
+   * Vérifie si un sort est actuellement actif sur un personnage
+   */
+  isSpellActive(spellId, character) {
+    console.log(`🔍 isSpellActive: Checking if spell "${spellId}" is active`)
+    console.log('🔍 character.activeEffects:', character.activeEffects)
+    
+    if (!character.activeEffects) {
+      console.log('❌ isSpellActive: No activeEffects on character')
+      return false
+    }
+    
+    // Vérifier dans les effets actifs
+    const isActive = character.activeEffects.some(effect => {
+      console.log(`🔍 isSpellActive: Checking effect - sourceSpellId: "${effect.sourceSpellId}", name: "${effect.name}"`)
+      return effect.sourceSpellId === spellId || effect.name === spellId
+    })
+    
+    console.log(`🔍 isSpellActive: Result for "${spellId}": ${isActive}`)
+    return isActive
+  }
+
+  /**
+   * Vérifie si un sort peut être préparé
+   */
+  canPrepareSpell(spellId, character) {
+    if (!character.spellcasting) return false
+    
+    // Vérifier si déjà préparé
+    if (character.spellcasting.preparedSpells?.includes(spellId)) return false
+    
+    // Vérifier la limite de sorts préparés
+    const currentPrepared = character.spellcasting.preparedSpells?.length || 0
+    const maxPrepared = this.getMaxPreparedSpells(character)
+    
+    if (currentPrepared >= maxPrepared) return false
+    
+    // Vérifier si le sort est connu ou dans le grimoire
+    const spell = this.getSpellData(spellId)
+    if (!spell) return false
+    
+    // Les cantrips ne sont pas préparés, ils sont toujours disponibles
+    if (spell.level === 0) return false
+    
+    return this.isSpellAvailableForClass(spell, character)
+  }
+
+  /**
+   * Vérifie si un sort peut être retiré de la préparation
+   */
+  canUnprepareSpell(spellId, character) {
+    if (!character.spellcasting?.preparedSpells) return false
+    
+    return character.spellcasting.preparedSpells.includes(spellId)
   }
 }

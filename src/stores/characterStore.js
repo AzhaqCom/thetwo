@@ -154,11 +154,16 @@ export const useCharacterStore = create(
           const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
           if (!character) return state
 
+          console.log(`🎯 Adding ${xp} XP to ${targetCharacter} (current level: ${character.level}, current XP: ${character.currentXP || character.experience || 0})`)
+          
           const updatedCharacter = CharacterManager.addExperience(character, xp)
+          console.log(`🎯 After XP gain: level ${updatedCharacter.level}, XP: ${updatedCharacter.currentXP}`)
+          
           const newState = { ...state }
 
           // Vérifier si montée de niveau
           if (updatedCharacter.level > character.level) {
+            console.log(`🎉 Level up detected! ${character.level} → ${updatedCharacter.level}`)
             newState.levelUpPending = true
             newState.levelUpData = {
               character: targetCharacter,
@@ -181,6 +186,8 @@ export const useCharacterStore = create(
 
           if (targetCharacter === 'player') {
             newState.playerCharacter = updatedCharacter
+            // Synchroniser selectedCharacter
+            newState.selectedCharacter = updatedCharacter
           } else {
             newState.playerCompanion = updatedCharacter
           }
@@ -219,32 +226,65 @@ export const useCharacterStore = create(
           }
         }),
 
-        prepareSpell: (spellName, targetCharacter = 'player') => set((state) => {
+        prepareSpell: (spellName, targetCharacter = 'player') => {
+          const state = get()
           const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
-          if (!character) return state
+          
+          if (!character) {
+            return { success: false, message: `Aucun personnage ${targetCharacter} trouvé` }
+          }
 
           const updatedCharacter = SpellSystem.prepareSpell(character, spellName)
-          if (!updatedCharacter) return state // Couldn't prepare
-
-          if (targetCharacter === 'player') {
-            return syncCharacter({ playerCharacter: updatedCharacter })
-          } else {
-            return { playerCompanion: updatedCharacter }
+          
+          if (!updatedCharacter) {
+            // Vérifier pourquoi la préparation a échoué
+            const currentPrepared = character.spellcasting?.preparedSpells || []
+            const maxPrepared = SpellSystem.getMaxPreparedSpells(character)
+            
+            if (currentPrepared.includes(spellName)) {
+              return { success: false, message: `${spellName} est déjà préparé` }
+            }
+            
+            if (currentPrepared.length >= maxPrepared) {
+              return { success: false, message: `Limite de sorts préparés atteinte (${maxPrepared})` }
+            }
+            
+            return { success: false, message: `Impossible de préparer ${spellName}` }
           }
-        }),
 
-        unprepareSpell: (spellName, targetCharacter = 'player') => set((state) => {
+          // Mettre à jour le store
+          if (targetCharacter === 'player') {
+            set(syncCharacter({ playerCharacter: updatedCharacter }))
+          } else {
+            set({ playerCompanion: updatedCharacter })
+          }
+
+          return { success: true, message: `${spellName} préparé avec succès` }
+        },
+
+        unprepareSpell: (spellName, targetCharacter = 'player') => {
+          const state = get()
           const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
-          if (!character) return state
+          
+          if (!character) {
+            return { success: false, message: `Aucun personnage ${targetCharacter} trouvé` }
+          }
 
           const updatedCharacter = SpellSystem.unprepareSpell(character, spellName)
-
-          if (targetCharacter === 'player') {
-            return syncCharacter({ playerCharacter: updatedCharacter })
-          } else {
-            return { playerCompanion: updatedCharacter }
+          
+          if (!updatedCharacter) {
+            return { success: false, message: `Impossible de retirer ${spellName}` }
           }
-        }),
+
+          // Mettre à jour le store
+          if (targetCharacter === 'player') {
+            set(syncCharacter({ playerCharacter: updatedCharacter }))
+          } else {
+            set({ playerCompanion: updatedCharacter })
+          }
+
+          return { success: true, message: `${spellName} retiré des sorts préparés` }
+        },
 
         // === GESTION DE L'INVENTAIRE ===
 

@@ -2,7 +2,7 @@
  * Spell System Service - Pure business logic for spell mechanics
  */
 
-import { rollDice } from '../utils/calculations'
+import { rollDice, getModifier } from '../utils/calculations'
 import { CharacterManager } from './characterManager'
 import { SpellService } from './SpellService'
 
@@ -294,11 +294,23 @@ export class SpellSystem {
       const dexModifier = Math.floor((character.stats.dexterite - 10) / 2)
       const newAC = 13 + dexModifier
       
-      
       updatedCharacter = {
         ...updatedCharacter,
         ac: newAC,
-        armorClass: newAC  // Ensure both properties are set
+        armorClass: newAC,  // Ensure both properties are set
+        // Ajouter l'effet actif pour que isSpellActive() puisse le détecter
+        activeEffects: [
+          ...(character.activeEffects || []),
+          {
+            id: `armure_du_mage_${Date.now()}`,
+            sourceSpellId: "Armure du Mage",
+            name: "Armure du Mage",
+            type: "spell_effect",
+            description: "CA = 13 + modificateur de Dextérité",
+            startTime: new Date(),
+            // Pas de durée = permanent jusqu'à repos long
+          }
+        ]
       }
     }
     

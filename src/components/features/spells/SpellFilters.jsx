@@ -8,6 +8,7 @@ export const SpellFilters = ({
   filters = {},
   onFilterChange,
   activeTab = 'prepared',
+  availableSpells = [], // Nouveaux prop pour les sorts disponibles
   className = ''
 }) => {
   const handleSearchChange = (e) => {
@@ -35,7 +36,8 @@ export const SpellFilters = ({
     })
   }
 
-  const schools = [
+  // Toutes les écoles possibles avec leurs icônes
+  const allSchools = [
     { value: 'all', label: 'Toutes les écoles', icon: '🎓' },
     { value: 'Abjuration', label: 'Abjuration', icon: '🛡️' },
     { value: 'Invocation', label: 'Invocation', icon: '👹' },
@@ -47,7 +49,7 @@ export const SpellFilters = ({
     { value: 'Transmutation', label: 'Transmutation', icon: '🔄' }
   ]
 
-  const levels = [
+  const allLevels = [
     { value: 'all', label: 'Tous niveaux' },
     { value: '0', label: 'Tours de magie' },
     { value: '1', label: 'Niveau 1' },
@@ -60,6 +62,26 @@ export const SpellFilters = ({
     { value: '8', label: 'Niveau 8' },
     { value: '9', label: 'Niveau 9' }
   ]
+
+  // Générer les écoles disponibles dynamiquement
+  const availableSchools = React.useMemo(() => {
+    const usedSchools = new Set(['all']) // Toujours inclure "Toutes"
+    availableSpells.forEach(spell => {
+      if (spell.school) {
+        usedSchools.add(spell.school)
+      }
+    })
+    return allSchools.filter(school => usedSchools.has(school.value))
+  }, [availableSpells])
+
+  // Générer les niveaux disponibles dynamiquement  
+  const availableLevels = React.useMemo(() => {
+    const usedLevels = new Set(['all']) // Toujours inclure "Tous niveaux"
+    availableSpells.forEach(spell => {
+      usedLevels.add(spell.level.toString())
+    })
+    return allLevels.filter(level => usedLevels.has(level.value))
+  }, [availableSpells])
 
   return (
     <div className={`spell-filters ${className}`}>
@@ -91,7 +113,7 @@ export const SpellFilters = ({
         <div className="spell-filters__section">
           <h5 className="spell-filters__label">École de magie</h5>
           <div className="spell-filters__school-grid">
-            {schools.map(school => (
+            {availableSchools.map(school => (
               <Button
                 key={school.value}
                 variant={filters.school === school.value ? 'primary' : 'ghost'}
@@ -111,7 +133,7 @@ export const SpellFilters = ({
         <div className="spell-filters__section">
           <h5 className="spell-filters__label">Niveau de sort</h5>
           <ButtonGroup className="spell-filters__level-buttons">
-            {levels.slice(0, 6).map(level => (
+            {availableLevels.slice(0, 6).map(level => (
               <Button
                 key={level.value}
                 variant={filters.level === level.value ? 'primary' : 'ghost'}
@@ -125,18 +147,20 @@ export const SpellFilters = ({
           </ButtonGroup>
           
           {/* Niveaux hauts */}
-          <ButtonGroup className="spell-filters__level-buttons spell-filters__level-buttons--high">
-            {levels.slice(6).map(level => (
-              <Button
-                key={level.value}
-                variant={filters.level === level.value ? 'primary' : 'ghost'}
-                size="small"
-                onClick={() => handleLevelChange(level.value)}
-              >
-                {level.value}
-              </Button>
-            ))}
-          </ButtonGroup>
+          {availableLevels.length > 6 && (
+            <ButtonGroup className="spell-filters__level-buttons spell-filters__level-buttons--high">
+              {availableLevels.slice(6).map(level => (
+                <Button
+                  key={level.value}
+                  variant={filters.level === level.value ? 'primary' : 'ghost'}
+                  size="small"
+                  onClick={() => handleLevelChange(level.value)}
+                >
+                  {level.value}
+                </Button>
+              ))}
+            </ButtonGroup>
+          )}
         </div>
 
         {/* Options spéciales */}

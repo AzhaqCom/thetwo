@@ -485,7 +485,12 @@
   box-shadow: var(--shadow-medium);
   /* min-height: 200px; */
 }
-
+.combat-controls .card__body {
+  display: flex;
+  flex-wrap: wrap;
+}.action-button__content{
+  display: flex;
+}
 /* === CONTENEUR DU LOG DE COMBAT === */
 .combat-log-container {
   flex: 1;

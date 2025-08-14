@@ -56,9 +56,12 @@ export const InventoryPanel = ({
         if (itemCategory !== filters.category) return false
       }
       
-      // Filtre par rareté
-      if (filters.rarity !== 'all' && item.rarity !== filters.rarity) {
-        return false
+      // Filtre par rareté (utiliser 'commun' par défaut comme dans InventoryFilters)
+      if (filters.rarity !== 'all') {
+        const itemRarity = item.rarity || 'commun'
+        if (itemRarity !== filters.rarity) {
+          return false
+        }
       }
       
       // Recherche textuelle

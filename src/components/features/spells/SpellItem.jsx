@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Card, Button, ButtonGroup } from '../../ui'
+import { SpellService } from '../../../services/SpellService'
 
 /**
  * Composant d'affichage d'un sort individuel
@@ -10,6 +11,7 @@ export const SpellItem = ({
   spellSlots = {},
   viewMode = 'list', // list, grid, compact
   actions = {},
+  isOutOfCombat = false,
   onClick,
   onCast,
   onPrepare,
@@ -55,7 +57,20 @@ export const SpellItem = ({
   const canBeCast = () => {
     if (!actions.canCast) return false
     
-    // Les cantrips peuvent toujours être lancés
+    // Si on est hors combat, vérifier si le sort peut être lancé hors combat
+    if (isOutOfCombat && spell.castableOutOfCombat !== true) {
+      return false
+    }
+    
+    // Vérifier si le sort est déjà actif (pour les sorts avec durée)
+    if (isOutOfCombat && spell.castableOutOfCombat === true) {
+      const spellService = new SpellService()
+      if (spellService.isSpellActive(spell.id, character)) {
+        return false // Sort déjà actif, ne pas permettre de le lancer à nouveau
+      }
+    }
+    
+    // Les cantrips peuvent toujours être lancés (si castable hors combat et pas déjà actif)
     if (spell.level === 0) return true
     
     // Vérifier les emplacements disponibles

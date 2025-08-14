@@ -9,6 +9,7 @@ export const SpellList = ({
   character,
   activeTab = 'prepared',
   spellSlots = {},
+  isOutOfCombat = false,
   viewMode = 'list', // list, grid, compact
   onSpellClick,
   onCastSpell,
@@ -60,7 +61,8 @@ export const SpellList = ({
           canUnprepare: true,
           canPrepare: false
         }
-      case 'known':
+      case 'grimoire':
+      case 'unprepared':
         return {
           canCast: false,
           canUnprepare: false,
@@ -96,6 +98,7 @@ export const SpellList = ({
               spellSlots={spellSlots}
               viewMode="compact"
               actions={actions}
+              isOutOfCombat={isOutOfCombat}
               onClick={() => onSpellClick?.(spell)}
               onCast={onCastSpell}
               onPrepare={onPrepareSpell}
@@ -124,6 +127,7 @@ export const SpellList = ({
                     spellSlots={spellSlots}
                     viewMode={viewMode}
                     actions={actions}
+                    isOutOfCombat={isOutOfCombat}
                     onClick={() => onSpellClick?.(spell)}
                     onCast={onCastSpell}
                     onPrepare={onPrepareSpell}

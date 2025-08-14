@@ -12,6 +12,19 @@ export const spells = {
         requiresAttackRoll: false,
         castableOutOfCombat: false // Ajouté pour la clarté
     },
+    "Trait de Feu": {
+        name: "Trait de Feu",
+        level: 1, // Sort de niveau 1
+        school: "Évocation",
+        castingTime: "1 action",
+        range: "36 mètres",
+        duration: "instantanée",
+        description: "Vous lancez un trait enflammé sur une créature ou un objet à portée. Faites une attaque de sort à distance contre la cible. Si vous touchez, elle subit 1d10 dégâts de feu. Si le sort touche un objet inflammable qui n'est ni porté ni transporté, il s'embrase.",
+        damage: { dice: "1d10", bonus: 0, type: "feu" },
+        projectiles: 1,
+        requiresAttackRoll: true,
+        castableOutOfCombat: false 
+    },
     "Rayon de givre": {
         name: "Rayon de givre",
         level: 0,

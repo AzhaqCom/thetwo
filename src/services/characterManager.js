@@ -114,9 +114,9 @@ export class CharacterManager {
    */
   static levelUp(character) {
     const newLevel = character.level + 1
-    const levelData = levels[character.class]?.[newLevel]
     
-    if (!levelData) return character
+    // Vérification niveau valide (maximum 20)
+    if (newLevel > 20) return character
 
     // Calculate HP gain
     const hitDie = this.getHitDie(character.class)
@@ -128,25 +128,43 @@ export class CharacterManager {
       level: newLevel,
       maxHP: character.maxHP + hpGain,
       currentHP: character.currentHP + hpGain,
-      currentXP: character.currentXP || character.experience || 0, // Conserver l'XP, ne pas reset
+      currentXP: character.currentXP || character.experience || 0, // Conserver l'XP
       proficiencyBonus: this.getProficiencyBonus(newLevel),
-      
-      // Update spell slots if spellcaster
-      ...(character.spellcasting && {
-        spellcasting: {
-          ...character.spellcasting,
-          slotsTotal: { ...levelData.spellSlots },
-          slotsRemaining: { ...levelData.spellSlots }
-        }
-      })
     }
 
-    // Add new features from level data
-    if (levelData.features) {
-      updatedCharacter.features = [...(character.features || []), ...levelData.features]
+    // Update spell slots for spellcasters based on level
+    if (character.spellcasting) {
+      const spellSlots = this.generateSpellSlotsForLevel(newLevel, character.class)
+      updatedCharacter.spellcasting = {
+        ...character.spellcasting,
+        spellSlots: spellSlots
+      }
     }
 
+    console.log(`📈 Level up successful: ${character.level} → ${newLevel}, HP: ${character.maxHP} → ${updatedCharacter.maxHP}`)
+    
     return updatedCharacter
+  }
+
+  /**
+   * Génère les emplacements de sorts pour un niveau et une classe donnés
+   */
+  static generateSpellSlotsForLevel(level, characterClass) {
+    // Table simple pour les lanceurs de sorts complets (Magicien, Clerc, etc.)
+    const fullCasterSlots = {
+      1: { 1: { max: 2, used: 0 } },
+      2: { 1: { max: 3, used: 0 } },
+      3: { 1: { max: 4, used: 0 }, 2: { max: 2, used: 0 } },
+      4: { 1: { max: 4, used: 0 }, 2: { max: 3, used: 0 } },
+      5: { 1: { max: 4, used: 0 }, 2: { max: 3, used: 0 }, 3: { max: 2, used: 0 } }
+    }
+
+    // Retourner les slots selon la classe
+    if (characterClass === 'Magicien' || characterClass === 'Clerc') {
+      return fullCasterSlots[level] || {}
+    }
+    
+    return {}
   }
 
   /**
@@ -274,19 +292,35 @@ export class CharacterManager {
    */
   static addExperience(character, xp) {
     const currentXP = character.currentXP || character.experience || 0
-    let newXP = currentXP + xp
-    let updatedCharacter = { ...character, currentXP: newXP }
+    const newXP = currentXP + xp
     
-    // Gérer les montées de niveau multiples (avec sécurité anti-boucle)
+    return this.processLevelUps({ ...character, currentXP: newXP })
+  }
+
+  /**
+   * Processes multiple level ups safely
+   * @param {Object} character - The character with updated XP
+   * @returns {Object} Updated character after all applicable level ups
+   */
+  static processLevelUps(character) {
+    let updatedCharacter = { ...character }
     let levelUpCount = 0
-    const maxLevelUps = 10 // Sécurité
+    const maxLevelUps = 10
+    const maxLevel = 20
     
-    while (levelUpCount < maxLevelUps && updatedCharacter.level < 20) {
+    while (levelUpCount < maxLevelUps && updatedCharacter.level < maxLevel) {
       const xpToNext = this.getXPToNextLevel(updatedCharacter.level)
       
       if (updatedCharacter.currentXP >= xpToNext) {
-        console.log(`🎯 Level up ! ${updatedCharacter.level} → ${updatedCharacter.level + 1} (XP: ${updatedCharacter.currentXP}/${xpToNext})`)
+        const oldLevel = updatedCharacter.level
         updatedCharacter = this.levelUp(updatedCharacter)
+        
+        if (updatedCharacter.level <= oldLevel) {
+          console.error(`⚠️ Level up failed to increase level (${oldLevel} → ${updatedCharacter.level})`)
+          break
+        }
+        
+        console.log(`🎯 Level up ! ${oldLevel} → ${updatedCharacter.level} (XP: ${updatedCharacter.currentXP}/${xpToNext})`)
         levelUpCount++
       } else {
         break
