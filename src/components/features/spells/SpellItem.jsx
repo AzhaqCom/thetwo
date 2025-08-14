@@ -56,12 +56,12 @@ export const SpellItem = ({
   // Vérifier si le sort peut être lancé
   const canBeCast = () => {
     if (!actions.canCast) return false
-    
+
     // Si on est hors combat, vérifier si le sort peut être lancé hors combat
     if (isOutOfCombat && spell.castableOutOfCombat !== true) {
       return false
     }
-    
+
     // Vérifier si le sort est déjà actif (pour les sorts avec durée)
     if (isOutOfCombat && spell.castableOutOfCombat === true) {
       const spellService = new SpellService()
@@ -69,23 +69,23 @@ export const SpellItem = ({
         return false // Sort déjà actif, ne pas permettre de le lancer à nouveau
       }
     }
-    
+
     // Les cantrips peuvent toujours être lancés (si castable hors combat et pas déjà actif)
     if (spell.level === 0) return true
-    
+
     // Vérifier les emplacements disponibles
     for (let level = spell.level; level <= 9; level++) {
       const slot = spellSlots[level]
       if (slot && slot.available > 0) return true
     }
-    
+
     return false
   }
 
   // Obtenir les niveaux de lancement disponibles
   const getAvailableCastingLevels = () => {
     if (spell.level === 0) return []
-    
+
     const levels = []
     for (let level = spell.level; level <= 9; level++) {
       const slot = spellSlots[level]
@@ -104,7 +104,7 @@ export const SpellItem = ({
 
   const handleCastClick = () => {
     const availableLevels = getAvailableCastingLevels()
-    
+
     if (spell.level === 0 || availableLevels.length <= 1) {
       // Lancement direct pour les cantrips ou s'il n'y a qu'un niveau disponible
       handleCast(availableLevels[0] || spell.level)
@@ -119,14 +119,14 @@ export const SpellItem = ({
     <div className={itemClass} onClick={onClick}>
       <div className="spell-item__compact-content">
         <span className="spell-item__icon">{getSpellIcon()}</span>
-        
+
         <div className="spell-item__compact-info">
           <span className="spell-item__name">{spell.name}</span>
           <span className="spell-item__level">
             {spell.level === 0 ? 'Cantrip' : `Niv. ${spell.level}`}
           </span>
         </div>
-        
+
         {actions.canCast && canBeCast() && (
           <Button
             size="small"
@@ -148,7 +148,7 @@ export const SpellItem = ({
     <Card className={itemClass} onClick={onClick}>
       <div className="spell-item__grid-content">
         <div className="spell-item__header">
-          <span className="spell-item__icon">{getSpellIcon()}</span>
+          {getSpellIcon()}{spell.name}
           <div className="spell-item__title">
             <h4 className="spell-item__name">{spell.name}</h4>
             <div className="spell-item__meta">
@@ -159,16 +159,16 @@ export const SpellItem = ({
             </div>
           </div>
         </div>
-        
+
         <div className="spell-item__description">
           <p>
-            {spell.description?.length > 80 
+            {spell.description?.length > 80
               ? `${spell.description.substring(0, 80)}...`
               : spell.description
             }
           </p>
         </div>
-        
+
         <div className="spell-item__properties">
           {spell.castingTime && (
             <span className="spell-property">
@@ -186,7 +186,7 @@ export const SpellItem = ({
             </span>
           )}
         </div>
-        
+
         <div className="spell-item__actions">
           {renderActions()}
         </div>
@@ -198,41 +198,37 @@ export const SpellItem = ({
   const renderListMode = () => (
     <div className={itemClass} onClick={onClick}>
       <div className="spell-item__list-content">
+
         <div className="spell-item__list-header">
-          <span className="spell-item__icon">{getSpellIcon()}</span>
-          
-          <div className="spell-item__list-info">
-            <div className="spell-item__list-primary">
-              <h4 className="spell-item__name">{spell.name}</h4>
-              <span className="spell-item__level">
-                {spell.level === 0 ? 'Cantrip' : `Niveau ${spell.level}`}
-              </span>
-              <span className="spell-item__school">{spell.school}</span>
-            </div>
-            
-            <div className="spell-item__list-properties">
-              {spell.castingTime && (
-                <span>⏱️ {spell.castingTime}</span>
-              )}
-              {spell.range && (
-                <span>📏 {spell.range}</span>
-              )}
-              {spell.duration && (
-                <span>⏳ {spell.duration}</span>
-              )}
-              {spell.components && (
-                <span>🧪 {spell.components.join(', ')}</span>
-              )}
-            </div>
-            
-            {spell.description && (
-              <p className="spell-item__list-description">
-                {spell.description}
-              </p>
+          {getSpellIcon()} <h4 className="spell-item__name">{spell.name}</h4>
+          <span className="spell-item__level">
+            {spell.level === 0 ? 'Cantrip' : `Niveau ${spell.level}`}
+          </span>
+          <span className="spell-item__school">{spell.school}</span>
+          <div className="spell-item__list-properties">
+            {spell.castingTime && (
+              <span>⏱️ {spell.castingTime}</span>
+            )}
+            {spell.range && (
+              <span>📏 {spell.range}</span>
+            )}
+            {spell.duration && (
+              <span>⏳ {spell.duration}</span>
+            )}
+            {spell.components && (
+              <span>🧪 {spell.components.join(', ')}</span>
             )}
           </div>
         </div>
-        
+        <div className="spell-item__list-info">
+
+
+          {spell.description && (
+            <p className="spell-item__list-description">
+              {spell.description}
+            </p>
+          )}
+        </div>
         <div className="spell-item__list-actions">
           {renderActions()}
         </div>
@@ -286,7 +282,7 @@ export const SpellItem = ({
               🔮 Lancer
             </Button>
           )}
-          
+
           {actions.canPrepare && (
             <Button
               size="small"
@@ -299,7 +295,7 @@ export const SpellItem = ({
               📋 Préparer
             </Button>
           )}
-          
+
           {actions.canUnprepare && (
             <Button
               size="small"
