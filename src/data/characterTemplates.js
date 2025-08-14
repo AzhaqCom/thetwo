@@ -58,11 +58,11 @@ export const characterTemplates = {
         type: "player",
         stats: {
             force: 16, // Stat principale
-            dexterite: 13,
+            dexterite: 14,
             constitution: 15,
             intelligence: 10,
             sagesse: 12,
-            charisme: 14
+            charisme: 13
         },
         proficiencies: {
             saves: ["force", "constitution"],
@@ -140,7 +140,7 @@ export const characterTemplates = {
         hitDiceType: 10,
         type: "player",
         stats: {
-            force: 14,
+            force: 15,
             dexterite: 12,
             constitution: 14,
             intelligence: 10,

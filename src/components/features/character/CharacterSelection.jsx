@@ -70,7 +70,8 @@ export const CharacterSelection = ({ onCharacterSelect }) => {
     const descriptions = {
       'Magicien': "Maître des arcanes, ce personnage utilise des sorts puissants pour vaincre ses ennemis. Fragile mais redoutable à distance, il excelle dans le contrôle du champ de bataille.",
       'Guerrier': "Combattant expérimenté, ce héros excelle au corps-à-corps avec ses armes. Robuste et polyvalent au combat, il peut encaisser et infliger de lourds dégâts.",
-      'Roublard': "Expert en furtivité, ce personnage frappe avec précision et évite les coups. Agile et mortel par surprise, il excelle dans les situations qui demandent de la finesse."
+      'Roublard': "Expert en furtivité, ce personnage frappe avec précision et évite les coups. Agile et mortel par surprise, il excelle dans les situations qui demandent de la finesse.",
+      'Paladin': "Chevalier sacré, ce héros allie force et foi. Capable de soigner ses alliés et de frapper avec puissance, il est un pilier de défense et de soutien.",
     }
     
     return descriptions[character.class] || "Un aventurier prêt à affronter tous les défis."
@@ -80,7 +81,8 @@ export const CharacterSelection = ({ onCharacterSelect }) => {
     const icons = {
       'Magicien': '🧙‍♂️',
       'Guerrier': '⚔️',
-      'Roublard': '🗡️'
+      'Roublard': '🗡️',
+      'Paladin': '🛡️'
     }
     
     return icons[characterClass] || '🗡️'

@@ -185,7 +185,7 @@ export const InventoryPanel = ({
     <Card className={`inventory-panel ${className}`}>
       <CardHeader>
         <div className="inventory-panel__header">
-          <h3>🎒 Inventaire de {activeCharacter.name}</h3>
+          <h3 className='inventory--title'>🎒 Inventaire de {activeCharacter.name}</h3>
           
           <div className="inventory-panel__stats">
             <div className={`inventory-weight ${isOverloaded ? 'inventory-weight--overloaded' : ''}`}>

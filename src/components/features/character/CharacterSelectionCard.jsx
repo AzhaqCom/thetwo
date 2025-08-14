@@ -103,6 +103,11 @@ export const CharacterSelectionCard = ({
               🎯 Attaques précises
             </div>
           )}
+            {character.class === 'Paladin' && (
+            <div className="specialty">
+              🛡️ Défense sacrée
+            </div>
+          )}
         </div>
       </CardBody>
 

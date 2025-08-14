@@ -357,13 +357,7 @@ const handleCombatVictory = () => {
                             isOutOfCombat={true}
                         />
                     )}
-                    {shouldShowWeapons && (
-                        <div className="weapons-section">
-                            {/* TODO: Create modern WeaponPanel component */}
-                            <h3>Armes</h3>
-                            <p>Panel d'armes à moderniser</p>
-                        </div>
-                    )}
+                 
                     {shouldShowSpecialAbilities && (
                         <SpecialAbilitiesPanel character={playerCharacter} />
                     )}

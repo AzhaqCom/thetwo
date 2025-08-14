@@ -109,8 +109,8 @@ export const SpellSlotTracker = ({
                       ))}
                     </div>
 
-                    {/* Actions de gestion */}
-                    <div className="spell-slot-level__actions">
+                    
+                    {/* <div className="spell-slot-level__actions">
                       {available < slot.max && onSlotRestore && (
                         <button
                           type="button"
@@ -131,7 +131,7 @@ export const SpellSlotTracker = ({
                           ↓
                         </button>
                       )}
-                    </div>
+                    </div> */}
                   </div>
                 )}
               </div>

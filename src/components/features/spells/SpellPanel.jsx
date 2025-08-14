@@ -246,12 +246,7 @@ export const SpellPanel = ({
             📜 Grimoire ({tabCounts.grimoire})
           </Button>
           
-          <Button
-            variant={activeTab === 'cantrips' ? 'primary' : 'ghost'}
-            onClick={() => handleTabChange('cantrips')}
-          >
-            ✨ Tours de magie ({tabCounts.cantrips})
-          </Button>
+       
         </div>
 
         {/* Filtres */}
