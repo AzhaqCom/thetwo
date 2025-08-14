@@ -116,6 +116,14 @@ Récemment, tu as entendu des murmures concernant une ancienne prophétie liée 
     "scene7": {
         text: `Après avoir traversé le pont, tu longes le torrent. Tu remarques un petit trésor dissimulé dans une crevasse : une fiole de potion de soins et un ancien parchemin. Le parchemin brille d'une faible lueur magique, tu sens qu'il pourrait améliorer tes capacités.`,
         choices: [
+              {
+                text: "rhingann",
+                next: {
+                    type: "ally",
+                    ally: "Rhingann",
+                    nextScene: "scene8"
+                }
+            },
             {
                 text: "Les ranger dans mon sac !",
                 next: {

@@ -112,7 +112,7 @@ export class CombatEngine {
 
     const idealDistance = this.getIdealDistance(entity)
 
-    // If already at ideal distance, don't move
+    // If already at ideal distance or closer, don't move
     if (closestTarget.distance <= idealDistance) return null
 
     // Find best position within movement range
@@ -151,14 +151,29 @@ export class CombatEngine {
    * @returns {Array} Array of potential targets with positions
    */
   static findPotentialTargets(entity, combatState) {
-    const { playerCharacter, companionCharacter, combatEnemies, combatPositions } = combatState
+    const { playerCharacter, companionCharacter, combatEnemies, combatPositions, activeCompanions = [] } = combatState
     const targets = []
 
     if (entity.type === ENTITY_TYPES.ENEMY) {
-      // Enemies target player and companion
+      // Enemies target player and companions
       if (playerCharacter?.currentHP > 0 && combatPositions.player) {
         targets.push({ entity: playerCharacter, position: combatPositions.player })
       }
+      
+      // Ajouter tous les compagnons actifs (nouveau système)
+      if (activeCompanions && activeCompanions.length > 0) {
+        activeCompanions.forEach(companion => {
+          if (companion && companion.currentHP > 0) {
+            const companionId = companion.id || companion.name.toLowerCase()
+            const companionPos = combatPositions[companionId]
+            if (companionPos) {
+              targets.push({ entity: companion, position: companionPos })
+            }
+          }
+        })
+      }
+      
+      // Compatibilité avec l'ancien système
       if (companionCharacter?.currentHP > 0 && combatPositions.companion) {
         targets.push({ entity: companionCharacter, position: combatPositions.companion })
       }
@@ -266,7 +281,7 @@ export class CombatEngine {
    * @returns {Object|null} Best target or null
    */
   static findBestTarget(attacker, attackerPos, combatState) {
-    const { playerCharacter, companionCharacter, combatPositions } = combatState
+    const { playerCharacter, companionCharacter, combatPositions, activeCompanions = [] } = combatState
     
     if (!attackerPos) {
       console.warn(`⚠️ Pas de position pour ${attacker.name}`)
@@ -287,7 +302,25 @@ export class CombatEngine {
         })
       }
 
-      // Ajouter le compagnon si vivant
+      // Ajouter tous les compagnons actifs (nouveau système multi-compagnons)
+      if (activeCompanions && activeCompanions.length > 0) {
+        activeCompanions.forEach(companion => {
+          if (companion && companion.currentHP > 0) {
+            const companionId = companion.id || companion.name.toLowerCase()
+            const companionPos = combatPositions[companionId]
+            if (companionPos) {
+              potentialTargets.push({
+                type: ENTITY_TYPES.COMPANION,
+                name: companion.name,
+                character: companion,
+                position: companionPos
+              })
+            }
+          }
+        })
+      }
+      
+      // Compatibilité avec l'ancien système
       if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
         potentialTargets.push({
           type: ENTITY_TYPES.COMPANION,
@@ -325,6 +358,7 @@ export class CombatEngine {
     let shortestDistance = Infinity
 
     console.log(`🎯 ${attacker.name} à (${attackerPos.x}, ${attackerPos.y}) évalue les cibles:`)
+    console.log(`   📍 Positions disponibles:`, Object.keys(combatPositions).map(key => `${key}: (${combatPositions[key]?.x}, ${combatPositions[key]?.y})`).join(', '))
     
     potentialTargets.forEach(target => {
       const distance = calculateDistance(attackerPos, target.position)

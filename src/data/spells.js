@@ -73,5 +73,94 @@ export const spells = {
         description: "Vous touchez une créature consentante et non-vêtue d'une armure. Sa Classe d'Armure devient 13 + son modificateur de Dextérité.",
         requiresAttackRoll: false,
         castableOutOfCombat: true // <-- NOUVEAU : Ce sort peut être lancé hors combat
+    },
+
+    // === SORTS DE SOIN ET DE SUPPORT POUR COMPAGNONS ===
+    
+    "Soins": {
+        name: "Soins",
+        level: 1,
+        school: "Évocation",
+        castingTime: "1 action",
+        range: "Toucher",
+        description: "Une créature que vous touchez récupère un nombre de points de vie égal à 1d8 + votre modificateur de caractéristique d'incantation.",
+        healing: { dice: "1d8", bonus: "wisdom" },
+        requiresAttackRoll: false,
+        targetType: "ally",
+        castableOutOfCombat: true
+    },
+
+    "Bénédiction": {
+        name: "Bénédiction",
+        level: 1,
+        school: "Enchantement",
+        castingTime: "1 action",
+        range: "9 mètres",
+        duration: "Concentration, jusqu'à 1 minute",
+        description: "Vous bénissez jusqu'à trois créatures de votre choix à portée. Chaque fois qu'une cible effectue un jet d'attaque ou de sauvegarde avant la fin du sort, elle peut lancer 1d4 et ajouter le résultat au jet.",
+        buff: { 
+            attackBonus: "1d4", 
+            saveBonus: "1d4",
+            duration: 600 // 10 rounds
+        },
+        targetType: "ally",
+        maxTargets: 3,
+        requiresAttackRoll: false,
+        castableOutOfCombat: true
+    },
+
+    "Sanctuaire": {
+        name: "Sanctuaire",
+        level: 1,
+        school: "Abjuration", 
+        castingTime: "1 action bonus",
+        range: "9 mètres",
+        duration: "1 minute",
+        description: "Vous protégez une créature à portée contre les attaques. Jusqu'à la fin du sort, toute créature qui cible la créature protégée avec une attaque ou un sort offensif doit d'abord effectuer un jet de sauvegarde de Sagesse.",
+        buff: {
+            protection: "sanctuary",
+            saveDC: "spell",
+            duration: 600 // 10 rounds
+        },
+        targetType: "ally",
+        requiresAttackRoll: false,
+        castableOutOfCombat: true
+    },
+
+    "Aide": {
+        name: "Aide",
+        level: 2,
+        school: "Abjuration",
+        castingTime: "1 action",
+        range: "9 mètres", 
+        duration: "8 heures",
+        description: "Votre sort renforce vos alliés avec endurance et résolution. Choisissez jusqu'à trois créatures à portée. Le maximum de points de vie de chaque cible augmente de 5 pour la durée du sort.",
+        buff: {
+            maxHPBonus: 5,
+            duration: 28800 // 8 heures en secondes  
+        },
+        maxTargets: 3,
+        targetType: "ally",
+        requiresAttackRoll: false,
+        castableOutOfCombat: true
+    },
+
+    // === SORTS OFFENSIFS POUR COMPAGNON DPS ===
+
+    "Bouclier": {
+        name: "Bouclier",
+        level: 1,
+        school: "Abjuration",
+        castingTime: "1 réaction",
+        range: "Personnel",
+        duration: "1 round",
+        description: "Une barrière invisible de force magique apparaît et vous protège. Jusqu'au début de votre prochain tour, vous avez un bonus de +5 à la CA.",
+        buff: {
+            acBonus: 5,
+            duration: 1 // 1 round
+        },
+        targetType: "self",
+        requiresAttackRoll: false,
+        castableOutOfCombat: false
     }
 };

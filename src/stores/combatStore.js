@@ -48,7 +48,7 @@ export const useCombatStore = create(
 
       // === ACTIONS D'INITIALISATION ===
 
-      initializeCombat: (encounterData, playerCharacter, playerCompanion) => set((state) => {
+      initializeCombat: (encounterData, playerCharacter, playerCompanion, activeCompanions = []) => set((state) => {
         // Créer les instances d'ennemis à partir des références
         const enemyInstances = []
         
@@ -82,9 +82,26 @@ export const useCombatStore = create(
           character: playerCharacter
         })
 
-        // Initiative compagnon si présent
-        
-        if (playerCompanion && playerCompanion.stats) {
+        // Initiative des compagnons actifs
+        if (activeCompanions && activeCompanions.length > 0) {
+          console.log(`🎲 COMBAT INIT: ${activeCompanions.length} compagnons actifs:`, activeCompanions.map(c => `${c.name}[${c.id}]`))
+          activeCompanions.forEach((companion, index) => {
+            if (companion && companion.stats && companion.stats.dexterite) {
+              const companionInitiative = rollD20WithModifier(getModifier(companion.stats.dexterite))
+              initiativeOrder.push({
+                type: 'companion',
+                name: companion.name,
+                id: companion.id,
+                initiative: companionInitiative,
+                character: companion
+              })
+              console.log(`🎲 COMBAT INIT: [${index}] ${companion.name} (${companion.role}) initiative=${companionInitiative}`)
+            } else {
+              console.error(`❌ COMBAT INIT: Compagnon invalide:`, companion)
+            }
+          })
+        } else if (playerCompanion && playerCompanion.stats) {
+          // Fallback pour compatibilité
           const companionInitiative = rollD20WithModifier(getModifier(playerCompanion.stats.dexterite))
           initiativeOrder.push({
             type: 'companion',
@@ -92,9 +109,9 @@ export const useCombatStore = create(
             initiative: companionInitiative,
             character: playerCompanion
           })
-         
+          console.log('🔄 COMBAT INIT: Mode compatibilité - compagnon unique')
         } else {
-          console.log('❌ Pas de compagnon valide, skip');
+          console.log('⚠️ COMBAT INIT: Aucun compagnon disponible');
         }
 
         // Initiative ennemis
@@ -122,13 +139,23 @@ export const useCombatStore = create(
         })
         
         // Initialiser les positions
-        const positions = get().calculateInitialPositions(enemyInstances, !!playerCompanion, encounterData.enemyPositions)
+        const companionsCount = activeCompanions.length > 0 ? activeCompanions.length : (playerCompanion ? 1 : 0)
+        const positions = get().calculateInitialPositions(enemyInstances, companionsCount, encounterData.enemyPositions, activeCompanions)
         
         // Sauvegarder les positions initiales comme positions de début de tour
         positions.playerStartPos = { ...positions.player }
-        if (positions.companion) {
-          positions.companionStartPos = { ...positions.companion }
+        
+        // Sauvegarder les positions de tous les compagnons
+        if (activeCompanions && activeCompanions.length > 0) {
+          activeCompanions.forEach(companion => {
+            const companionId = companion.id || companion.name.toLowerCase()
+            if (positions[companionId]) {
+              positions[`${companionId}StartPos`] = { ...positions[companionId] }
+            }
+          })
         }
+        
+        // Plus besoin de compatibilité companionStartPos
 
         return {
           ...state,
@@ -149,13 +176,27 @@ export const useCombatStore = create(
         }
       }),
 
-      calculateInitialPositions: (enemies, hasCompanion, customEnemyPositions = {}) => {
+      calculateInitialPositions: (enemies, companionsCount, customEnemyPositions = {}, activeCompanions = []) => {
         const positions = {
           player: { x: 0, y: 5 } // Bottom-left corner for player
         }
 
-        // Position du compagnon
-        if (hasCompanion) {
+        // Positions des compagnons actifs
+        if (activeCompanions && activeCompanions.length > 0) {
+          console.log(`📍 POSITIONS: Placement de ${activeCompanions.length} compagnons:`)
+          activeCompanions.forEach((companion, index) => {
+            const companionId = companion.id || companion.name.toLowerCase()
+            // Disposer les compagnons à côté du joueur
+            positions[companionId] = { 
+              x: 1 + index, 
+              y: 5 - Math.floor(index / 2) // Décaler sur Y si plus de 2 compagnons
+            }
+            console.log(`📍 POSITIONS: [${index}] ${companion.name}[${companionId}] → (${positions[companionId].x}, ${positions[companionId].y})`)
+          })
+          
+          // Plus besoin de positions.companion avec le nouveau système
+        } else if (companionsCount > 0) {
+          // Fallback pour compatibilité
           positions.companion = { x: 1, y: 5 }
         }
 
@@ -171,6 +212,7 @@ export const useCombatStore = create(
           }
         })
 
+        // Positions finales configurées
         return positions
       },
 

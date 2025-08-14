@@ -19,7 +19,15 @@ export { XPBar, CompactXPBar, CircularXPIndicator } from './XPBar'
 export { SpecialAbilitiesPanel, CompactSpecialAbilitiesPanel, InteractiveSpecialAbilitiesPanel } from './SpecialAbilitiesPanel'
 
 // Compagnons
-export { CompanionDisplay, CompactCompanionDisplay, DetailedCompanionDisplay, InteractiveCompanionDisplay } from './CompanionDisplay'
+export { 
+    CompanionDisplay, 
+    CompactCompanionDisplay, 
+    DetailedCompanionDisplay, 
+    InteractiveCompanionDisplay,
+    CompanionParty,
+    CompactCompanionParty,
+    InteractiveCompanionParty
+} from './CompanionDisplay'
 
 // Utilitaires et constants
 export const CHARACTER_CLASSES = {

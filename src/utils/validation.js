@@ -24,13 +24,19 @@ export const isValidGridPosition = (x, y) => {
  * @returns {boolean} True if position is occupied
  */
 export const isPositionOccupied = (x, y, positions, entities = [], excludeEntity = null) => {
-  // Check fixed positions (player, companion)
+  // Check fixed positions (player)
   if (positions.player && positions.player.x === x && positions.player.y === y) {
     return true
   }
 
-  if (positions.companion && positions.companion.x === x && positions.companion.y === y) {
-    return true
+  // Check all companion positions (nouveau système multi-compagnons)
+  for (const posKey in positions) {
+    if (posKey !== 'player' && posKey !== excludeEntity && !posKey.endsWith('StartPos')) {
+      const pos = positions[posKey]
+      if (pos && pos.x === x && pos.y === y) {
+        return true
+      }
+    }
   }
 
   // Check entities (only living ones block movement)

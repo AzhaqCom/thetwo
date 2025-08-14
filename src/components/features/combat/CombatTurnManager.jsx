@@ -27,15 +27,15 @@ export const CombatTurnManager = ({
   } = useCombatStore()
   
   const { addCombatMessage } = useGameStore()
-  const { takeDamagePlayer, takeDamageCompanion, playerCharacter, playerCompanion } = useCharacterStore()
+  const { takeDamagePlayer, takeDamageCompanionById, playerCharacter, playerCompanion, getActiveCompanions } = useCharacterStore()
   
   // Services
   const combatService = new CombatService()
 
   // Configuration des callbacks de dégâts
   useEffect(() => {
-    setDamageCallbacks(takeDamagePlayer, takeDamageCompanion)
-  }, [setDamageCallbacks, takeDamagePlayer, takeDamageCompanion])
+    setDamageCallbacks(takeDamagePlayer, takeDamageCompanionById)
+  }, [setDamageCallbacks, takeDamagePlayer, takeDamageCompanionById])
 
   /**
    * GESTION DES MOUVEMENTS
@@ -43,7 +43,7 @@ export const CombatTurnManager = ({
    */
   const handleMovement = useCallback((entity, gameState) => {
     // Gérer les différentes clés de position selon le type d'entité
-    const positionKey = entity.type === 'companion' ? 'companion' : entity.name
+    const positionKey = entity.type === 'companion' ? (entity.id || 'companion') : entity.name
     const currentPos = gameState.combatPositions[positionKey]
     
     if (!currentPos) {
@@ -89,14 +89,16 @@ export const CombatTurnManager = ({
    */
   const getTarget = useCallback((entity, gameState) => {
     // Gérer les différentes clés de position selon le type d'entité
-    const positionKey = entity.type === 'companion' ? 'companion' : entity.name
+    const positionKey = entity.type === 'companion' ? (entity.id || 'companion') : entity.name
     const currentPos = gameState.combatPositions[positionKey]
     
     // Utiliser CombatEngine pour trouver la meilleure cible
+    const activeCompanions = getActiveCompanions()
     const target = CombatEngine.findBestTarget(entity, currentPos, {
       ...gameState,
       playerCharacter,
-      companionCharacter: playerCompanion
+      companionCharacter: playerCompanion, // Compatibilité
+      activeCompanions: activeCompanions    // Nouveau système
     })
 
     if (!target) {
@@ -105,7 +107,7 @@ export const CombatTurnManager = ({
     }
 
     return target
-  }, [playerCharacter, playerCompanion, addCombatMessage])
+  }, [playerCharacter, playerCompanion, addCombatMessage, getActiveCompanions])
 
   /**
    * Applique les dégâts à une cible selon son type
@@ -114,19 +116,24 @@ export const CombatTurnManager = ({
     if (target.type === 'player') {
       takeDamagePlayer(damage)
     } else if (target.type === 'companion') {
-      takeDamageCompanion(damage)
+      console.log(target)
+      console.log(target.name)
+
+      takeDamageCompanionById(target.character.id, damage)
+       console.log(target)
     } else if (target.type === 'enemy') {
       dealDamageToEnemy(target.name, damage)
       
       // Vérifier si l'ennemi est mort
       setTimeout(() => {
+       
         const enemyAfter = enemies.find(e => e.name === target.name)
         if (enemyAfter && enemyAfter.currentHP <= 0) {
           addCombatMessage(`💀 ${target.name} tombe au combat !`, 'enemy-death')
         }
       }, 100)
     }
-  }, [takeDamagePlayer, takeDamageCompanion, dealDamageToEnemy, addCombatMessage, enemies])
+  }, [takeDamagePlayer, takeDamageCompanionById, dealDamageToEnemy, addCombatMessage, enemies])
 
   /**
    * Sélectionne le meilleur attackSet selon la distance
@@ -264,7 +271,7 @@ export const CombatTurnManager = ({
     }
 
     // Calculer la distance à la cible (gérer les différents types)
-    const attackerPosKey = attacker.type === 'companion' ? 'companion' : attacker.name
+    const attackerPosKey = attacker.type === 'companion' ? (attacker.id || 'companion') : attacker.name
     const attackerPos = gameState.combatPositions[attackerPosKey]
     const distance = calculateDistance(attackerPos, target.position)
 
@@ -295,11 +302,13 @@ export const CombatTurnManager = ({
     }
 
     // État du jeu actuel
+    const activeCompanions = getActiveCompanions()
     const gameState = {
       combatPositions: useCombatStore.getState().combatPositions,
       combatEnemies: enemies,
       playerCharacter,
-      companionCharacter: playerCompanion
+      companionCharacter: playerCompanion,
+      activeCompanions: activeCompanions
     }
 
     // 1. MOUVEMENT
@@ -319,7 +328,8 @@ export const CombatTurnManager = ({
     // Mettre à jour l'état du jeu après mouvement
     const updatedGameState = {
       ...gameState,
-      combatPositions: useCombatStore.getState().combatPositions
+      combatPositions: useCombatStore.getState().combatPositions,
+      activeCompanions: activeCompanions
     }
 
     // 2. CIBLAGE
@@ -366,19 +376,24 @@ export const CombatTurnManager = ({
    * EXECUTION DU TOUR DE COMPAGNON  
    * Logique identique aux ennemis mais ciblant les ennemis
    */
-  const handleCompanionTurn = useCallback((companion) => {
-    console.log(`🤝 === Tour de ${companion.name} ===`)
+  const handleCompanionTurn = useCallback((companionTurn) => {
+    console.log(`🤝 ${companionTurn.name} agit`)
+    const activeCompanions = getActiveCompanions()
     
-    // Vérifier que le compagnon est vivant
-    if (!playerCompanion || playerCompanion.currentHP <= 0) {
-      console.log(`💀 Le compagnon est mort, tour passé`)
-      addCombatMessage(`${companion.name} est trop blessé pour agir.`)
+    // Récupérer le bon personnage compagnon depuis le turn order
+    const actualCompanion = companionTurn.character || playerCompanion
+    
+    if (!actualCompanion || actualCompanion.currentHP <= 0) {
+      console.log(`💀 TURN: ${companionTurn.name} est mort, tour passé`)
+      addCombatMessage(`${companionTurn.name} est trop blessé pour agir.`)
       setTimeout(() => {
         setIsExecuting(false)
         onNextTurn()
       }, 500)
       return
     }
+    
+    // Détails du compagnon configurés
 
     // État du jeu pour le compagnon (cible les ennemis vivants)
     const gameState = {
@@ -390,10 +405,11 @@ export const CombatTurnManager = ({
 
     // Adapter l'entité compagnon pour utiliser la même logique que les ennemis
     const companionAsEntity = {
-      ...playerCompanion,
-      name: companion.name,
+      ...actualCompanion,
+      name: companionTurn.name,
+      id: companionTurn.id || companionTurn.name.toLowerCase(),
       type: 'companion',
-      attacks: playerCompanion.attacks || [{
+      attacks: actualCompanion.attacks || [{
         name: "Attaque de base",
         damageDice: "1d6", 
         damageBonus: 0,
@@ -407,15 +423,18 @@ export const CombatTurnManager = ({
     // Mettre à jour l'état du jeu après mouvement
     const updatedGameState = {
       ...gameState,
-      combatPositions: useCombatStore.getState().combatPositions
+      combatPositions: useCombatStore.getState().combatPositions,
+      activeCompanions: activeCompanions
     }
 
     // 2. CIBLAGE ET ATTAQUE (utilise la même logique que les ennemis)
     setTimeout(() => {
+      // Recherche de cible
+      
       const target = getTarget(companionAsEntity, updatedGameState)
       
       if (!target) {
-        addCombatMessage(`${companion.name} ne trouve aucune cible.`)
+        addCombatMessage(`${companionTurn.name} ne trouve aucune cible.`)
         setTimeout(() => {
           setIsExecuting(false)
           onNextTurn()
@@ -427,9 +446,9 @@ export const CombatTurnManager = ({
       const attackSuccess = executeAttack(companionAsEntity, target, updatedGameState)
       
       if (attackSuccess) {
-        console.log(`✅ ${companion.name} a attaqué avec succès`)
+        console.log(`✅ ${companionTurn.name} a attaqué avec succès`)
       } else {
-        console.log(`❌ ${companion.name} n'a pas pu attaquer`)
+        console.log(`❌ ${companionTurn.name} n'a pas pu attaquer`)
       }
 
       // Fin de tour

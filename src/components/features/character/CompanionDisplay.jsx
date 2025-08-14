@@ -11,6 +11,7 @@ export const CompanionDisplay = ({
   variant = 'default', // 'default', 'compact', 'detailed'
   className = '',
   showActions = false,
+  showRole = false, // Nouveau: afficher le rôle du compagnon
   onAction // Callback pour les actions sur le compagnon
 }) => {
   if (!companion) {
@@ -31,10 +32,36 @@ export const CompanionDisplay = ({
   const isHealthy = hpPercentage > 75
   const isWounded = hpPercentage <= 25 && hpPercentage > 0
 
+  // Icons pour les rôles
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case 'tank': return '🛡️'
+      case 'healer': return '❤️'
+      case 'dps': return '⚔️'
+      default: return '🤝'
+    }
+  }
+
+  const getRoleLabel = (role) => {
+    switch (role) {
+      case 'tank': return 'Tank'
+      case 'healer': return 'Soigneur'
+      case 'dps': return 'DPS'
+      default: return 'Compagnon'
+    }
+  }
+
   return (
     <Card className={displayClass}>
       <CardHeader>
-        <h4>Compagnon</h4>
+        <h4>
+          {showRole && companion.role && (
+            <span className="companion-role-icon" title={getRoleLabel(companion.role)}>
+              {getRoleIcon(companion.role)}
+            </span>
+          )}
+          {showRole ? getRoleLabel(companion.role) : 'Compagnon'}
+        </h4>
       </CardHeader>
       
       <CardBody>
@@ -169,6 +196,88 @@ export const InteractiveCompanionDisplay = ({ companion, onAction, ...props }) =
     companion={companion} 
     showActions={true}
     onAction={onAction}
+    {...props} 
+  />
+)
+
+/**
+ * Composant pour afficher plusieurs compagnons ensemble
+ */
+export const CompanionParty = ({ 
+  companions = [], 
+  variant = "default",
+  showRoles = true,
+  layout = "grid", // "grid", "list", "compact"
+  className = "",
+  onCompanionAction
+}) => {
+  if (!companions || companions.length === 0) {
+    return (
+      <div className="companion-party companion-party--empty">
+        <p>Aucun compagnon actif</p>
+      </div>
+    )
+  }
+
+  const partyClass = [
+    'companion-party',
+    `companion-party--${layout}`,
+    `companion-party--${variant}`,
+    className
+  ].filter(Boolean).join(' ')
+
+  return (
+    <div className={partyClass}>
+      {layout !== "compact" && (
+        <div className="companion-party__header">
+          <h3>Compagnons ({companions.length}/3)</h3>
+        </div>
+      )}
+      
+      <div className="companion-party__grid">
+        {companions.map((companion, index) => (
+          <CompanionDisplay
+            key={companion.id || companion.name || index}
+            companion={companion}
+            variant={variant}
+            showRole={showRoles}
+            showActions={variant === "interactive"}
+            onAction={(action, comp) => onCompanionAction?.(action, comp)}
+          />
+        ))}
+      </div>
+      
+      {companions.length < 3 && variant === "management" && (
+        <div className="companion-party__add-slot">
+          <div className="companion-add-button">
+            <span>+ Recruter un compagnon</span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Version compacte pour l'interface de combat
+ */
+export const CompactCompanionParty = ({ companions, ...props }) => (
+  <CompanionParty 
+    companions={companions}
+    variant="compact"
+    layout="compact"
+    {...props} 
+  />
+)
+
+/**
+ * Version de gestion avec actions
+ */
+export const InteractiveCompanionParty = ({ companions, onCompanionAction, ...props }) => (
+  <CompanionParty 
+    companions={companions}
+    variant="interactive"
+    onCompanionAction={onCompanionAction}
     {...props} 
   />
 )

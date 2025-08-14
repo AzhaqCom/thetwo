@@ -7,6 +7,7 @@ import { useCombatStore } from '../../../stores/combatStore'
 export const CombatGrid = ({
   playerCharacter,
   playerCompanion,
+  activeCompanions = [], // Nouveau : compagnons actifs
   enemies,
   positions,
   selectedAction,
@@ -31,10 +32,18 @@ export const CombatGrid = ({
       return { ...playerCharacter, id: 'player', type: 'player' }
     }
 
-    // Vérifier le compagnon
-    if (positions.companion?.x === x && positions.companion?.y === y && playerCompanion) {
-      return { ...playerCompanion, id: 'companion', type: 'companion' }
+    // Vérifier les compagnons actifs
+    if (activeCompanions && activeCompanions.length > 0) {
+      for (const companion of activeCompanions) {
+        const companionId = companion.id || companion.name.toLowerCase()
+        const companionPos = positions[companionId]
+        if (companionPos?.x === x && companionPos?.y === y) {
+          return { ...companion, id: companionId, type: 'companion' }
+        }
+      }
     }
+    
+    // Plus besoin de vérification de compatibilité
 
     // Vérifier les ennemis
     for (const enemy of enemies) {
@@ -45,7 +54,7 @@ export const CombatGrid = ({
     }
 
     return null
-  }, [positions, playerCharacter, playerCompanion, enemies])
+  }, [positions, playerCharacter, playerCompanion, activeCompanions, enemies])
 
 
   const getHealthColor = (currentHP, maxHP) => {

@@ -16,7 +16,11 @@ body {
 p {
     margin: 5px;
 }
-
+.collapsible-section__header{
+    margin: 5px 0;
+    padding: 5px 0;
+    font-size: 16px;
+}
 .combat-container {
     overflow-y: auto;
     width: 100%;
@@ -173,7 +177,10 @@ p {
     flex-wrap: wrap;
     gap:10px
 }
-
+.spell-item__list-properties{
+    display: flex;
+    flex-wrap: wrap;
+}
 .text-sm {
     font-size: 14px;
 }
@@ -1111,13 +1118,23 @@ button:hover {
     border-radius: 5px;
     overflow: hidden;
 }
-
-.health-bar__fill {
+.resource-bars{
+    display: flex;flex-direction: column;gap: 10px;
+}
+.health-bar--health .health-bar__fill {
     height: 100%;
     background-color: #d32f2f;
     transition: width 0.3s ease;
 }
-
+.health-bar--energy .health-bar__fill{
+       height: 100%;
+    background-color: #77ae26;
+    transition: width 0.3s ease;
+}.health-bar--mana .health-bar__fill{
+       height: 100%;
+    background-color: #3426ae;
+    transition: width 0.3s ease;
+}
 .skills-list__items {
     display: flex;
     flex-direction: column;

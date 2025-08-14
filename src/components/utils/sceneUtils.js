@@ -33,8 +33,30 @@ export const processSceneAction = (action, handlers) => {
             case 'ally':
                 const companionToAdd = companions[action.ally];
                 if (companionToAdd) {
-                    handlers.setPlayerCompanion(companionToAdd);
+                    // Nouveau système multi-compagnons
+                    const companionWithId = { 
+                        ...companionToAdd, 
+                        id: action.ally.toLowerCase() 
+                    };
+                    
+                    // Ajouter au nouveau système
+                    if (handlers.addCompanion) {
+                        handlers.addCompanion(companionWithId);
+                        
+                        // Mettre à jour les compagnons actifs
+                        const currentStore = useCharacterStore.getState();
+                        const newActiveCompanions = [...currentStore.activeCompanions, companionWithId.id];
+                        handlers.setActiveCompanions(newActiveCompanions);
+                    }
+                    
+                    // Compatibilité avec l'ancien système (pour le premier compagnon)
+                    if (handlers.setPlayerCompanion && !useCharacterStore.getState().playerCompanion) {
+                        handlers.setPlayerCompanion(companionToAdd);
+                    }
+                    
                     handlers.addCombatMessage(`${companionToAdd.name} te rejoint dans ton aventure !`, 'upgrade');
+                    console.log(`✅ RECRUIT: ${companionToAdd.name} (${companionToAdd.role}) avec ID=${companionWithId.id}`);
+                    
                     return action.nextScene;
                 } else {
                     console.error(`Compagnon '${action.ally}' introuvable.`);

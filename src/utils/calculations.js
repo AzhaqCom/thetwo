@@ -54,6 +54,9 @@ export const rollDice = (diceString) => {
  * @returns {number} The distance in grid squares
  */
 export const calculateDistance = (pos1, pos2) => {
+  if (!pos1 || !pos2 || pos1.x === undefined || pos2.x === undefined) {
+    return Infinity // Distance infinie si positions invalides
+  }
   return Math.abs(pos1.x - pos2.x) + Math.abs(pos1.y - pos2.y)
 }
 

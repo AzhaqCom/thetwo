@@ -7,7 +7,8 @@ import {
   CharacterSheet,
   CharacterSelection,
   SpecialAbilitiesPanel,
-  CompanionDisplay
+  CompanionDisplay,
+  CompanionParty
 } from './components/features/character';
 import {
   CombatPanel
@@ -78,8 +79,13 @@ function App() {
     const {
         playerCharacter,
         playerCompanion,
+        playerCompanions,
+        activeCompanions,
         setPlayerCharacter,
         setPlayerCompanion,
+        addCompanion,
+        setActiveCompanions,
+        getActiveCompanions,
         takeDamagePlayer,
         takeDamageCompanion,
         addItemToInventory,
@@ -142,6 +148,8 @@ const handleCombatVictory = () => {
             startShortRest,
             handleItemGain,
             setPlayerCompanion,
+            addCompanion,
+            setActiveCompanions,
             addCombatMessage,
             handleSkillCheck
         });
@@ -266,6 +274,7 @@ const handleCombatVictory = () => {
                     key={combatKey}
                     playerCharacter={playerCharacter}
                     playerCompanion={playerCompanion}
+                    activeCompanions={getActiveCompanions()}
                     encounterData={currentScene}
                     onCombatEnd={handleCombatVictory}
                     onReplayCombat={() => {
@@ -293,8 +302,15 @@ const handleCombatVictory = () => {
                         setTimeout(() => {
                             // Utiliser les personnages avec les PV restaurés
                             const restoredPlayer = { ...playerCharacter, currentHP: playerCharacter.maxHP };
-                            const restoredCompanion = playerCompanion ? { ...playerCompanion, currentHP: playerCompanion.maxHP } : null;
-                            initializeCombat(currentScene, restoredPlayer, restoredCompanion);
+                            const restoredCompanions = getActiveCompanions().map(companion => ({
+                                ...companion,
+                                currentHP: companion.maxHP
+                            }));
+                            
+                            // Compatibilité avec l'ancien système
+                            const restoredCompanion = restoredCompanions.length > 0 ? restoredCompanions[0] : null;
+                            
+                            initializeCombat(currentScene, restoredPlayer, restoredCompanion, restoredCompanions);
                         }, 100);
                     }}
                 />
@@ -316,6 +332,8 @@ const handleCombatVictory = () => {
                                 startShortRest,
                                 handleItemGain,
                                 setPlayerCompanion,
+                                addCompanion,
+                                setActiveCompanions,
                                 addCombatMessage,
                                 handleSkillCheck
                             });
@@ -348,7 +366,18 @@ const handleCombatVictory = () => {
                         character={playerCharacter} 
                         variant="interactive"
                     />
-                    {playerCompanion && <CompanionDisplay companion={playerCompanion} />}
+                    
+                    {/* Affichage des compagnons - nouveau système */}
+                    <CompanionParty 
+                        companions={getActiveCompanions()} 
+                        variant="default"
+                        showRoles={true}
+                    />
+                    
+                    {/* Fallback pour compatibilité */}
+                    {!getActiveCompanions().length && playerCompanion && (
+                        <CompanionDisplay companion={playerCompanion} />
+                    )}
                     <InventoryPanel />
                     {shouldShowSpellcasting && (
                         <SpellPanel

@@ -1,5 +1,6 @@
 import React from 'react'
 import { useUIStore } from '../../stores'
+import { SpellService } from '../../services/SpellService'
 
 /**
  * Barre de santé réutilisable avec animations et états
@@ -100,6 +101,39 @@ export const CharacterHealthBar = ({ character, size = 'medium', showLabel = tru
 }
 
 /**
+ * Barre d'emplacements de sorts
+ */
+const SpellSlotsBar = ({ character }) => {
+  if (!character?.spellcasting) return null
+  
+  const spellService = new SpellService()
+  const spellSlots = spellService.getSpellSlots(character)
+  
+  if (!spellSlots || Object.keys(spellSlots).length === 0) return null
+  
+  const totalSlots = Object.values(spellSlots).reduce((sum, slot) => 
+    sum + (slot?.max || 0), 0
+  )
+  
+  const usedSlots = Object.values(spellSlots).reduce((sum, slot) => 
+    sum + (slot?.used || 0), 0
+  )
+  
+  const availableSlots = totalSlots - usedSlots
+  
+  return totalSlots > 0 ? (
+    <HealthBar
+      current={availableSlots}
+      max={totalSlots}
+      label="✨ Emplacements de sorts"
+      variant="mana"
+      showNumbers={true}
+      size="small"
+    />
+  ) : null
+}
+
+/**
  * Barre de ressources multiples (HP, MP, etc.)
  */
 export const ResourceBars = ({ character, characterStats, layout = 'vertical' }) => {
@@ -130,6 +164,8 @@ export const ResourceBars = ({ character, characterStats, layout = 'vertical' })
           size="small"
         />
       )}
+
+      <SpellSlotsBar character={character} />
     </div>
   )
 }

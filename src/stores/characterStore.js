@@ -21,7 +21,9 @@ export const useCharacterStore = create(
       (set, get) => ({
         // État des personnages
         playerCharacter: null,
-        playerCompanion: null,
+        playerCompanion: null, // Gardé pour compatibilité temporaire
+        playerCompanions: [], // Nouveau: Array de tous les compagnons (max 3)
+        activeCompanions: [], // Compagnons actuellement déployés en mission/combat
         selectedCharacter: null, // Alias pour playerCharacter pour compatibilité avec les composants
         
         // États temporaires
@@ -40,10 +42,56 @@ export const useCharacterStore = create(
           playerCharacter: character ? GameLogic.deepClone(character) : null
         })),
 
-        // Définir le compagnon
+        // Définir le compagnon (compatibilité)
         setPlayerCompanion: (companion) => set({ 
           playerCompanion: companion ? GameLogic.deepClone(companion) : null 
         }),
+
+        // === GESTION MULTIPLE DES COMPAGNONS ===
+        
+        // Ajouter un compagnon (max 3)
+        addCompanion: (companionData) => set((state) => {
+          if (state.playerCompanions.length >= 3) {
+            console.warn('Maximum 3 compagnons autorisés')
+            return state
+          }
+          
+          const companion = GameLogic.deepClone(companionData)
+          companion.id = companion.id || companion.name || GameLogic.generateId('companion')
+          
+          return {
+            playerCompanions: [...state.playerCompanions, companion]
+          }
+        }),
+        
+        // Retirer un compagnon
+        removeCompanion: (companionId) => set((state) => ({
+          playerCompanions: state.playerCompanions.filter(c => c.id !== companionId),
+          activeCompanions: state.activeCompanions.filter(id => id !== companionId)
+        })),
+        
+        // Définir les compagnons actifs (ceux qui participent aux missions)
+        setActiveCompanions: (companionIds) => set((state) => {
+          // Vérifier que tous les IDs existent
+          const validIds = companionIds.filter(id => 
+            state.playerCompanions.some(c => c.id === id)
+          )
+          return { activeCompanions: validIds }
+        }),
+        
+        // Obtenir un compagnon par ID
+        getCompanion: (companionId) => {
+          const { playerCompanions } = get()
+          return playerCompanions.find(c => c.id === companionId)
+        },
+        
+        // Obtenir les compagnons actifs
+        getActiveCompanions: () => {
+          const { playerCompanions, activeCompanions } = get()
+          return activeCompanions.map(id => 
+            playerCompanions.find(c => c.id === id)
+          ).filter(Boolean)
+        },
 
         // Mise à jour générique d'un personnage
         updatePlayerCharacter: (updates) => set((state) => ({
@@ -56,6 +104,19 @@ export const useCharacterStore = create(
           playerCompanion: state.playerCompanion 
             ? { ...state.playerCompanion, ...updates }
             : null
+        })),
+
+        // Mettre à jour un compagnon par ID
+        updateCompanion: (companionId, updates) => set((state) => ({
+          playerCompanions: state.playerCompanions.map(companion =>
+            companion.id === companionId
+              ? { ...companion, ...updates }
+              : companion
+          ),
+          // Mettre à jour aussi playerCompanion si c'est le même pour compatibilité
+          playerCompanion: state.playerCompanion?.id === companionId
+            ? { ...state.playerCompanion, ...updates }
+            : state.playerCompanion
         })),
 
         // === GESTION DES DÉGÂTS ET SOINS ===
@@ -74,6 +135,24 @@ export const useCharacterStore = create(
           return { playerCompanion: updatedCompanion }
         }),
 
+        // Dégâts à un compagnon par ID
+        takeDamageCompanionById: (companionId, damage) => set((state) => {
+          const companion = state.playerCompanions.find(c => c.id === companionId)
+          if (!companion) return state
+          
+          const updatedCompanion = CharacterManager.takeDamage(companion, damage)
+          
+          return {
+            playerCompanions: state.playerCompanions.map(c =>
+              c.id === companionId ? updatedCompanion : c
+            ),
+            // Compatibilité
+            playerCompanion: state.playerCompanion?.id === companionId 
+              ? updatedCompanion 
+              : state.playerCompanion
+          }
+        }),
+
         healPlayer: (healing) => set((state) => {
           if (!state.playerCharacter) return state
           
@@ -86,6 +165,24 @@ export const useCharacterStore = create(
           
           const updatedCompanion = CharacterManager.heal(state.playerCompanion, healing)
           return { playerCompanion: updatedCompanion }
+        }),
+
+        // Soigner un compagnon par ID
+        healCompanionById: (companionId, healing) => set((state) => {
+          const companion = state.playerCompanions.find(c => c.id === companionId)
+          if (!companion) return state
+          
+          const updatedCompanion = CharacterManager.heal(companion, healing)
+          
+          return {
+            playerCompanions: state.playerCompanions.map(c =>
+              c.id === companionId ? updatedCompanion : c
+            ),
+            // Compatibilité
+            playerCompanion: state.playerCompanion?.id === companionId 
+              ? updatedCompanion 
+              : state.playerCompanion
+          }
         }),
 
         // === GESTION DES REPOS ===
@@ -111,11 +208,34 @@ export const useCharacterStore = create(
           return { playerCompanion: updatedCompanion }
         }),
 
+        // Repos long pour un compagnon par ID
+        longRestCompanionById: (companionId) => set((state) => {
+          const companion = state.playerCompanions.find(c => c.id === companionId)
+          if (!companion) return state
+          
+          const updatedCompanion = CharacterManager.longRest(companion)
+          
+          return {
+            playerCompanions: state.playerCompanions.map(c =>
+              c.id === companionId ? updatedCompanion : c
+            ),
+            // Compatibilité
+            playerCompanion: state.playerCompanion?.id === companionId 
+              ? updatedCompanion 
+              : state.playerCompanion
+          }
+        }),
+
         // Repos complet (joueur + compagnon)
         longRestAll: () => {
-          const { longRestPlayer, longRestCompanion } = get()
+          const { longRestPlayer, longRestCompanion, playerCompanions } = get()
           longRestPlayer()
           longRestCompanion()
+          
+          // Repos pour tous les compagnons actifs
+          playerCompanions.forEach(companion => {
+            get().longRestCompanionById(companion.id)
+          })
         },
 
         // Dépenser un dé de vie pendant un repos court
@@ -522,8 +642,14 @@ export const useCharacterStore = create(
           
           if (itemData && itemData.use) {
             try {
+              // Calculer l'effet avant de modifier le personnage
+              const oldHP = character.currentHP
+              
               // Utiliser la fonction use de l'objet
               const updatedCharacter = itemData.use(character)
+              
+              // Calculer la différence pour les potions de soin
+              const healAmount = updatedCharacter.currentHP - oldHP
               
               // Mettre à jour le personnage
               if (targetCharacter === 'player') {
@@ -540,8 +666,8 @@ export const useCharacterStore = create(
                 get().removeItemFromInventory(itemId, targetCharacter, 1)
               }
               
-              // Retourner le message pour affichage
-              const message = typeof itemData.message === 'function' ? itemData.message() : itemData.message
+              // Retourner le message pour affichage avec le healAmount calculé
+              const message = typeof itemData.message === 'function' ? itemData.message(healAmount) : itemData.message
               return { success: true, message, item: itemData }
               
             } catch (error) {
@@ -654,6 +780,8 @@ export const useCharacterStore = create(
         resetCharacters: () => set({
           playerCharacter: null,
           playerCompanion: null,
+          playerCompanions: [],
+          activeCompanions: [],
           activeEffects: [],
           temporaryModifiers: {},
           experienceGains: [],
@@ -674,11 +802,34 @@ export const characterSelectors = {
   
   getPlayerCompanion: (state) => state.playerCompanion,
   
+  // Nouveaux sélecteurs pour compagnons multiples
+  getAllCompanions: (state) => state.playerCompanions,
+  
+  getActiveCompanions: (state) => 
+    state.activeCompanions.map(id => 
+      state.playerCompanions.find(c => c.id === id)
+    ).filter(Boolean),
+  
+  getCompanionById: (state, companionId) => 
+    state.playerCompanions.find(c => c.id === companionId),
+  
+  getCompanionsByRole: (state, role) =>
+    state.playerCompanions.filter(c => c.role === role),
+    
   hasCompanion: (state) => state.playerCompanion !== null,
+  
+  hasCompanions: (state) => state.playerCompanions.length > 0,
+  
+  hasActiveCompanions: (state) => state.activeCompanions.length > 0,
   
   isPlayerAlive: (state) => state.playerCharacter?.currentHP > 0,
   
   isCompanionAlive: (state) => state.playerCompanion?.currentHP > 0,
+  
+  isCompanionAliveById: (state, companionId) => {
+    const companion = state.playerCompanions.find(c => c.id === companionId)
+    return companion?.currentHP > 0
+  },
   
   getPlayerHPPercentage: (state) => 
     state.playerCharacter 
