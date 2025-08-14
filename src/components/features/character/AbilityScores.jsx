@@ -78,7 +78,7 @@ export const AbilityScores = ({
   onStatClick,
   layout = 'grid', // 'grid', 'horizontal', 'vertical'
   compact = false,
-  showSaveBonuses = true
+  showSaveBonuses = false
 }) => {
   const containerClass = [
     'ability-scores',

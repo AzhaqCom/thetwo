@@ -5,6 +5,7 @@ import { Card, CardHeader, CardBody, Button } from '../../ui'
 import { InventoryGrid } from './InventoryGrid'
 import { InventoryFilters } from './InventoryFilters'
 import { ItemDetailModal } from './ItemDetailModal'
+import { weapons } from '../../../data/weapons'
 
 /**
  * Panneau d'inventaire moderne avec gestion Zustand
@@ -17,7 +18,9 @@ export const InventoryPanel = ({
   // Stores
   const { 
     selectedCharacter,
-    useItem
+    useItem,
+    equipItem,
+    unequipItem
   } = useCharacterStore()
   
   // Utiliser selectedCharacter du store (qui est maintenant synchronisé avec playerCharacter)
@@ -39,9 +42,21 @@ export const InventoryPanel = ({
   const inventoryData = useMemo(() => {
     if (!activeCharacter) return { items: [], totalWeight: 0, maxWeight: 0, allItems: [] }
     
-    // Utiliser inventory moderne + équipement legacy si disponible
+    // Utiliser inventory moderne + équipement moderne + équipement legacy si disponible
+    const equippedItems = activeCharacter.equipment 
+      ? Object.values(activeCharacter.equipment)
+          .filter(Boolean)
+          .map(itemId => {
+            // L'équipement stocke maintenant des IDs, récupérer les données depuis weapons.js
+            const weaponData = weapons[itemId]
+            return weaponData ? { ...weaponData, id: itemId, equipped: true } : null
+          })
+          .filter(Boolean)
+      : []
+      
     const allItems = [
       ...(activeCharacter.inventory || []),
+      ...equippedItems,
       ...(activeCharacter.equipement?.inventaire || []),
       ...(activeCharacter.equipement?.armes || []),
       ...(activeCharacter.equipement?.armures || []),
@@ -82,16 +97,21 @@ export const InventoryPanel = ({
     
     // Calculer le poids total
     const totalWeight = allItems.reduce((sum, item) => 
-      sum + (item.poids || item.weight || 0) * (item.quantity || 1), 0
+      sum + (item.poids || item.weight || 0.1) * (item.quantity || 1), 0
     )
     
     const maxWeight = calculateCarryingCapacity(activeCharacter)
+    
+    // Calculer les quantités totales pour l'affichage
+    const totalItemCount = allItems.reduce((sum, item) => sum + (item.quantity || 1), 0)
+    const filteredItemCount = filteredItems.reduce((sum, item) => sum + (item.quantity || 1), 0)
     
     return {
       items: filteredItems,
       totalWeight,
       maxWeight,
-      allItemsCount: allItems.length,
+      totalItemCount, // Nombre total d'objets individuels (avec quantités)
+      filteredItemCount, // Nombre d'objets filtrés individuels (avec quantités)
       allItems // Garder tous les objets pour les filtres dynamiques
     }
   }, [activeCharacter?.inventory, activeCharacter?.equipement, filters, sortBy])
@@ -104,7 +124,8 @@ export const InventoryPanel = ({
       if (result.success) {
         // Afficher le message retourné par le système d'objet
         addCombatMessage(result.message, 'item')
-        
+        console.log(item.name, result.message)
+
         // Utiliser la fonction legacy si elle existe pour compatibilité
         if (onUseItem) {
           onUseItem(item.id || item.nom || item.name)
@@ -119,13 +140,25 @@ export const InventoryPanel = ({
   }
 
   const handleEquipItem = (item) => {
-    // TODO: Implémenter l'équipement d'objets
-    addCombatMessage(`Équipement non encore implémenté: ${item.nom || item.name}`, 'info')
+    try {
+      const itemId = item.id || item.name || item.nom
+      equipItem(itemId, 'player')
+      addCombatMessage(`${item.nom || item.name} équipé !`, 'success')
+    } catch (error) {
+      console.error('Erreur lors de l\'équipement:', error)
+      addCombatMessage(`Erreur lors de l'équipement: ${error.message}`, 'error')
+    }
   }
 
   const handleUnequipItem = (item) => {
-    // TODO: Implémenter le déséquipement d'objets
-    addCombatMessage(`Déséquipement non encore implémenté: ${item.nom || item.name}`, 'info')
+    try {
+      const itemId = item.id || item.name || item.nom
+      unequipItem(itemId, 'player')
+      addCombatMessage(`${item.nom || item.name} retiré !`, 'info')
+    } catch (error) {
+      console.error('Erreur lors du déséquipement:', error)
+      addCombatMessage(`Erreur lors du déséquipement: ${error.message}`, 'error')
+    }
   }
 
   const handleFilterChange = (newFilters) => {
@@ -161,7 +194,7 @@ export const InventoryPanel = ({
             </div>
             
             <div className="inventory-count">
-              <span>📦 Objets: {inventoryData.items.length}/{inventoryData.allItemsCount}</span>
+              <span>📦 Objets: {inventoryData.filteredItemCount}/{inventoryData.totalItemCount}</span>
             </div>
           </div>
           

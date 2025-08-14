@@ -70,7 +70,7 @@ export const characterTemplates = {
         },
         weaponProficiencies: ["simple", "martial"],
         armorProficiencies: ["light", "medium", "heavy", "shields"],
-        weapons: ["longsword", "shortbow", "dagger"],
+        weapons: ["longsword", "shortbow", "heavybow", "dagger"],
         armor: "chainmail", // CA 16
         shield: true,
         inventory: []
@@ -121,6 +121,41 @@ export const characterTemplates = {
                 skills: ["discretion", "escamotage"]
             }
         },
+        inventory: []
+    },
+    paladin:{
+        name: "Elara",
+        level: 1,
+        currentXP: 0,
+        race: "Elfe",
+        class: "Paladin",
+        historic: "Templier",
+        maxHP: 16, // d10 + 2 (CON) + 4 (elfe bonus)
+        currentHP: 16,
+        ac: 18, // Cotte de mailles + bouclier
+        initiative: 0,
+        speed: "9m",
+        proficiencyBonus: 2,
+        hitDice: 1,
+        hitDiceType: 10,
+        type: "player",
+        stats: {
+            force: 14,
+            dexterite: 12,
+            constitution: 14,
+            intelligence: 10,
+            sagesse: 13,
+            charisme: 16 // Stat principale
+        },
+        proficiencies: {
+            saves: ["force", "charisme"],
+            skills: ["athletisme", "intimidation", "medecine", "persuasion"]
+        },
+        weaponProficiencies: ["simple", "martial"],
+        armorProficiencies: ["light", "medium", "heavy", "shields"],
+        weapons: ["longsword", "shield"],
+        armor: "chainmail", // CA 18
+        shield: true,
         inventory: []
     }
 };

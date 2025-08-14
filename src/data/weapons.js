@@ -150,6 +150,18 @@ export const weapons = {
         stat: "dexterite",
         description: "Un arc puissant avec une longue portée."
     },
+    heavybow: {
+        name: "Arc lourd",
+        id: "heavybow", 
+        type: "weapon",
+        category: "ranged",
+        damage: { dice: "1d10", bonus: 0, type: "dexterite" },
+        damageType: "perforant",
+        properties: ["ammunition", "heavy", "two-handed"],
+        range: { ranged: "200/800" },
+        stat: "dexterite",
+        description: "Un arc de guerre exceptionnellement puissant, difficile à bander."
+    },
     heavyCrossbow: {
         name: "Arbalète lourde",
         id: "heavyCrossbow",
@@ -161,6 +173,20 @@ export const weapons = {
         range: { ranged: "100/400" },
         stat: "dexterite",
         description: "Une arbalète puissante mais lente à recharger."
+    },
+    arccheat:{
+        name: "Arc Du MJ",
+        id: "arccheat",
+        type: "weapon",
+        category: "ranged",
+        damage: { dice: "1d10", bonus: 50, type: "intelligence" },
+        damageType: "perforant",
+        properties: ["ammunition", "heavy", "two-handed"],
+        range: { ranged: "150/600" },
+        stat: "intelligence",
+        description: "Un arc d'une grande précision, fabriqué à partir du bois d'un arbre ancien.",
+        rarity :"Légendaire",
+        weight :3
     }
 };
 

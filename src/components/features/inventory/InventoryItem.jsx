@@ -18,7 +18,7 @@ export const InventoryItem = ({
   const itemName = item.nom || item.name || 'Objet inconnu'
   const itemDescription = item.description || 'Aucune description'
   const itemQuantity = item.quantity || 1
-  const itemWeight = item.poids || item.weight || 0
+  const itemWeight = item.poids || item.weight || 0.1
   const itemRarity = item.rarity || 'commun'
   const itemType = item.type || 'misc'
   const isEquipped = item.equipped || false
@@ -36,12 +36,16 @@ export const InventoryItem = ({
   // Icône selon le type d'objet
   const getItemIcon = () => {
     switch (itemType) {
+      case 'weapon':
       case 'arme':
         return '⚔️'
+      case 'armor':
       case 'armure':
         return '🛡️'
+      case 'consumable':
       case 'potion':
         return '🧪'
+      case 'accessory':
       case 'accessoire':
         return '💎'
       case 'outil':
@@ -51,6 +55,25 @@ export const InventoryItem = ({
       default:
         return '📦'
     }
+  }
+  const getIconRarity = () => {
+    switch (itemRarity?.toLowerCase()) {
+      case 'commun':
+        return '🪙'
+      case 'peu commun':
+        return '💰'
+      case 'rare':
+        return '💎'
+      case 'très rare':
+        return '🏆'
+      case 'légendaire':
+        return '🌟'
+      case 'artéfact':
+        return '🗝️'
+      default:
+        return '📦'
+    }
+
   }
 
   // Couleur de rareté
@@ -75,7 +98,7 @@ export const InventoryItem = ({
 
   // Vérifier si l'objet peut être équipé
   const canBeEquipped = () => {
-    return ['arme', 'armure', 'accessoire'].includes(itemType) && !isEquipped
+    return ['weapon', 'armor', 'accessory'].includes(itemType) && !isEquipped
   }
 
   // Vérifier si l'objet peut être utilisé
@@ -85,35 +108,38 @@ export const InventoryItem = ({
 
   // Rendu pour le mode grille
   const renderGridMode = () => (
-    <Card 
+    <Card
       className={itemClass}
       onClick={onClick}
       style={{ borderColor: getRarityColor(itemRarity) }}
     >
       <div className="inventory-item__content">
-        <div className="inventory-item__header">
+        <div className="inventory-item__header" title={`${itemName} - ${itemDescription} item ${itemRarity}`}>
           <span className="inventory-item__icon">{getItemIcon()}</span>
+          <h5 className="inventory-item__name">{itemName}</h5>
           {itemQuantity > 1 && (
-            <span className="inventory-item__quantity">{itemQuantity}</span>
+            <span className="inventory-item__quantity">x {itemQuantity}</span>
           )}
+          <span className="inventory-item__icon">{getIconRarity()}</span>
+
           {isEquipped && (
             <span className="inventory-item__equipped-badge">✓</span>
           )}
         </div>
-        
+
         <div className="inventory-item__info">
-          <h4 className="inventory-item__name">{itemName}</h4>
-          <p className="inventory-item__type">{itemType}</p>
-          
+
+
+
           {viewMode !== 'compact' && (
             <>
               <p className="inventory-item__description">
-                {itemDescription.length > 50 
-                  ? `${itemDescription.substring(0, 50)}...` 
+                {itemDescription.length > 100
+                  ? `${itemDescription.substring(0, 100)}...`
                   : itemDescription
                 }
               </p>
-              
+
               <div className="inventory-item__stats">
                 {itemWeight > 0 && (
                   <span className="inventory-item__weight">⚖️ {itemWeight} kg</span>
@@ -123,7 +149,7 @@ export const InventoryItem = ({
             </>
           )}
         </div>
-        
+
         {viewMode !== 'compact' && (
           <div className="inventory-item__actions">
             {canBeUsed() && (
@@ -138,7 +164,7 @@ export const InventoryItem = ({
                 Utiliser
               </Button>
             )}
-            
+
             {canBeEquipped() && (
               <Button
                 size="small"
@@ -151,7 +177,7 @@ export const InventoryItem = ({
                 Équiper
               </Button>
             )}
-            
+
             {isEquipped && (
               <Button
                 size="small"
@@ -174,28 +200,19 @@ export const InventoryItem = ({
   const renderListMode = () => (
     <div className={itemClass} onClick={onClick}>
       <div className="inventory-item__list-content">
-        <span className="inventory-item__icon">{getItemIcon()}</span>
-        
-        <div className="inventory-item__list-info">
-          <div className="inventory-item__list-primary">
-            <h4 className="inventory-item__name">{itemName}</h4>
-            {itemQuantity > 1 && (
-              <span className="inventory-item__quantity">x{itemQuantity}</span>
-            )}
-            {isEquipped && (
-              <span className="inventory-item__equipped-badge">Équipé</span>
-            )}
-          </div>
-          
-          <div className="inventory-item__list-secondary">
-            <span className="inventory-item__type">{itemType}</span>
-            <span className="inventory-item__rarity">{itemRarity}</span>
-            {itemWeight > 0 && (
-              <span className="inventory-item__weight">{itemWeight} kg</span>
-            )}
-          </div>
+        <div className="inventory-item__header" title={`${itemName} - ${itemDescription} item ${itemRarity}`}>
+          <span className="inventory-item__icon">{getItemIcon()}</span>
+          <h5 className="inventory-item__name">{itemName}</h5>
+          {itemQuantity > 1 && (
+            <span className="inventory-item__quantity">x {itemQuantity}</span>
+          )}
+          <span className="inventory-item__icon">{getIconRarity()}</span>
+
+          {isEquipped && (
+            <span className="inventory-item__equipped-badge">✓</span>
+          )}
         </div>
-        
+
         <div className="inventory-item__list-actions">
           {canBeUsed() && (
             <Button
@@ -209,11 +226,11 @@ export const InventoryItem = ({
               Utiliser
             </Button>
           )}
-          
+
           {canBeEquipped() && (
             <Button
               size="small"
-              variant="secondary" 
+              variant="secondary"
               onClick={(e) => {
                 e.stopPropagation()
                 onEquip?.()
@@ -222,7 +239,7 @@ export const InventoryItem = ({
               Équiper
             </Button>
           )}
-          
+
           {isEquipped && (
             <Button
               size="small"

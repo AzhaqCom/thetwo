@@ -452,16 +452,19 @@ export const CombatTurnManager = ({
   useEffect(() => {
     if (phase !== 'executing-turn' || !currentTurn || isExecuting) return
 
-    // Éviter les re-exécutions du même tour
-    const turnKey = `${currentTurn.name}-${currentTurn.type}-${Date.now()}`
-    if (lastExecutedTurn === `${currentTurn.name}-${currentTurn.type}`) {
+    // Éviter les re-exécutions du même tour exact
+    // Utiliser le turnCounter et currentTurnIndex pour créer un identifiant unique de tour
+    const { turnCounter, currentTurnIndex } = useCombatStore.getState()
+    const currentTurnKey = `${currentTurn.name}-${currentTurn.type}-${turnCounter}-${currentTurnIndex}`
+    if (lastExecutedTurn === currentTurnKey) {
       // Protection silencieuse - normal en mode dev React
+      console.log(`🔄 Tour déjà exécuté: ${currentTurnKey}`)
       return
     }
 
-    console.log(`🎮 Exécution du tour: ${currentTurn.name} (${currentTurn.type})`)
+    console.log(`🎮 Exécution du tour: ${currentTurn.name} (${currentTurn.type}) - Round: ${turnCounter}, Index: ${currentTurnIndex}`)
     setIsExecuting(true)
-    setLastExecutedTurn(`${currentTurn.name}-${currentTurn.type}`)
+    setLastExecutedTurn(currentTurnKey)
 
     // VÉRIFICATION GLOBALE de fin de combat avant d'exécuter le tour
     const allEnemiesDead = enemies.every(e => e.currentHP <= 0)

@@ -41,6 +41,7 @@ import {
 // Utils
 import { processSceneAction } from './components/utils/sceneUtils';
 import { items } from './data/items';
+import { weapons } from './data/weapons';
 import './App.css';
 
 // Error fallback component
@@ -160,7 +161,14 @@ const handleCombatVictory = () => {
         const itemIds = Array.isArray(itemIdOrArray) ? itemIdOrArray : [itemIdOrArray];
         
         itemIds.forEach(itemId => {
-            const itemData = items[itemId];
+            // Chercher d'abord dans items.js (consommables)
+            let itemData = items[itemId];
+            
+            // Si pas trouvé dans items.js, chercher dans weapons.js
+            if (!itemData) {
+                itemData = weapons[itemId];
+            }
+            
             if (itemData) {
                 const itemToAdd = {
                     ...itemData,
@@ -169,7 +177,7 @@ const handleCombatVictory = () => {
                 addItemToInventory(itemToAdd);
                 addCombatMessage(`Objet obtenu : ${itemData.name}`, 'item');
             } else {
-                console.error(`❌ Item non trouvé : ${itemId}`);
+                console.error(`❌ Item non trouvé dans items.js ou weapons.js : ${itemId}`);
             }
         });
     };
@@ -341,16 +349,7 @@ const handleCombatVictory = () => {
                         variant="interactive"
                     />
                     {playerCompanion && <CompanionDisplay companion={playerCompanion} />}
-                    <InventoryPanel 
-                        characterInventory={playerCharacter.inventory} 
-                        onUseItem={(itemId) => {
-                            const success = useItem(itemId);
-                            if (success) {
-                                const item = playerCharacter.inventory.find(i => i.id === itemId);
-                                addCombatMessage(`Utilisation de ${item?.name}`, 'item');
-                            }
-                        }} 
-                    />
+                    <InventoryPanel />
                     {shouldShowSpellcasting && (
                         <SpellPanel
                             character={playerCharacter}

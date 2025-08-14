@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { CombatEngine } from '../services/combatEngine'
+import { CombatService } from '../services/CombatService'
 import { CharacterManager } from '../services/characterManager'
 import { GameLogic } from '../services/gameLogic'
 import { rollD20WithModifier, getModifier, calculateDistance } from '../utils/calculations'
@@ -364,11 +365,13 @@ export const useCombatStore = create(
         const attackerPosition = combatPositions[currentTurn.name.toLowerCase()]
 
         // Exécuter l'action via le service de combat
-        const result = CombatEngine.executePlayerAction(
+        const combatService = new CombatService()
+        const result = combatService.executePlayerAction(
           currentTurn.character,
           playerAction,
           actionTargets,
-          attackerPosition
+          combatEnemies,
+          combatPositions
         )
 
         // Appliquer les résultats

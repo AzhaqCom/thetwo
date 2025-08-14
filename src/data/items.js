@@ -6,6 +6,7 @@ export const items = {
         description: "Restaure 2d4 + 2 PV.",
         type: "consumable",
         iconType: "heal",
+        weight: 0.5,
         use: (playerCharacter) => {
             const healAmount = Math.floor(Math.random() * 4) + 1 + Math.floor(Math.random() * 4) + 1 + 2;
             const newHP = Math.min(playerCharacter.maxHP, playerCharacter.currentHP + healAmount);
@@ -22,6 +23,7 @@ export const items = {
         description: "Restaure 4d4 + 4 PV.",
         type: "consumable",
         iconType: "heal",
+        weight: 0.5,
         use: (playerCharacter) => {
             let healAmount = 0;
             for (let i = 0; i < 4; i++) {
@@ -41,6 +43,7 @@ export const items = {
         description: "Augmente ta Force de 2 de manière permanente.",
         type: "consumable",
         iconType: "upgrade",
+        weight: 0.1,
         use: (playerCharacter) => {
             return {
                 ...playerCharacter,
@@ -57,6 +60,7 @@ export const items = {
         description: "Augmente ta Dextérité de 2 de manière permanente.",
         type: "consumable",
         iconType: "upgrade",
+        weight: 0.1,
         use: (playerCharacter) => {
             return {
                 ...playerCharacter,
@@ -73,6 +77,7 @@ export const items = {
         description: "Augmente ta Constitution de 2 de manière permanente et tes PV maximum de 2.",
         type: "consumable",
         iconType: "upgrade",
+        weight: 0.1,
         use: (playerCharacter) => {
             return {
                 ...playerCharacter,
@@ -92,6 +97,7 @@ export const items = {
         type: "consumable",
         iconType: "upgrade",
         rarity:"légendaire",
+        weight: 0.1,
         use: (playerCharacter) => {
             return {
                 ...playerCharacter,
@@ -101,13 +107,14 @@ export const items = {
                 }
             };
         },
-        message: () => `Tu as lu un Parchemin d'Intelligence et te sens plus sagace !`
+        message: () => `Tu as lu un Parchemin d'Intelligence et tes facultés augmentent !`
     },
     scrollOfSagesse: {
         name: "Parchemin de Sagesse",
         description: "Augmente ta Sagesse de 2 de manière permanente.",
         type: "consumable",
         iconType: "upgrade",
+        weight: 0.1,
         use: (playerCharacter) => {
             return {
                 ...playerCharacter,
@@ -117,13 +124,14 @@ export const items = {
                 }
             };
         },
-        message: () => `Tu as lu un Parchemin de Sgesse et te sens plus sagace !`
+        message: () => `Tu as lu un Parchemin de Sagesse et te sens plus sae !`
     },
     bookArtHeal: {
         name: "Livre l'art de la prestidigitation",
         description: "C'est un jolie livre vous devriez le lire",
         type: "consumable",
         iconType: "heal",
+        weight: 0.8,
         use: (playerCharacter) => {
             const healAmount = 2
             const newHP = Math.min(playerCharacter.maxHP, playerCharacter.currentHP + healAmount);
@@ -133,33 +141,5 @@ export const items = {
             };
         },
         message: () => `Tu as lu ce livre pendant une heure et tu t'es un peu reposé, tu as récuperer 2PV`
-    },
-    // Ajout d'une arme pour illustrer un autre type d'objet
-    shortsword: {
-        name: "Épée Courte",
-        description: "Une arme légère et rapide.",
-        type: "weapon",
-        damage: "1d6", // Le dé de dégâts
-        damageType: "perforant",
-        isFinesse: true, // Peut être utilisée avec la Dextérité
-        isLight: true, // Peut être utilisée à deux mains
-    },
-    longsword: {
-        name: "Épée Longue",
-        description: "Une épée classique, polyvalente en combat.",
-        type: "weapon",
-        damage: "1d8",
-        damageType: "tranchant",
-    },
-    dagger: {
-        name: "Dague",
-        description: "Une petite lame facile à cacher et à lancer.",
-        type: "weapon",
-        damage: "1d4",
-        damageType: "perforant",
-        isFinesse: true,
-        isLight: true,
-        isThrown: true,
-        range: "20/60",
-    },
+    }
 };

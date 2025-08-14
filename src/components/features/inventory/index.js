@@ -15,6 +15,9 @@ export { InventoryFilters, CompactInventoryFilters } from './InventoryFilters'
 // Modals et détails
 export { ItemDetailModal } from './ItemDetailModal'
 
+// Utilitaires
+export { InventoryCleanup } from './InventoryCleanup'
+
 // Utilitaires et constantes
 export const ITEM_TYPES = {
   WEAPON: 'arme',

@@ -17,21 +17,59 @@ export const CombatActionPanel = ({
   canMove = true,
   onMoveToggle
 }) => {
-  // Actions d'attaque disponibles
-  const attackActions = (playerCharacter.weapons || [])
-    .map(weaponId => weapons[weaponId])
-    .filter(weapon => weapon) // Filtrer les armes inexistantes
-    .map(weapon => ({
-      id: `attack_${weapon.id}`,
-      type: 'attack',
-      name: weapon.name,
-      description: `Attaque avec ${weapon.name}`,
-      damage: weapon.damage,
-      damageType: weapon.damageType,
-      range: weapon.range?.melee || 1,
-      stat: weapon.stat,
-      icon: weapon.category === 'ranged' ? '🏹' : '⚔️'
-    }))
+  // Actions d'attaque disponibles - depuis l'équipement moderne ET le système legacy
+  const getEquippedWeapons = () => {
+    const equippedWeapons = []
+    
+    // Nouveau système d'équipement (maintenant stocke des IDs)
+    if (playerCharacter.equipment?.mainHand) {
+      const weaponId = playerCharacter.equipment.mainHand
+      const weaponData = weapons[weaponId]
+      if (weaponData) {
+        equippedWeapons.push({ ...weaponData, id: weaponId })
+      }
+    }
+    
+    // Système legacy
+    const legacyWeapons = (playerCharacter.weapons || [])
+      .map(weaponId => weapons[weaponId])
+      .filter(weapon => weapon)
+      .map(weapon => ({ ...weapon, id: weapon.id }))
+    
+    equippedWeapons.push(...legacyWeapons)
+    
+    return equippedWeapons
+  }
+
+  const equippedWeapons = getEquippedWeapons()
+  const attackActions = equippedWeapons.length > 0 
+    ? equippedWeapons.map(weapon => ({
+        id: `attack_${weapon.id || weapon.name}`,
+        type: 'attack',
+        name: weapon.name,
+        description: `Attaque avec ${weapon.name}`,
+        damage: typeof weapon.damage === 'object' 
+          ? `${weapon.damage.dice}${weapon.damage.bonus > 0 ? `+${weapon.damage.bonus}` : ''}`
+          : weapon.damage,
+        damageType: weapon.damageType,
+        range: weapon.category === 'ranged' ? weapon.range?.ranged : (weapon.range?.melee || 1),
+        stat: weapon.stat,
+        icon: weapon.category === 'ranged' ? '🏹' : '⚔️'
+      }))
+    : [
+        // Attaque à mains nues par défaut
+        {
+          id: 'attack_unarmed',
+          type: 'attack',
+          name: 'Attaque à mains nues',
+          description: 'Attaque de base sans arme',
+          damage: '1d4',
+          damageType: 'contondant',
+          range: 1,
+          stat: 'force',
+          icon: '👊'
+        }
+      ]
 
   // Actions de sort disponibles (cantrips et sorts préparés avec emplacements)
   const spellActions = []
@@ -108,10 +146,12 @@ export const CombatActionPanel = ({
           <span className="action-button__icon">{action.icon}</span>
           <div className="action-button__details">
             <span className="action-button__name">{action.name}</span>
-            {action.damage?.dice && (
+            {action.damage && (
               <span className="action-button__damage">
-                Dégâts: {action.damage.dice}
-                {action.damage.bonus > 0 && `+${action.damage.bonus}`}
+                Dégâts: {typeof action.damage === 'string' 
+                  ? action.damage 
+                  : `${action.damage.dice}${action.damage.bonus > 0 ? `+${action.damage.bonus}` : ''}`
+                }
               </span>
             )}
             {action.level > 0 && (
@@ -145,6 +185,8 @@ export const CombatActionPanel = ({
       </CardHeader>
 
       <CardBody>
+
+
         {/* Actions de mouvement */}
         {canMove && (
           <div className="combat-action-section">

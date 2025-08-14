@@ -37,7 +37,7 @@ export const CharacterSheet = ({
     const xpToNext = CharacterManager.getXPToNextLevel(character.level) // XP pour niveau suivant
     const xpCurrentLevel = CharacterManager.getXPForLevel(character.level) // XP total pour le niveau actuel
     const currentXP = character.currentXP || character.experience || 0 // Support des deux propriétés
-    
+    const spellSlots = CharacterManager.generateSpellSlotsForLevel(character.level, character.class)
     // Calcul correct de la progression dans le niveau actuel
     const xpInCurrentLevel = currentXP - xpCurrentLevel // XP gagné dans le niveau actuel
     const xpNeededForLevel = xpToNext - xpCurrentLevel // XP total nécessaire pour passer au niveau suivant
@@ -64,6 +64,7 @@ export const CharacterSheet = ({
       spellAttackBonus,
       weaponAttackBonus,
       spellSaveDC,
+      spellSlots: spellSlots,
       proficiencyBonus: CharacterManager.getProficiencyBonus(character.level)
     }
   }, [character])
@@ -88,16 +89,7 @@ export const CharacterSheet = ({
     <Card className={containerClass}>
       <CardHeader>
         <div className="character-sheet__header">
-          <div className="character-sheet__identity">
-            <h3 className="character-sheet__name">{character.name}</h3>
-            <p className="character-sheet__details">
-              Niv. {character.level} {character.race} {character.class}
-            </p>
-            {character.historic && (
-              <p className="character-sheet__background">{character.historic}</p>
-            )}
-          </div>
-
+          <h3 className="character-sheet__name">{character.name}</h3>
           {!compact && (
             <XPBar
               currentXP={Math.max(0, (character.currentXP || character.experience || 0) - CharacterManager.getXPForLevel(character.level))}
@@ -106,6 +98,16 @@ export const CharacterSheet = ({
               level={character.level}
             />
           )}
+
+          <p className="character-sheet__details">
+            Niv. {character.level} {character.race} {character.class}
+          </p>
+          {character.historic && (
+            <p className="character-sheet__background">{character.historic}</p>
+          )}
+
+
+
         </div>
       </CardHeader>
 
@@ -118,21 +120,23 @@ export const CharacterSheet = ({
               value={character.ac}
               tooltip="Classe d'Armure"
             />
-            <StatBlock
-              label="Initiative"
-              value={`+${getModifier(character.stats.dexterite)}`}
-              tooltip="Modificateur d'initiative"
-            />
+
           </div>
 
           {/* Barre de vie */}
-          <HealthBar
-            current={character.currentHP}
-            max={character.maxHP}
-            label={compact ? null : "❤️ Points de vie"}
-            size={compact ? 'small' : 'medium'}
-            showNumbers={true}
-          />
+          {!compact && (
+            <CollapsibleSection
+              id={`${characterType}-resources`}
+              title="Ressources"
+              defaultExpanded={true}
+            >
+              <ResourceBars
+                character={character}
+                characterStats={characterStats}
+                layout="vertical"
+              />
+            </CollapsibleSection>
+          )}
         </div>
 
         {/* Caractéristiques */}
@@ -146,6 +150,7 @@ export const CharacterSheet = ({
             saves={character.proficiencies?.saves || []}
             proficiencyBonus={characterStats.proficiencyBonus}
             compact={!compact}
+            showSaveBonus={false}
           />
         </CollapsibleSection>
 
@@ -153,34 +158,33 @@ export const CharacterSheet = ({
         <CollapsibleSection
           id={`${characterType}-combat`}
           title="Combat"
-          defaultExpanded={!compact}
+          defaultExpanded={compact}
         >
           <div className="character-sheet__combat-info">
-            <div className="character-sheet__proficiency">
-              <StatBlock
-                label="Bonus de Maîtrise"
-                value={`+${characterStats.proficiencyBonus}`}
-              />
-            </div>
+            <StatBlock
+              label="Bonus de Maîtrise"
+              value={`+${characterStats.proficiencyBonus}`}
+            />
+
 
 
             {characterStats.spellAttackBonus !== null && (
-              <div className="character-sheet__attack-bonuses">
-                <StatBlock
-                  label="Att. Sorts"
-                  value={`+${characterStats.spellAttackBonus}`}
-                  tooltip="Bonus d'attaque des sorts"
-                />
-              </div>
+
+              <StatBlock
+                label="Att. Sorts"
+                value={`+${characterStats.spellAttackBonus}`}
+                tooltip="Bonus d'attaque des sorts"
+              />
+
             )}
 
-            <div className="character-sheet__attack-bonuses">
-              <StatBlock
-                label="Att. Armes"
-                value={`+${characterStats.weaponAttackBonus}`}
-                tooltip="Bonus d'attaque des armes"
-              />
-            </div>
+
+            <StatBlock
+              label="Att. Armes"
+              value={`+${characterStats.weaponAttackBonus}`}
+              tooltip="Bonus d'attaque des armes"
+            />
+
 
             {characterStats.spellSaveDC && (
               <StatBlock
@@ -206,18 +210,7 @@ export const CharacterSheet = ({
         </CollapsibleSection>
 
         {/* Ressources (HP, sorts, dés de vie) */}
-        {!compact && (
-          <CollapsibleSection
-            id={`${characterType}-resources`}
-            title="Ressources"
-            defaultExpanded={true}
-          >
-            <ResourceBars
-              character={character}
-              layout="vertical"
-            />
-          </CollapsibleSection>
-        )}
+
       </CardBody>
     </Card>
   )

@@ -4,6 +4,7 @@ import { CharacterManager } from '../services/characterManager'
 import { SpellSystem } from '../services/spellSystem'
 import { GameLogic } from '../services/gameLogic'
 import { items } from '../data/items'
+import { weapons } from '../data/weapons'
 
 // Store pour la gestion des personnages (joueur et compagnon)
 // Helper pour synchroniser playerCharacter et selectedCharacter
@@ -286,17 +287,182 @@ export const useCharacterStore = create(
           return { success: true, message: `${spellName} retiré des sorts préparés` }
         },
 
+        // === GESTION DE L'ÉQUIPEMENT ===
+
+        equipItem: (itemId, targetCharacter = 'player') => set((state) => {
+          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          if (!character) return state
+
+          // Chercher l'objet dans l'inventaire OU dans weapons.js
+          let item = character.inventory?.find(invItem => 
+            (invItem.id || invItem.name || invItem.nom) === itemId
+          )
+          
+          // Si pas trouvé dans l'inventaire, chercher dans weapons.js
+          if (!item) {
+            const weaponData = weapons[itemId]
+            if (weaponData) {
+              item = { ...weaponData, id: itemId }
+            }
+          }
+          
+          if (!item) return state
+
+          // Vérifier si l'objet peut être équipé
+          const itemType = item.type
+          if (!['weapon', 'arme', 'armor', 'armure', 'accessory', 'accessoire'].includes(itemType)) {
+            return state
+          }
+
+          // Initialiser l'équipement si nécessaire
+          const currentEquipment = character.equipment || {}
+          let newEquipment = { ...currentEquipment }
+
+          // Déterminer le slot d'équipement
+          let slot = null
+          if (itemType === 'weapon' || itemType === 'arme') {
+            slot = 'mainHand'
+          } else if (itemType === 'armor' || itemType === 'armure') {
+            slot = 'body'
+          } else if (itemType === 'accessory' || itemType === 'accessoire') {
+            slot = 'accessory'
+          }
+
+          if (!slot) return state
+
+          // Déséquiper l'objet actuel si il y en a un
+          if (newEquipment[slot]) {
+            // Si l'ancien objet était dans l'inventaire, le remettre
+            const oldEquipmentId = newEquipment[slot]
+            const wasInInventory = character.inventory?.some(invItem => 
+              (invItem.id || invItem.name || invItem.nom) === oldEquipmentId
+            )
+            
+            let newInventory = [...(character.inventory || [])]
+            if (wasInInventory) {
+              // Récupérer les données complètes de l'ancien objet
+              const oldWeaponData = weapons[oldEquipmentId]
+              if (oldWeaponData) {
+                newInventory.push({ ...oldWeaponData, id: oldEquipmentId })
+              }
+            }
+            
+            // Équiper le nouvel objet (stocker seulement l'ID)
+            newEquipment[slot] = itemId
+            
+            // Retirer le nouvel objet de l'inventaire s'il y était
+            newInventory = newInventory.filter(invItem => 
+              (invItem.id || invItem.name || invItem.nom) !== itemId
+            )
+
+            const updates = {
+              inventory: newInventory,
+              equipment: newEquipment
+            }
+
+            if (targetCharacter === 'player') {
+              return syncCharacter({ playerCharacter: { ...character, ...updates } })
+            } else {
+              return { playerCompanion: { ...character, ...updates } }
+            }
+          } else {
+            // Équiper directement (stocker seulement l'ID)
+            newEquipment[slot] = itemId
+            
+            // Retirer de l'inventaire s'il y était
+            const newInventory = character.inventory ? character.inventory.filter(invItem => 
+              (invItem.id || invItem.name || invItem.nom) !== itemId
+            ) : []
+
+            const updates = {
+              inventory: newInventory,
+              equipment: newEquipment
+            }
+
+            if (targetCharacter === 'player') {
+              return syncCharacter({ playerCharacter: { ...character, ...updates } })
+            } else {
+              return { playerCompanion: { ...character, ...updates } }
+            }
+          }
+        }),
+
+        unequipItem: (itemId, targetCharacter = 'player') => set((state) => {
+          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          if (!character || !character.equipment) return state
+
+          // Chercher l'objet équipé (maintenant ce sont des IDs)
+          const equipment = character.equipment
+          let foundSlot = null
+
+          for (const [slot, equippedId] of Object.entries(equipment)) {
+            if (equippedId === itemId) {
+              foundSlot = slot
+              break
+            }
+          }
+
+          if (!foundSlot) return state
+
+          // Retirer de l'équipement
+          const newEquipment = { ...equipment }
+          delete newEquipment[foundSlot]
+
+          // Remettre dans l'inventaire avec les données complètes
+          const weaponData = weapons[itemId]
+          const newInventory = [...(character.inventory || [])]
+          
+          if (weaponData) {
+            newInventory.push({ ...weaponData, id: itemId })
+          }
+
+          const updates = {
+            inventory: newInventory,
+            equipment: newEquipment
+          }
+
+          if (targetCharacter === 'player') {
+            return syncCharacter({ playerCharacter: { ...character, ...updates } })
+          } else {
+            return { playerCompanion: { ...character, ...updates } }
+          }
+        }),
+
         // === GESTION DE L'INVENTAIRE ===
 
         addItemToInventory: (item, targetCharacter = 'player') => set((state) => {
           const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
           if (!character) return state
 
-          const newInventory = [...character.inventory, {
-            ...item,
-            id: item.id || GameLogic.generateId('item'),
-            quantity: item.quantity || 1
-          }]
+          const currentInventory = character.inventory || []
+          
+          // Identifier l'objet par son nom/type pour le groupement
+          const itemKey = item.id || item.name || item.nom
+          const quantityToAdd = item.quantity || 1
+          
+          // Chercher si l'objet existe déjà dans l'inventaire
+          const existingItemIndex = currentInventory.findIndex(invItem => {
+            const invItemKey = invItem.id || invItem.name || invItem.nom
+            return invItemKey === itemKey
+          })
+
+          let newInventory
+          
+          if (existingItemIndex >= 0) {
+            // L'objet existe déjà, on augmente sa quantité
+            newInventory = [...currentInventory]
+            newInventory[existingItemIndex] = {
+              ...newInventory[existingItemIndex],
+              quantity: (newInventory[existingItemIndex].quantity || 1) + quantityToAdd
+            }
+          } else {
+            // Nouvel objet, on l'ajoute à l'inventaire
+            newInventory = [...currentInventory, {
+              ...item,
+              id: item.id || item.name || item.nom || GameLogic.generateId('item'),
+              quantity: quantityToAdd
+            }]
+          }
 
           const updates = { inventory: newInventory }
 
@@ -307,11 +473,32 @@ export const useCharacterStore = create(
           }
         }),
 
-        removeItemFromInventory: (itemId, targetCharacter = 'player') => set((state) => {
+        removeItemFromInventory: (itemId, targetCharacter = 'player', quantityToRemove = 1) => set((state) => {
           const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
           if (!character) return state
 
-          const newInventory = character.inventory.filter(item => item.id !== itemId)
+          const currentInventory = character.inventory || []
+          const itemIndex = currentInventory.findIndex(item => 
+            (item.id || item.name || item.nom) === itemId
+          )
+          
+          if (itemIndex === -1) return state // Objet non trouvé
+
+          let newInventory = [...currentInventory]
+          const item = newInventory[itemIndex]
+          const currentQuantity = item.quantity || 1
+          
+          if (currentQuantity <= quantityToRemove) {
+            // Supprimer complètement l'objet si la quantité à retirer est >= à la quantité actuelle
+            newInventory.splice(itemIndex, 1)
+          } else {
+            // Réduire la quantité
+            newInventory[itemIndex] = {
+              ...item,
+              quantity: currentQuantity - quantityToRemove
+            }
+          }
+
           const updates = { inventory: newInventory }
 
           if (targetCharacter === 'player') {
@@ -348,9 +535,9 @@ export const useCharacterStore = create(
                 set({ playerCompanion: updatedCharacter })
               }
               
-              // Retirer l'objet s'il est consommable
+              // Retirer UNE SEULE unité de l'objet s'il est consommable
               if (itemData.type === 'consumable') {
-                get().removeItemFromInventory(itemId, targetCharacter)
+                get().removeItemFromInventory(itemId, targetCharacter, 1)
               }
               
               // Retourner le message pour affichage
@@ -389,9 +576,9 @@ export const useCharacterStore = create(
                 set({ playerCompanion: updatedCharacter })
               }
 
-              // Retirer l'objet s'il est consommable
+              // Retirer UNE SEULE unité de l'objet s'il est consommable
               if (item.consumable || item.type === 'consumable') {
-                get().removeItemFromInventory(itemId, targetCharacter)
+                get().removeItemFromInventory(itemId, targetCharacter, 1)
               }
               
               return { success: true, message }
@@ -427,6 +614,42 @@ export const useCharacterStore = create(
         }),
 
         // === UTILITAIRES ===
+
+        // Nettoyer les doublons dans l'inventaire en regroupant par nom/id
+        consolidateInventory: (targetCharacter = 'player') => set((state) => {
+          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          if (!character || !character.inventory) return state
+
+          const consolidatedInventory = []
+          const itemMap = new Map()
+
+          // Regrouper les objets par nom/id
+          character.inventory.forEach(item => {
+            const itemKey = item.id || item.name || item.nom
+            if (itemMap.has(itemKey)) {
+              // Augmenter la quantité de l'objet existant
+              const existingItem = itemMap.get(itemKey)
+              existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1)
+            } else {
+              // Nouveau type d'objet
+              itemMap.set(itemKey, {
+                ...item,
+                quantity: item.quantity || 1
+              })
+            }
+          })
+
+          // Convertir la Map en array
+          itemMap.forEach(item => consolidatedInventory.push(item))
+
+          const updates = { inventory: consolidatedInventory }
+
+          if (targetCharacter === 'player') {
+            return syncCharacter({ playerCharacter: { ...character, ...updates } })
+          } else {
+            return { playerCompanion: { ...character, ...updates } }
+          }
+        }),
 
         resetCharacters: () => set({
           playerCharacter: null,

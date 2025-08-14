@@ -30,7 +30,8 @@ export const CharacterSelection = ({ onCharacterSelect }) => {
   const availableCharacters = [
     characterTemplates.wizard,
     characterTemplates.warrior, 
-    characterTemplates.rogue
+    characterTemplates.rogue,
+    characterTemplates.paladin
   ].filter(Boolean) // Filtrer les personnages undefined
 
   const handleCharacterSelect = (character) => {

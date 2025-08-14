@@ -44,7 +44,7 @@ export const HealthBar = ({
     <div className={containerClass}>
       {label && (
         <div className="health-bar__label">
-          <span className="health-bar__label-text">{label}</span>
+          <span className="health-bar__label-text">{label} </span>
           {showNumbers && (
             <span className="health-bar__numbers">
               {actualCurrent}/{max}
@@ -53,18 +53,18 @@ export const HealthBar = ({
           )}
         </div>
       )}
-      
+
       <div className="health-bar__container">
         <div className="health-bar__background">
           <div
             className="health-bar__fill"
-            style={{ 
+            style={{
               width: `${percentage}%`,
               transition: animated && animationsEnabled ? 'width 0.3s ease-out' : 'none'
             }}
           />
         </div>
-        
+
         {/* Affichage des nombres au centre si pas de label */}
         {!label && showNumbers && (
           <div className="health-bar__overlay">
@@ -102,7 +102,7 @@ export const CharacterHealthBar = ({ character, size = 'medium', showLabel = tru
 /**
  * Barre de ressources multiples (HP, MP, etc.)
  */
-export const ResourceBars = ({ character, layout = 'vertical' }) => {
+export const ResourceBars = ({ character, characterStats, layout = 'vertical' }) => {
   if (!character) return null
 
   const containerClass = [
@@ -119,29 +119,7 @@ export const ResourceBars = ({ character, layout = 'vertical' }) => {
         variant="health"
         showNumbers={true}
       />
-      
-      {character.spellcasting && (
-        <div className="resource-bars__spell-slots">
-          <div className="resource-bars__spell-title">🔮 Emplacements de sorts</div>
-          {Object.entries(character.spellcasting.slotsRemaining || {}).map(([level, remaining]) => {
-            const total = character.spellcasting.slotsTotal?.[level] || 0
-            if (total === 0) return null
-            
-            return (
-              <HealthBar
-                key={level}
-                current={remaining}
-                max={total}
-                label={`Niveau ${level}`}
-                variant="mana"
-                showNumbers={true}
-                size="small"
-              />
-            )
-          })}
-        </div>
-      )}
-      
+
       {character.hitDice && (
         <HealthBar
           current={character.hitDice}
@@ -157,16 +135,16 @@ export const ResourceBars = ({ character, layout = 'vertical' }) => {
 }
 
 /**
- * Indicateur de santé simple (juste une couleur)
- */
-export const HealthIndicator = ({ 
-  current, 
-  max, 
+      * Indicateur de santé simple (juste une couleur)
+      */
+export const HealthIndicator = ({
+  current,
+  max,
   size = 'small',
   shape = 'circle' // 'circle', 'square'
 }) => {
   const percentage = max > 0 ? (current / max) * 100 : 0
-  
+
   let colorClass = ''
   if (percentage > 75) colorClass = 'health-indicator--high'
   else if (percentage > 50) colorClass = 'health-indicator--medium'

@@ -391,21 +391,20 @@ export class SpellService {
    * Vérifie si un sort est actuellement actif sur un personnage
    */
   isSpellActive(spellId, character) {
-    console.log(`🔍 isSpellActive: Checking if spell "${spellId}" is active`)
-    console.log('🔍 character.activeEffects:', character.activeEffects)
+  
     
     if (!character.activeEffects) {
-      console.log('❌ isSpellActive: No activeEffects on character')
+      // console.log('❌ isSpellActive: No activeEffects on character')
       return false
     }
     
     // Vérifier dans les effets actifs
     const isActive = character.activeEffects.some(effect => {
-      console.log(`🔍 isSpellActive: Checking effect - sourceSpellId: "${effect.sourceSpellId}", name: "${effect.name}"`)
+      // console.log(`🔍 isSpellActive: Checking effect - sourceSpellId: "${effect.sourceSpellId}", name: "${effect.name}"`)
       return effect.sourceSpellId === spellId || effect.name === spellId
     })
     
-    console.log(`🔍 isSpellActive: Result for "${spellId}": ${isActive}`)
+    // console.log(`🔍 isSpellActive: Result for "${spellId}": ${isActive}`)
     return isActive
   }
 

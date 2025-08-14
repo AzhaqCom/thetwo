@@ -62,12 +62,12 @@ export const InventoryFilters = ({
 
   // Générer les raretés disponibles dynamiquement
   const allRarities = [
-    { value: 'all', label: 'Toutes', color: '#9e9e9e' },
-    { value: 'commun', label: 'Commun', color: '#9e9e9e' },
-    { value: 'peu commun', label: 'Peu commun', color: '#4caf50' },
-    { value: 'rare', label: 'Rare', color: '#2196f3' },
-    { value: 'très rare', label: 'Très rare', color: '#9c27b0' },
-    { value: 'légendaire', label: 'Légendaire', color: '#ff9800' }
+    { value: 'all', label: 'Toutes', color: '#9e9e9e' , icon: '📦'},
+    { value: 'commun', label: 'Commun', color: '#9e9e9e',icon: '🪙' },
+    { value: 'peu commun', label: 'Peu commun', color: '#4caf50', icon: '💰' },
+    { value: 'rare', label: 'Rare', color: '#2196f3', icon: '💎' },
+    { value: 'très rare', label: 'Très rare', color: '#9c27b0', icon: '🏆' },
+    { value: 'légendaire', label: 'Légendaire', color: '#ff9800', icon: '🌟' }
   ]
 
   const availableRarities = React.useMemo(() => {
@@ -141,6 +141,7 @@ export const InventoryFilters = ({
               onClick={() => handleRarityChange(rarity.value)}
               style={filters.rarity === rarity.value ? { borderColor: rarity.color } : {}}
             >
+              <span className="button-icon">{rarity.icon}</span>
               {rarity.label}
             </Button>
           ))}

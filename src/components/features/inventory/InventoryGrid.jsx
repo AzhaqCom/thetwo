@@ -23,10 +23,7 @@ export const InventoryGrid = ({
   if (items.length === 0) {
     return (
       <div className="inventory-grid-empty">
-        <div className="inventory-empty-state">
-          <span className="inventory-empty-icon">📦</span>
-          <p>Aucun objet à afficher</p>
-        </div>
+       
       </div>
     )
   }

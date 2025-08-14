@@ -32,15 +32,16 @@ export const StatBlock = ({
 
   const content = (
     <div className={blockClass} onClick={onClick}>
+      <div className="stat-block__label">{label}</div>
       <div className="stat-block__value">
-        {value}
+        {value} 
         {displayModifier !== null && (
           <span className="stat-block__modifier">
             ({displayModifier >= 0 ? '+' : ''}{displayModifier})
           </span>
         )}
       </div>
-      <div className="stat-block__label">{label}</div>
+      
     </div>
   )
 

@@ -35,7 +35,7 @@ export const XPBar = ({
           <div className="xp-bar__current">
           
             <span className="xp-bar__value">
-              XP {Math.max(0, Math.round(currentXP))} / {Math.max(0, Math.round(nextLevelXP))}
+              ✨ XP:  {Math.max(0, Math.round(currentXP))} / {Math.max(0, Math.round(nextLevelXP))}
             </span>
           </div>
           

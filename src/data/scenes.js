@@ -22,7 +22,7 @@ Récemment, tu as entendu des murmures concernant une ancienne prophétie liée 
         choices: [
             {
                 text: "Prendre le parchemin et commencer le voyage",
-                next: { type: "item", item: "scrollOfIntelligence", nextScene: "scene3" }
+                next: { type: "item", item: ["potionOfSuperiorHealing","arccheat"], nextScene: "scene3" }
             }
         ]
     },
