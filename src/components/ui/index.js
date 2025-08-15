@@ -51,13 +51,14 @@ export {
 // Icônes
 export * from './Icons'
 
-// Types d'utilitaires pour TypeScript (si utilisé plus tard)
+// PARTIELLEMENT OBSOLÈTE: Nombreuses constantes non exploitées - simplifier selon l'utilisation réelle
 export const UI_SIZES = {
   SMALL: 'small',
   MEDIUM: 'medium', 
   LARGE: 'large'
 }
 
+// PARTIELLEMENT OBSOLÈTE: Beaucoup de variants non utilisés - garder seulement les variants essentiels
 export const UI_VARIANTS = {
   PRIMARY: 'primary',
   SECONDARY: 'secondary',

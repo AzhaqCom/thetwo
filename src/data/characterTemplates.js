@@ -1,6 +1,7 @@
 export const characterTemplates = {
     wizard: {
         name: "Elarion",
+        familyName:'Thalendor',
         level: 1,
         currentXP: 0,
         race: "Haut Elfe",
@@ -42,6 +43,7 @@ export const characterTemplates = {
 
     warrior: {
         name: "Gareth",
+        familyName:'Stonehaven',
         level: 1,
         currentXP: 0,
         race: "Humain",
@@ -78,6 +80,7 @@ export const characterTemplates = {
 
     rogue: {
         name: "Lyra",
+        familyName:"Copperfoot",
         level: 1,
         currentXP: 0,
         race: "Halfelin",
@@ -125,6 +128,7 @@ export const characterTemplates = {
     },
     paladin:{
         name: "Elara",
+        familyName:"Brightlance",
         level: 1,
         currentXP: 0,
         race: "Elfe",

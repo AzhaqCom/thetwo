@@ -1,5 +1,7 @@
 import { companions } from '../../data/companions';
-import { useCharacterStore } from '../../stores';
+import { useCharacterStore, useGameStore } from '../../stores';
+import { StoryService } from '../../services/StoryService';
+import { SCENE_TYPES, ACTION_TYPES } from '../../types/story';
 
 /**
  * Processes scene actions and returns the appropriate result
@@ -13,6 +15,13 @@ export const processSceneAction = (action, handlers) => {
     }
 
     if (typeof action === 'object') {
+        // Gestion du nouveau format avec nextScene
+        if (action.nextScene) {
+            // Traiter l'action puis retourner la scène suivante
+            processActionEffects(action, handlers);
+            return action.nextScene;
+        }
+
         switch (action.type) {
             case 'combat':
                 return { 
@@ -27,58 +36,26 @@ export const processSceneAction = (action, handlers) => {
             case 'shortRest':
                 handlers.startShortRest(action.nextScene);
                 return null;
-            case 'item':
+            case 'items':
                 handlers.handleItemGain(action.item);
                 return action.nextScene;
             case 'ally':
-                const companionToAdd = companions[action.ally];
-                if (companionToAdd) {
-                    // Nouveau système multi-compagnons
-                    const companionWithId = { 
-                        ...companionToAdd, 
-                        id: action.ally.toLowerCase() 
-                    };
-                    
-                    // Ajouter au nouveau système
-                    if (handlers.addCompanion) {
-                        handlers.addCompanion(companionWithId);
-                        
-                        // Mettre à jour les compagnons actifs
-                        const currentStore = useCharacterStore.getState();
-                        const newActiveCompanions = [...currentStore.activeCompanions, companionWithId.id];
-                        handlers.setActiveCompanions(newActiveCompanions);
-                    }
-                    
-                    // Compatibilité avec l'ancien système (pour le premier compagnon)
-                    if (handlers.setPlayerCompanion && !useCharacterStore.getState().playerCompanion) {
-                        handlers.setPlayerCompanion(companionToAdd);
-                    }
-                    
-                    handlers.addCombatMessage(`${companionToAdd.name} te rejoint dans ton aventure !`, 'upgrade');
-                    console.log(`✅ RECRUIT: ${companionToAdd.name} (${companionToAdd.role}) avec ID=${companionWithId.id}`);
-                    
-                    return action.nextScene;
-                } else {
-                    console.error(`Compagnon '${action.ally}' introuvable.`);
-                    return null;
-                }
+                return processAllyAction(action, handlers);
             case 'skillCheck':
-                // Récupérer le personnage actuel depuis le store
-                const playerCharacter = useCharacterStore.getState().playerCharacter;
-                if (!playerCharacter) {
-                    console.error('Aucun personnage joueur trouvé pour le test de compétence');
-                    return null;
-                }
-                
-                handlers.handleSkillCheck(
-                    action.skill,
-                    action.dc,
-                    action.onSuccess,
-                    action.onPartialSuccess,
-                    action.onFailure,
-                    playerCharacter
-                );
-                return null;
+                return processSkillCheckAction(action, handlers);
+            case 'setFlag':
+                return processSetFlagAction(action, handlers);
+            case 'changeReputation':
+                return processReputationAction(action, handlers);
+            case 'openShop':
+                // Pour les actions de boutique, on retourne l'action telle quelle
+                // Le composant parent gérera l'ouverture de la boutique
+                return action;
+            case 'openSellInterface':
+                return action;
+            case 'scene_transition':
+                // Simple transition vers une autre scène
+                return action.next;
             default:
                 console.warn("Type d'action inconnu :", action.type);
                 return null;
@@ -86,4 +63,225 @@ export const processSceneAction = (action, handlers) => {
     }
 
     return null;
+};
+
+/**
+ * Traite les effets d'une action (conséquences)
+ */
+const processActionEffects = (action, handlers) => {
+    const gameStore = useGameStore.getState();
+    
+    // Appliquer les conséquences via le store
+    if (action.consequences) {
+        gameStore.applyConsequences(action.consequences);
+    }
+    
+    // Actions spécifiques selon le type
+    switch (action.type) {
+        case 'item':
+            if (action.item) {
+                handlers.handleItemGain(action.item);
+            }
+            break;
+        case 'ally':
+            if (action.ally) {
+                processAllyAction(action, handlers);
+            }
+            break;
+        default:
+            break;
+    }
+};
+
+/**
+ * Traite l'ajout d'un allié
+ */
+const processAllyAction = (action, handlers) => {
+    const companionToAdd = companions[action.ally];
+    if (companionToAdd) {
+        // Nouveau système multi-compagnons
+        const companionWithId = { 
+            ...companionToAdd, 
+            id: action.ally.toLowerCase() 
+        };
+        
+        // Ajouter au nouveau système
+        if (handlers.addCompanion) {
+            handlers.addCompanion(companionWithId);
+            
+            // Mettre à jour les compagnons actifs
+            const currentStore = useCharacterStore.getState();
+            const newActiveCompanions = [...currentStore.activeCompanions, companionWithId.id];
+            handlers.setActiveCompanions(newActiveCompanions);
+        }
+        
+        // Compatibilité avec l'ancien système (pour le premier compagnon)
+        if (handlers.setPlayerCompanion && !useCharacterStore.getState().playerCompanion) {
+            handlers.setPlayerCompanion(companionToAdd);
+        }
+        
+        // Ajouter aux flags du jeu
+        const gameStore = useGameStore.getState();
+        gameStore.addToList('companions', action.ally);
+        
+        handlers.addCombatMessage(`${companionToAdd.name} te rejoint dans ton aventure !`, 'upgrade');
+        
+        return action.nextScene;
+    } else {
+        console.error(`Compagnon '${action.ally}' introuvable.`);
+        return null;
+    }
+};
+
+/**
+ * Traite un test de compétence
+ */
+const processSkillCheckAction = (action, handlers) => {
+    // Récupérer le personnage actuel depuis le store
+    const playerCharacter = useCharacterStore.getState().playerCharacter;
+    if (!playerCharacter) {
+        console.error('Aucun personnage joueur trouvé pour le test de compétence');
+        return null;
+    }
+    
+    // Pour les skill checks avec le nouveau format
+    if (action.onSuccess && typeof action.onSuccess === 'object' && action.onSuccess.consequences) {
+        // Utiliser une version étendue du handleSkillCheck qui peut gérer les conséquences
+        handlers.handleSkillCheckWithConsequences?.(
+            action.skill,
+            action.dc,
+            action.onSuccess,
+            action.onPartialSuccess,
+            action.onFailure,
+            playerCharacter
+        ) || handlers.handleSkillCheck(
+            action.skill,
+            action.dc,
+            action.onSuccess.next || action.onSuccess,
+            action.onPartialSuccess,
+            action.onFailure,
+            playerCharacter
+        );
+    } else {
+        // Format ancien
+        handlers.handleSkillCheck(
+            action.skill,
+            action.dc,
+            action.onSuccess,
+            action.onPartialSuccess,
+            action.onFailure,
+            playerCharacter
+        );
+    }
+    
+    return null;
+};
+
+/**
+ * Traite la modification d'un flag
+ */
+const processSetFlagAction = (action, handlers) => {
+    const gameStore = useGameStore.getState();
+    
+    if (action.flags) {
+        gameStore.setFlags(action.flags);
+    } else if (action.flag && action.value !== undefined) {
+        gameStore.setFlag(action.flag, action.value);
+    }
+    
+    return action.nextScene;
+};
+
+/**
+ * Traite un changement de réputation
+ */
+const processReputationAction = (action, handlers) => {
+    const gameStore = useGameStore.getState();
+    
+    if (typeof action.change === 'number') {
+        gameStore.updateReputation(action.change);
+        handlers.addCombatMessage(`Réputation ${action.change > 0 ? 'augmentée' : 'diminuée'} de ${Math.abs(action.change)}`, 'info');
+    }
+    
+    return action.nextScene;
+};
+
+/**
+ * Traite un choix avec le nouveau système
+ * @param {Object} choice - Le choix sélectionné
+ * @param {Object} gameState - L'état actuel du jeu
+ * @param {Object} handlers - Les handlers disponibles
+ * @returns {Promise<string|Object>} La prochaine scène ou action
+ */
+export const processChoice = async (choice, gameState, handlers) => {
+    // Appliquer les conséquences du choix de manière asynchrone
+    if (choice.consequences) {
+        const gameStore = useGameStore.getState();
+        await gameStore.applyConsequences(choice.consequences);
+    }
+    
+    // Traiter l'action si présente
+    if (choice.action) {
+        const actionResult = processSceneAction(choice.action, handlers);
+        
+        // Si l'action retourne quelque chose, on l'utilise
+        if (actionResult) {
+            return actionResult;
+        }
+        
+        // Si l'action retourne null (comme les repos), on s'arrête là
+        // L'action a été traitée (repos lancé) et on ne change pas de scène immédiatement
+        if (actionResult === null) {
+            return null;
+        }
+    }
+    
+    // Retourner la scène suivante seulement s'il n'y a pas d'action
+    return choice.next;
+};
+
+/**
+ * Obtient l'état du jeu pour le StoryService
+ * @returns {Object} L'état du jeu formaté pour StoryService
+ */
+export const getGameStateForStory = () => {
+    const gameStore = useGameStore.getState();
+    const characterStore = useCharacterStore.getState();
+    
+    return {
+        flags: gameStore.gameFlags,
+        character: characterStore.playerCharacter,
+        currentScene: gameStore.currentScene
+    };
+};
+
+/**
+ * Vérifie si une scène utilise le nouveau format
+ * @param {Object} scene - La scène à vérifier
+ * @returns {boolean} True si c'est le nouveau format
+ */
+export const isNewSceneFormat = (scene) => {
+    return scene.metadata && Object.values(SCENE_TYPES).includes(scene.metadata.type);
+};
+
+/**
+ * Adapte une scène de l'ancien format vers le nouveau format
+ * @param {Object} oldScene - Scène de l'ancien format
+ * @param {string} sceneId - ID de la scène
+ * @returns {Object} Scène au nouveau format
+ */
+export const adaptLegacyScene = (oldScene, sceneId) => {
+    return {
+        metadata: {
+            type: SCENE_TYPES.TEXT,
+            title: `Scène ${sceneId}`,
+            tags: ['legacy']
+        },
+        content: {
+            text: oldScene.text
+        },
+        choices: oldScene.choices || [],
+        conditions: {},
+        effects: {}
+    };
 };

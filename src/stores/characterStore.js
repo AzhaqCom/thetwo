@@ -24,7 +24,7 @@ export const useCharacterStore = create(
         playerCompanion: null, // Gardé pour compatibilité temporaire
         playerCompanions: [], // Nouveau: Array de tous les compagnons (max 3)
         activeCompanions: [], // Compagnons actuellement déployés en mission/combat
-        selectedCharacter: null, // Alias pour playerCharacter pour compatibilité avec les composants
+        selectedCharacter: null, // OBSOLÈTE: Alias pour playerCharacter pour compatibilité avec les composants - utiliser playerCharacter directement
         
         // États temporaires
         activeEffects: [],
@@ -274,17 +274,11 @@ export const useCharacterStore = create(
         addExperience: (xp, targetCharacter = 'player') => set((state) => {
           const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
           if (!character) return state
-
-          console.log(`🎯 Adding ${xp} XP to ${targetCharacter} (current level: ${character.level}, current XP: ${character.currentXP || character.experience || 0})`)
-          
           const updatedCharacter = CharacterManager.addExperience(character, xp)
-          console.log(`🎯 After XP gain: level ${updatedCharacter.level}, XP: ${updatedCharacter.currentXP}`)
-          
           const newState = { ...state }
 
           // Vérifier si montée de niveau
           if (updatedCharacter.level > character.level) {
-            console.log(`🎉 Level up detected! ${character.level} → ${updatedCharacter.level}`)
             newState.levelUpPending = true
             newState.levelUpData = {
               character: targetCharacter,

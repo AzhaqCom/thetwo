@@ -1,4 +1,33 @@
 export const enemyTemplates = {
+      ombre: {
+        name: "Ombre",
+        maxHP: 16,
+        currentHP: 16,
+        ac: 12,
+        xp: 100,
+        stats: {
+            force: 6,
+            dexterite: 14,
+            constitution: 13,
+            intelligence: 6,
+            sagesse: 10,
+            charisme: 8,
+        },
+        attacks: [
+            {
+                name: "absorption de force",
+                type: "melee",
+                attackBonus: 4,
+                range: 1,
+                targets: 1,
+                damageDice: "2d6",
+                damageBonus: 2,
+                damageType: "necrotique",
+                description: "absorption de force"
+            }
+        ],
+        image: "https://www.aidedd.org/dnd/images/shadow.jpg"
+    },
     gobelin: {
         name: "Gobelin",
         maxHP: 7,

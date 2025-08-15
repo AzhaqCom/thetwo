@@ -501,10 +501,6 @@ export class CombatService {
       addCombatMessage(`${entity.name} ne peut pas se déplacer à cette position.`)
       return false
     }
-
-    // Log du mouvement
-    const distance = Math.abs(targetPos.x - currentPos.x) + Math.abs(targetPos.y - currentPos.y)
-    console.log(`🚶 ${entity.name} bouge de (${currentPos.x}, ${currentPos.y}) vers (${targetPos.x}, ${targetPos.y}) - distance: ${distance}`)
     
     return true
   }

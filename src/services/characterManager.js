@@ -140,8 +140,6 @@ export class CharacterManager {
         spellSlots: spellSlots
       }
     }
-
-    console.log(`📈 Level up successful: ${character.level} → ${newLevel}, HP: ${character.maxHP} → ${updatedCharacter.maxHP}`)
     
     return updatedCharacter
   }
@@ -320,7 +318,6 @@ export class CharacterManager {
           break
         }
         
-        console.log(`🎯 Level up ! ${oldLevel} → ${updatedCharacter.level} (XP: ${updatedCharacter.currentXP}/${xpToNext})`)
         levelUpCount++
       } else {
         break

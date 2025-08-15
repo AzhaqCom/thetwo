@@ -34,7 +34,7 @@ export class CombatEngine {
    * @returns {Array} Array of valid targets
    */
   static getTargetsInRange(attacker, attackerPos, action, combatState) {
-    const { playerCharacter, companionCharacter, combatEnemies, combatPositions } = combatState
+    const { playerCharacter, activeCompanions = [], combatEnemies, combatPositions } = combatState
     const targets = []
 
     if (!attackerPos) return targets
@@ -53,16 +53,23 @@ export class CombatEngine {
       }
     }
 
-    // Check companion as target (if attacker is enemy)  
-    if (attacker.type === ENTITY_TYPES.ENEMY && companionCharacter?.currentHP > 0 && combatPositions.companion) {
-      const distance = calculateDistance(attackerPos, combatPositions.companion)
-      if (distance <= maxRange) {
-        targets.push({
-          ...companionCharacter,
-          type: ENTITY_TYPES.COMPANION,
-          position: combatPositions.companion
-        })
-      }
+    // Check active companions as targets (if attacker is enemy)
+    if (attacker.type === ENTITY_TYPES.ENEMY && activeCompanions.length > 0) {
+      activeCompanions.forEach(companion => {
+        if (companion?.currentHP > 0) {
+          const companionPos = combatPositions[companion.id]
+          if (companionPos) {
+            const distance = calculateDistance(attackerPos, companionPos)
+            if (distance <= maxRange) {
+              targets.push({
+                ...companion,
+                type: ENTITY_TYPES.COMPANION,
+                position: companionPos
+              })
+            }
+          }
+        }
+      })
     }
 
     // Check enemies as targets (if attacker is player/companion)
@@ -151,7 +158,7 @@ export class CombatEngine {
    * @returns {Array} Array of potential targets with positions
    */
   static findPotentialTargets(entity, combatState) {
-    const { playerCharacter, companionCharacter, combatEnemies, combatPositions, activeCompanions = [] } = combatState
+    const { playerCharacter, combatEnemies, combatPositions, activeCompanions = [] } = combatState
     const targets = []
 
     if (entity.type === ENTITY_TYPES.ENEMY) {
@@ -173,10 +180,7 @@ export class CombatEngine {
         })
       }
       
-      // Compatibilité avec l'ancien système
-      if (companionCharacter?.currentHP > 0 && combatPositions.companion) {
-        targets.push({ entity: companionCharacter, position: combatPositions.companion })
-      }
+      // Plus de compatibilité ancien système nécessaire
     } else {
       // Player/Companion target enemies
       combatEnemies.forEach(enemy => {
@@ -281,7 +285,7 @@ export class CombatEngine {
    * @returns {Object|null} Best target or null
    */
   static findBestTarget(attacker, attackerPos, combatState) {
-    const { playerCharacter, companionCharacter, combatPositions, activeCompanions = [] } = combatState
+    const { playerCharacter, combatPositions, activeCompanions = [] } = combatState
     
     if (!attackerPos) {
       console.warn(`⚠️ Pas de position pour ${attacker.name}`)
@@ -320,15 +324,7 @@ export class CombatEngine {
         })
       }
       
-      // Compatibilité avec l'ancien système
-      if (companionCharacter && companionCharacter.currentHP > 0 && combatPositions.companion) {
-        potentialTargets.push({
-          type: ENTITY_TYPES.COMPANION,
-          name: companionCharacter.name,
-          character: companionCharacter,
-          position: combatPositions.companion
-        })
-      }
+      // Plus de compatibilité ancien système nécessaire
     }
     
     // Pour le compagnon : cibler les ennemis
@@ -349,36 +345,29 @@ export class CombatEngine {
     }
 
     if (potentialTargets.length === 0) {
-      console.log(`🎯 ${attacker.name}: Aucune cible vivante trouvée`)
+
       return null
     }
 
     // Trouver la cible la plus proche (priorité stricte à la distance)
     let bestTarget = null
     let shortestDistance = Infinity
-
-    console.log(`🎯 ${attacker.name} à (${attackerPos.x}, ${attackerPos.y}) évalue les cibles:`)
-    console.log(`   📍 Positions disponibles:`, Object.keys(combatPositions).map(key => `${key}: (${combatPositions[key]?.x}, ${combatPositions[key]?.y})`).join(', '))
-    
     potentialTargets.forEach(target => {
       const distance = calculateDistance(attackerPos, target.position)
-      console.log(`   - ${target.name} (${target.type}) à (${target.position.x}, ${target.position.y}) - distance: ${distance}`)
       
       // Prioriser strictement la distance
       if (distance < shortestDistance) {
         shortestDistance = distance
         bestTarget = target
-        console.log(`     ✅ Nouvelle cible la plus proche: ${target.name} à distance ${distance}`)
       } else if (distance === shortestDistance && target.type === ENTITY_TYPES.PLAYER) {
         // En cas d'égalité exacte, préférer le joueur
         bestTarget = target
-        console.log(`     ↔️ Même distance ${distance}, priorité au joueur: ${target.name}`)
+
       }
     })
 
     if (bestTarget) {
       bestTarget.distance = shortestDistance
-      console.log(`🏹 ${attacker.name} choisit: ${bestTarget.name} (${bestTarget.type}) à distance ${shortestDistance}`)
     }
 
     return bestTarget

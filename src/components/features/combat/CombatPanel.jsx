@@ -69,7 +69,7 @@ export const CombatPanel = ({
     if (!isInitialized) {
       // Utiliser le premier compagnon actif pour compatibilité
       const primaryCompanion = activeCompanions.length > 0 ? activeCompanions[0] : playerCompanion
-      initializeCombat(encounterData, playerCharacter, primaryCompanion, activeCompanions)
+      initializeCombat(encounterData, playerCharacter, activeCompanions)
     }
   }, [encounterData, combatKey, isInitialized, playerCharacter, playerCompanion, activeCompanions, initializeCombat, startCombat, resetCombat, addCombatMessage, turnOrder])
 
@@ -87,29 +87,33 @@ export const CombatPanel = ({
   // Gestion automatique des transitions de phase selon le type de tour
   useEffect(() => {
     if (phase === 'turn' && currentTurn) {
-      console.log(`🎮 Phase 'turn' détectée pour ${currentTurn.name} (${currentTurn.type})`)
+      console.log('🎯 Phase transition - Current turn:', currentTurn)
       
       // Vérification de fin de combat AVANT de continuer
       const allEnemiesDead = enemies.every(e => e.currentHP <= 0)
       const playerDead = !playerCharacter || playerCharacter.currentHP <= 0
       
       if (allEnemiesDead) {
-        console.log(`🎉 Victoire détectée dans la transition de phase !`)
+        console.log('🏆 All enemies dead - Victory!')
         setPhase('victory')
         return
       } else if (playerDead) {
-        console.log(`💀 Défaite détectée dans la transition de phase !`)
+        console.log('💀 Player dead - Defeat!')
         setPhase('defeat')
         return
       }
       
       if (currentTurn.type === 'player') {
         // Tour du joueur : passer à player-turn pour afficher l'interface
-        console.log(`👤 Passage en phase player-turn pour ${currentTurn.name}`)
+        console.log('🎮 Player turn starting')
         setPhase('player-turn')
-      } else if (currentTurn.type === 'enemy' || currentTurn.type === 'companion') {
-        // Tour automatique : passer à executing-turn pour déclencher l'IA
-        console.log(`🤖 Passage en phase executing-turn pour ${currentTurn.name}`)
+      } else if (currentTurn.type === 'enemy') {
+        // Tour d'ennemi : passer à executing-turn pour déclencher l'IA
+        console.log('👹 Enemy turn starting:', currentTurn.name)
+        setPhase('executing-turn')
+      } else if (currentTurn.type === 'companion') {
+        // Tour de compagnon : passer à executing-turn pour déclencher l'IA
+        console.log('🤝 Companion turn starting:', currentTurn.name)
         setPhase('executing-turn')
       }
     }
@@ -290,6 +294,7 @@ export const CombatPanel = ({
         )
 
       case 'enemy-turn':
+        console.log('enemy')
       case 'companion-turn':
       case 'executing-turn':
         return (

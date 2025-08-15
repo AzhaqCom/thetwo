@@ -10,7 +10,8 @@ export const spells = {
         damage: { dice: "1d4", bonus: 1, type: "force" },
         projectiles: 3,
         requiresAttackRoll: false,
-        castableOutOfCombat: false // Ajouté pour la clarté
+        castableOutOfCombat: false,
+        class: ["Magicien"]
     },
     "Trait de Feu": {
         name: "Trait de Feu",
@@ -23,7 +24,8 @@ export const spells = {
         damage: { dice: "1d10", bonus: 0, type: "feu" },
         projectiles: 1,
         requiresAttackRoll: true,
-        castableOutOfCombat: false 
+        castableOutOfCombat: false,
+        class: ["Magicien"]
     },
     "Rayon de givre": {
         name: "Rayon de givre",
@@ -35,7 +37,8 @@ export const spells = {
         damage: { dice: "1d8", bonus: 0, type: "froid" },
         projectiles: 1,
         requiresAttackRoll: true,
-        castableOutOfCombat: false // Ajouté pour la clarté
+        castableOutOfCombat: false,
+        class: ["Magicien"]
     },
     "Rayon Ardent": {
         name: "Rayon Ardent",
@@ -47,7 +50,8 @@ export const spells = {
         damage: { dice: "2d6", bonus: 0, type: "feu" },
         projectiles: 3,
         requiresAttackRoll: true,
-        castableOutOfCombat: false // Ajouté pour la clarté
+        castableOutOfCombat: false,
+        class: ["Magicien"]
     },
 
     "Boule de Feu": {
@@ -62,7 +66,8 @@ export const spells = {
         savingThrow: { ability: "dexterite", dc: "spell" },
         requiresAttackRoll: false,
         castableOutOfCombat: false,
-        projectiles: 1
+        projectiles: 1,
+        class: ["Magicien"]
     },
     "Armure du Mage": {
         name: "Armure du Mage",
@@ -72,11 +77,12 @@ export const spells = {
         range: "Toucher",
         description: "Vous touchez une créature consentante et non-vêtue d'une armure. Sa Classe d'Armure devient 13 + son modificateur de Dextérité.",
         requiresAttackRoll: false,
-        castableOutOfCombat: true // <-- NOUVEAU : Ce sort peut être lancé hors combat
+        castableOutOfCombat: true,
+        class: ["Magicien"]
     },
 
     // === SORTS DE SOIN ET DE SUPPORT POUR COMPAGNONS ===
-    
+
     "Soins": {
         name: "Soins",
         level: 1,
@@ -87,7 +93,8 @@ export const spells = {
         healing: { dice: "1d8", bonus: "wisdom" },
         requiresAttackRoll: false,
         targetType: "ally",
-        castableOutOfCombat: true
+        castableOutOfCombat: true,
+        class: ["barde", "clerc", "druide", "paladin", "rodeur"]
     },
 
     "Bénédiction": {
@@ -98,21 +105,22 @@ export const spells = {
         range: "9 mètres",
         duration: "Concentration, jusqu'à 1 minute",
         description: "Vous bénissez jusqu'à trois créatures de votre choix à portée. Chaque fois qu'une cible effectue un jet d'attaque ou de sauvegarde avant la fin du sort, elle peut lancer 1d4 et ajouter le résultat au jet.",
-        buff: { 
-            attackBonus: "1d4", 
+        buff: {
+            attackBonus: "1d4",
             saveBonus: "1d4",
             duration: 600 // 10 rounds
         },
         targetType: "ally",
         maxTargets: 3,
         requiresAttackRoll: false,
-        castableOutOfCombat: true
+        castableOutOfCombat: true,
+        class: ["clerc", "paladin"]
     },
 
     "Sanctuaire": {
         name: "Sanctuaire",
         level: 1,
-        school: "Abjuration", 
+        school: "Abjuration",
         castingTime: "1 action bonus",
         range: "9 mètres",
         duration: "1 minute",
@@ -124,7 +132,8 @@ export const spells = {
         },
         targetType: "ally",
         requiresAttackRoll: false,
-        castableOutOfCombat: true
+        castableOutOfCombat: true,
+        class: ["clerc"]
     },
 
     "Aide": {
@@ -132,7 +141,7 @@ export const spells = {
         level: 2,
         school: "Abjuration",
         castingTime: "1 action",
-        range: "9 mètres", 
+        range: "9 mètres",
         duration: "8 heures",
         description: "Votre sort renforce vos alliés avec endurance et résolution. Choisissez jusqu'à trois créatures à portée. Le maximum de points de vie de chaque cible augmente de 5 pour la durée du sort.",
         buff: {
@@ -142,7 +151,9 @@ export const spells = {
         maxTargets: 3,
         targetType: "ally",
         requiresAttackRoll: false,
-        castableOutOfCombat: true
+        castableOutOfCombat: true,
+        class: ["clerc", "paladin"]
+
     },
 
     // === SORTS OFFENSIFS POUR COMPAGNON DPS ===
@@ -161,6 +172,7 @@ export const spells = {
         },
         targetType: "self",
         requiresAttackRoll: false,
-        castableOutOfCombat: false
+        castableOutOfCombat: false,
+        class: ["ensorceleur", "Magicien"]
     }
 };

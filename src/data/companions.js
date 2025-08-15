@@ -1,8 +1,9 @@
 import tyrionImage from '../assets/tyrion.png';
 import rhingannImage from '../assets/rhingann.png'
+import kaelImage from '../assets/kael.png'
 
 export const companions = {
-    "Tyrion": {
+    "tyrion": {
         name: "Tyrion",
         level: 1,
         race: "Humain",
@@ -42,30 +43,30 @@ export const companions = {
         inventory: [],
         aiPriority: ["protect", "taunt", "melee_attack"],
         spellcasting: null
-    }, 
-    "Rhingann": {
+    },
+    "rhingann": {
         name: "Rhingann",
         level: 1,
         race: "Naine",
         class: "Clerc",
-        historic: "", 
+        historic: "",
         role: "healer",
-        maxHP: 13, 
-        currentHP: 13, 
+        maxHP: 13,
+        currentHP: 13,
         ac: 14,
         initiative: 0,
         speed: "9m",
         proficiencyBonus: 2,
         hitDice: 1,
-        hitDiceType: 8, 
+        hitDiceType: 8,
         type: "companion",
         stats: {
-            force: 14,        
-            dexterite: 10,    
-            constitution: 14, 
-            intelligence: 10, 
-            sagesse: 18,     
-            charisme: 10      
+            force: 14,
+            dexterite: 10,
+            constitution: 14,
+            intelligence: 10,
+            sagesse: 18,
+            charisme: 10
         },
         movement: 6,
         image: rhingannImage,
@@ -84,7 +85,7 @@ export const companions = {
         aiPriority: ["heal", "buff", "ranged_support"],
         spellcasting: {
             class: "Clerc",
-            spellSlots: { 
+            spellSlots: {
                 "1": { total: 2, used: 0 }
             },
             knownSpells: ["Soins", "Bénédiction"],
@@ -92,6 +93,52 @@ export const companions = {
             slotsRemaining: {
                 "1": 2
             }
+        }
+    },
+    "kael": {
+        name: "Kael",
+        level: 1,
+        race: "Elfe des bois",
+        class: "Rôdeur",
+        historic: "Chasseur Solitaire",
+        role: "tank",
+        maxHP: 13,
+        currentHP: 13,
+        ac: 15,
+        initiative: 0,
+        speed: "9m",
+        proficiencyBonus: 2,
+        hitDice: 1,
+        hitDiceType: 10,
+        type: "companion",
+        stats: {
+            force: 12,
+            dexterite: 16,
+            constitution: 12,
+            intelligence: 10,
+            sagesse: 14,
+            charisme: 8
+        },
+        movement: 6,
+        image: kaelImage,
+        attacks: [
+            {
+                name: "Épée Courte",
+                type: "melee",
+                range: 1,
+                description: "Une attaque avec une épée courte.",
+                damageDice: "1d6",
+                damageType: "perforant",
+                stat: "dexterite"
+            }
+        ],
+        inventory: [],
+        aiPriority: ["ranged_attack", "support_skill"],
+        spellcasting: {
+            class: "Rôdeur",
+            spellSlots: null,
+            knownSpells: [],
+            preparedSpells: []
         }
     }
 

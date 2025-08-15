@@ -27,7 +27,7 @@ export const getAllData = () => ({
   weapons
 })
 
-// Data validation utilities
+// OBSOLÈTE: Validation basique non utilisée - remplacée par types/story pour le nouveau système narratif
 export const validateData = () => {
   const errors = []
   

@@ -26,22 +26,25 @@
   height: 100%;
 
 }
-.card{
+
+.card {
   user-select: none;
- 
+
 }
-.collapsible-section__title{
+
+.collapsible-section__title {
   cursor: pointer;
 }
+
 .combat-grid__container {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(6, 1fr);
   gap: 2px;
-  background-color: var(--color-border-primary);
-  padding: var(--spacing-xs);
+  background-color: var(--color-bg-primary);
+
   border-radius: var(--radius-md);
-  width: 98%;
+  width: 100%;
   aspect-ratio: 8/6;
   height: 94%;
   flex: 1;
@@ -49,6 +52,7 @@
 
 .combat-grid__legend {
   display: flex;
+  margin-top: 10px;
 }
 
 .combat-log-section {
@@ -60,12 +64,13 @@
 
 .combat-log {
   height: 100%;
+  margin: 3px;
   margin-bottom: 0;
   min-height: 210px;
   overflow: hidden;
   border: 1px solid var(--color-border-primary);
   padding: var(--spacing-sm);
-  background: var(--color-bg-primary);
+  background: linear-gradient(350deg, #19212d 10%, #15181d 100%);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-medium);
   display: flex;
@@ -74,13 +79,16 @@
 
 .combat-log__header {
   border-bottom: 1px solid var(--color-border-primary);
-  ;
+  
 }
-
+.combat-log__clear-button{
+  margin-left: 4px;
+}
 .combat-log__title-section,
 .combat-log__header {
   display: flex;
   gap: 3px;
+  align-items: center;
 }
 
 .combat-log__content,
@@ -112,7 +120,7 @@
 }
 
 .combat-grid__cell {
-  background-color: var(--color-bg-primary);
+  background-color: var(--color-bg-quarternary);
   border: 1px solid var(--color-border-secondary);
   display: flex;
   align-items: center;
@@ -127,9 +135,11 @@
   font-family: 'Cinzel', serif;
   user-select: none;
 }
-.combat-grid__combatant-name{
+
+.combat-grid__combatant-name {
   line-height: 15px;
 }
+
 .combat-grid__coordinates {
   display: none;
 }
@@ -140,8 +150,12 @@
 }
 
 .combat-grid__cell--occupied {
-  background-color: white;
+  background-color: #f3f4f6;
 
+}
+
+.combat-grid__cell.combat-grid__cell--occupied:hover {
+  background-color: #f3f4f6;
 }
 
 .combat-grid__combatant {
@@ -167,7 +181,7 @@
 }
 
 .combat-grid__cell:hover {
-  background-color: var(--color-text-muted);
+  background-color: var(--color-bg-secondary);
   border-color: var(--color-border-accent);
 }
 
@@ -207,7 +221,7 @@
 }
 
 /* === CARTES DE PERSONNAGES AMÉLIORÉES === */
-.combat-grid__combatant-ac{
+.combat-grid__combatant-ac {
   position: absolute;
   top: 0px;
   right: 2px;
@@ -216,6 +230,7 @@
   color: var(--color-health-low);
   padding: 2px;
 }
+
 .combat-grid__health-bar {
   height: 5px;
   width: 100%;
@@ -238,21 +253,21 @@
 }
 
 .player-card {
-  background: white;
+  background: #f3f4f6;
   border-color: var(--color-combat-player);
   color: var(--color-text-primary);
   font-weight: bold;
 }
 
 .companion-card {
-  background: white;
+  background: #f3f4f6;
   border-color: var(--color-combat-companion);
   color: var(--color-text-primary);
   font-weight: bold;
 }
 
 .enemy-card {
-  background: white;
+  background: #f3f4f6;
   border-color: var(--color-combat-enemy);
   color: var(--color-text-primary);
   font-weight: bold;
@@ -485,12 +500,16 @@
   box-shadow: var(--shadow-medium);
   /* min-height: 200px; */
 }
+
 .combat-controls .card__body {
   display: flex;
   flex-wrap: wrap;
-}.action-button__content{
+}
+
+.action-button__content {
   display: flex;
 }
+
 /* === CONTENEUR DU LOG DE COMBAT === */
 .combat-log-container {
   flex: 1;
@@ -511,26 +530,6 @@
   font-size: 1.2em;
 }
 
-/* .combat-controls button {
-  margin: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: 14px;
-  background: linear-gradient(135deg, var(--color-info), rgba(49, 57, 65, 0.8));
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: var(--transition-normal);
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.combat-controls button:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-medium);
-  background: linear-gradient(135deg, rgba(49, 57, 65, 0.8), var(--color-info));
-} */
 
 .combat-controls p {
   margin: var(--spacing-sm) 0;
@@ -575,9 +574,8 @@
 }
 
 .action-button:hover {
-  background: var(--color-bg-quaternary);
-  border-color: var(--color-border-accent);
-  transform: translateX(5px);
+
+  transform: translateX(2px);
 }
 
 .action-button.spell-action {

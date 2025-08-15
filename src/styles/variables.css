@@ -2,10 +2,10 @@
   /* === PALETTE DE COULEURS PRINCIPALE === */
   
   /* Couleurs de base sombres */
-  --color-bg-primary: #1a1a1a;      /* Fond principal très sombre */
-  --color-bg-secondary: #2a2a2a;    /* Fond secondaire (panneaux) */
-  --color-bg-tertiary: #333333;     /* Fond tertiaire (cartes, éléments) */
-  --color-bg-quaternary: #404040;   /* Fond quaternaire (hover states) */
+  --color-bg-primary: #19212d;      /* Fond principal très sombre */
+  --color-bg-secondary: #202e42;    /* Fond secondaire (panneaux) */
+  --color-bg-tertiary: #1f2937;     /* Fond tertiaire (cartes, éléments) */
+  --color-bg-quaternary: #15181d;   /* Fond quaternaire (hover states) */
   
   /* Couleurs de bordure */
   --color-border-primary: #444444;   /* Bordures principales */

@@ -47,7 +47,7 @@ export const CombatTurnManager = ({
     const currentPos = gameState.combatPositions[positionKey]
     
     if (!currentPos) {
-      console.warn(`⚠️ Position manquante pour ${entity.name} (clé: ${positionKey})`)
+   
       return { moved: false, newPosition: currentPos }
     }
 
@@ -55,7 +55,7 @@ export const CombatTurnManager = ({
     const optimalPosition = CombatEngine.calculateOptimalMovement(entity, currentPos, gameState)
     
     if (!optimalPosition) {
-      console.log(`🚫 ${entity.name} ne bouge pas - déjà bien placé`)
+     
       return { moved: false, newPosition: currentPos }
     }
 
@@ -75,10 +75,10 @@ export const CombatTurnManager = ({
       const distance = Math.abs(optimalPosition.x - currentPos.x) + Math.abs(optimalPosition.y - currentPos.y)
       addCombatMessage(`${entity.name} se déplace de ${distance} case(s).`)
       
-      console.log(`✅ ${entity.name} bouge vers (${optimalPosition.x}, ${optimalPosition.y})`)
+   
       return { moved: true, newPosition: optimalPosition }
     } else {
-      console.warn(`❌ Mouvement échoué pour ${entity.name}`)
+    
       return { moved: false, newPosition: currentPos }
     }
   }, [combatService, updateEnemyPosition, addCombatMessage])
@@ -97,12 +97,11 @@ export const CombatTurnManager = ({
     const target = CombatEngine.findBestTarget(entity, currentPos, {
       ...gameState,
       playerCharacter,
-      companionCharacter: playerCompanion, // Compatibilité
-      activeCompanions: activeCompanions    // Nouveau système
+      activeCompanions: activeCompanions
     })
 
     if (!target) {
-      console.log(`🎯 ${entity.name}: Aucune cible trouvée`)
+
       addCombatMessage(`${entity.name} ne trouve aucune cible.`)
     }
 
@@ -116,11 +115,7 @@ export const CombatTurnManager = ({
     if (target.type === 'player') {
       takeDamagePlayer(damage)
     } else if (target.type === 'companion') {
-      console.log(target)
-      console.log(target.name)
-
       takeDamageCompanionById(target.character.id, damage)
-       console.log(target)
     } else if (target.type === 'enemy') {
       dealDamageToEnemy(target.name, damage)
       
@@ -191,7 +186,6 @@ export const CombatTurnManager = ({
     })
 
     if (viableAttacks.length === 0) {
-      console.log(`🤷 ${attacker.name} est trop loin pour attaquer (distance: ${distance})`)
       addCombatMessage(`${attacker.name} est trop loin pour attaquer.`)
       return false
     }
@@ -217,12 +211,9 @@ export const CombatTurnManager = ({
     const selectedSet = selectAttackSet(attacker.attackSets, distance)
     
     if (!selectedSet) {
-      console.log(`🤷 ${attacker.name} n'a pas d'attaque viable à distance ${distance}`)
       addCombatMessage(`${attacker.name} ne peut pas attaquer à cette distance.`)
       return false
     }
-
-    console.log(`⚔️ ${attacker.name} utilise: ${selectedSet.name}`)
     addCombatMessage(`${attacker.name} lance ${selectedSet.name}.`)
 
     let overallSuccess = false
@@ -232,7 +223,6 @@ export const CombatTurnManager = ({
     for (const attack of selectedSet.attacks) {
       // Vérifier si la cible est encore vivante avant chaque attaque
       if (target.character.currentHP <= 0) {
-        console.log(`💀 ${target.name} est mort, arrêt des attaques restantes`)
         break
       }
 
@@ -259,13 +249,11 @@ export const CombatTurnManager = ({
    */
   const executeAttack = useCallback((attacker, target, gameState) => {
     if (!target || !target.character) {
-      console.warn(`⚠️ Cible invalide pour ${attacker.name}`)
       return false
     }
 
     // Vérifier que la cible est toujours vivante
     if (target.character.currentHP <= 0) {
-      console.log(`💀 ${target.name} est déjà mort, ${attacker.name} passe son tour`)
       addCombatMessage(`${attacker.name} réalise que ${target.name} est déjà tombé au combat.`)
       return false
     }
@@ -288,26 +276,23 @@ export const CombatTurnManager = ({
    * Logique complète pour un tour d'ennemi
    */
   const handleEnemyTurn = useCallback((enemy) => {
-    console.log(`👹 === Tour de ${enemy.name} ===`)
     
     // Vérifier que l'ennemi est vivant AU DÉBUT du tour
     const enemyCharacter = enemies.find(e => e.name === enemy.name)
     if (!enemyCharacter || enemyCharacter.currentHP <= 0) {
-      console.log(`💀 ${enemy.name} est mort, tour passé`)
       setTimeout(() => {
         setIsExecuting(false)
         onNextTurn()
       }, 200)
       return
     }
-
+    console.log('enemyturn')
     // État du jeu actuel
     const activeCompanions = getActiveCompanions()
     const gameState = {
       combatPositions: useCombatStore.getState().combatPositions,
       combatEnemies: enemies,
       playerCharacter,
-      companionCharacter: playerCompanion,
       activeCompanions: activeCompanions
     }
 
@@ -317,7 +302,6 @@ export const CombatTurnManager = ({
     // VÉRIFICATION après mouvement : est-il toujours vivant ?
     const enemyAfterMovement = enemies.find(e => e.name === enemy.name)
     if (!enemyAfterMovement || enemyAfterMovement.currentHP <= 0) {
-      console.log(`💀 ${enemy.name} est mort pendant le mouvement, tour annulé`)
       setTimeout(() => {
         setIsExecuting(false)
         onNextTurn()
@@ -349,19 +333,12 @@ export const CombatTurnManager = ({
       // VÉRIFICATION FINALE : ennemi toujours vivant avant attaque ?
       const enemyBeforeAttack = enemies.find(e => e.name === enemy.name)
       if (!enemyBeforeAttack || enemyBeforeAttack.currentHP <= 0) {
-        console.log(`💀 ${enemy.name} est mort avant l'attaque, tour annulé`)
         setIsExecuting(false)
         onNextTurn()
         return
       }
 
       const attackSuccess = executeAttack(enemyBeforeAttack, target, updatedGameState)
-      
-      if (attackSuccess) {
-        console.log(`✅ ${enemy.name} a terminé son attaque`)
-      } else {
-        console.log(`❌ ${enemy.name} n'a pas pu attaquer`)
-      }
 
       // Fin de tour avec délai réduit
       setTimeout(() => {
@@ -377,14 +354,16 @@ export const CombatTurnManager = ({
    * Logique identique aux ennemis mais ciblant les ennemis
    */
   const handleCompanionTurn = useCallback((companionTurn) => {
-    console.log(`🤝 ${companionTurn.name} agit`)
+    console.log('🤝 handleCompanionTurn called with:', companionTurn)
     const activeCompanions = getActiveCompanions()
+    console.log('🤝 Active companions available:', activeCompanions)
     
     // Récupérer le bon personnage compagnon depuis le turn order
     const actualCompanion = companionTurn.character || playerCompanion
+    console.log('🤝 Actual companion to use:', actualCompanion)
     
     if (!actualCompanion || actualCompanion.currentHP <= 0) {
-      console.log(`💀 TURN: ${companionTurn.name} est mort, tour passé`)
+      console.log('🤝 Companion cannot act - injured or missing')
       addCombatMessage(`${companionTurn.name} est trop blessé pour agir.`)
       setTimeout(() => {
         setIsExecuting(false)
@@ -400,7 +379,7 @@ export const CombatTurnManager = ({
       combatPositions: useCombatStore.getState().combatPositions,
       combatEnemies: enemies.filter(e => e.currentHP > 0), // Ennemis vivants uniquement
       playerCharacter: null, // Le compagnon ne cible pas le joueur
-      companionCharacter: null // Le compagnon ne se cible pas
+      activeCompanions: [] // Le compagnon ne se cible pas
     }
 
     // Adapter l'entité compagnon pour utiliser la même logique que les ennemis
@@ -444,12 +423,6 @@ export const CombatTurnManager = ({
 
       // 3. ATTAQUE
       const attackSuccess = executeAttack(companionAsEntity, target, updatedGameState)
-      
-      if (attackSuccess) {
-        console.log(`✅ ${companionTurn.name} a attaqué avec succès`)
-      } else {
-        console.log(`❌ ${companionTurn.name} n'a pas pu attaquer`)
-      }
 
       // Fin de tour
       setTimeout(() => {
@@ -469,19 +442,23 @@ export const CombatTurnManager = ({
    * Détermine quel type de tour exécuter
    */
   useEffect(() => {
+    console.log('🔄 TurnManager useEffect - phase:', phase, 'currentTurn:', currentTurn, 'isExecuting:', isExecuting)
+    
     if (phase !== 'executing-turn' || !currentTurn || isExecuting) return
 
     // Éviter les re-exécutions du même tour exact
     // Utiliser le turnCounter et currentTurnIndex pour créer un identifiant unique de tour
     const { turnCounter, currentTurnIndex } = useCombatStore.getState()
     const currentTurnKey = `${currentTurn.name}-${currentTurn.type}-${turnCounter}-${currentTurnIndex}`
+    console.log('🔑 Turn key:', currentTurnKey, 'last executed:', lastExecutedTurn)
+    
     if (lastExecutedTurn === currentTurnKey) {
       // Protection silencieuse - normal en mode dev React
-      console.log(`🔄 Tour déjà exécuté: ${currentTurnKey}`)
+      console.log('⏭️ Skipping already executed turn')
       return
     }
 
-    console.log(`🎮 Exécution du tour: ${currentTurn.name} (${currentTurn.type}) - Round: ${turnCounter}, Index: ${currentTurnIndex}`)
+
     setIsExecuting(true)
     setLastExecutedTurn(currentTurnKey)
 
@@ -490,12 +467,10 @@ export const CombatTurnManager = ({
     const playerDead = !playerCharacter || playerCharacter.currentHP <= 0
     
     if (allEnemiesDead) {
-      console.log(`🎉 Victoire ! Tous les ennemis sont morts`)
       setIsExecuting(false)
       onPhaseChange('victory')
       return
     } else if (playerDead) {
-      console.log(`💀 Défaite ! Le joueur est mort`)
       setIsExecuting(false)
       onPhaseChange('defeat')
       return
@@ -504,18 +479,31 @@ export const CombatTurnManager = ({
     // VÉRIFICATION PRIORITAIRE: Skip les entités mortes
     const isEntityDead = () => {
       if (currentTurn.type === 'player') {
-        return !playerCharacter || playerCharacter.currentHP <= 0
+        const isDead = !playerCharacter || playerCharacter.currentHP <= 0
+        console.log('🎮 Player death check:', isDead, 'HP:', playerCharacter?.currentHP)
+        return isDead
       } else if (currentTurn.type === 'companion') {
-        return !playerCompanion || playerCompanion.currentHP <= 0
+        // Nouveau système : vérifier dans activeCompanions
+        const activeCompanions = getActiveCompanions()
+        const companion = activeCompanions.find(c => 
+          (c.id && c.id === currentTurn.id) || 
+          (c.name && c.name === currentTurn.name)
+        )
+        
+        const isDead = !companion || companion.currentHP <= 0
+        console.log('🤝 Companion death check:', currentTurn.name, 'isDead:', isDead, 'companion:', companion, 'HP:', companion?.currentHP)
+        return isDead
       } else if (currentTurn.type === 'enemy') {
         const enemy = enemies.find(e => e.name === currentTurn.name)
-        return !enemy || enemy.currentHP <= 0
+        const isDead = !enemy || enemy.currentHP <= 0
+        console.log('👹 Enemy death check:', currentTurn.name, 'isDead:', isDead, 'HP:', enemy?.currentHP)
+        return isDead
       }
       return false
     }
 
     if (isEntityDead()) {
-      console.log(`💀 ${currentTurn.name} est mort, tour passé automatiquement`)
+      console.log('💀 Entity is dead, skipping turn:', currentTurn.name)
       setIsExecuting(false)
       
       // Vérifier les conditions de fin de combat avant de passer au tour suivant
@@ -523,11 +511,9 @@ export const CombatTurnManager = ({
       const playerDead = !playerCharacter || playerCharacter.currentHP <= 0
       
       if (allEnemiesDead) {
-        console.log(`🎉 Tous les ennemis sont morts - Victoire !`)
         onPhaseChange('victory')
         return
       } else if (playerDead) {
-        console.log(`💀 Le joueur est mort - Défaite !`)
         onPhaseChange('defeat')
         return
       }
@@ -555,6 +541,7 @@ export const CombatTurnManager = ({
         break
         
       case 'companion':
+        console.log('🤝 Starting companion turn execution:', currentTurn.name)
         executeWithCleanup(() => {
           handleCompanionTurn(currentTurn)
           setTimeout(() => setIsExecuting(false), 800) // Safety timeout
@@ -564,19 +551,16 @@ export const CombatTurnManager = ({
       case 'player':
         // Vérifier si le joueur peut encore agir
         if (playerCharacter && playerCharacter.currentHP > 0) {
-          console.log(`👤 Tour du joueur: ${currentTurn.name}`)
           setIsExecuting(false)
           
           // Vérifier la victoire après le tour du joueur (case où il vient de tuer le dernier ennemi)
           setTimeout(() => {
             const allEnemiesDead = enemies.every(e => e.currentHP <= 0)
             if (allEnemiesDead) {
-              console.log(`🎉 Victoire détectée après le tour du joueur !`)
               onPhaseChange('victory')
             }
           }, 100) // Court délai pour que les dégâts soient appliqués
         } else {
-          console.log(`💀 Joueur mort, fin de combat`)
           setIsExecuting(false)
           onPhaseChange('defeat')
         }

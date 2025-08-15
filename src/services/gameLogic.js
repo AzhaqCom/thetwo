@@ -214,7 +214,7 @@ export class GameLogic {
   }
 
   /**
-   * Processes end of combat rewards
+   * OBSOLÈTE: Processes end of combat rewards - remplacé par la logique directe dans les stores
    * @param {Array} defeatedEnemies - Enemies that were defeated
    * @param {Object} character - Player character
    * @param {Object} companion - Companion character (optional)

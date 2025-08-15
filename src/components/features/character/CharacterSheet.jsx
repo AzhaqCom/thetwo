@@ -90,6 +90,7 @@ export const CharacterSheet = ({
       <CardHeader>
         <div className="character-sheet__header">
           <h3 className="character-sheet__name">{character.name}</h3>
+           <h5 className="character-sheet__name">{character.familyName}</h5>
           {!compact && (
             <XPBar
               currentXP={Math.max(0, (character.currentXP || character.experience || 0) - CharacterManager.getXPForLevel(character.level))}

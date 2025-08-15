@@ -124,8 +124,6 @@ export const InventoryPanel = ({
       if (result.success) {
         // Afficher le message retourné par le système d'objet
         addCombatMessage(result.message, 'item')
-        console.log(item.name, result.message)
-
         // Utiliser la fonction legacy si elle existe pour compatibilité
         if (onUseItem) {
           onUseItem(item.id || item.nom || item.name)

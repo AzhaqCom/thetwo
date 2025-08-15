@@ -65,7 +65,7 @@ export const initializeStores = () => {
   window.addEventListener('resize', handleResize)
 
   isInitialized = true
-  console.log('Stores initialized successfully')
+
 }
 
 // Store reset helpers
@@ -75,7 +75,7 @@ export const resetAllStores = () => {
   useCombatStore.getState().resetCombat()
   useUIStore.getState().resetUI()
   
-  console.log('All stores reset')
+
 }
 
 // Development helpers
@@ -86,11 +86,9 @@ export const getStoreStates = () => ({
   ui: useUIStore.getState()
 })
 
+// OBSOLÈTE: Fonction de debug peu utilisée - utilisée uniquement en développement
 export const logStoreStates = () => {
   console.group('Store States')
-  console.log('Game:', useGameStore.getState())
-  console.log('Character:', useCharacterStore.getState()) 
-  console.log('Combat:', useCombatStore.getState())
-  console.log('UI:', useUIStore.getState())
+
   console.groupEnd()
 }

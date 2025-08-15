@@ -365,8 +365,15 @@ export class SpellService {
    * Vérifie si un sort est disponible pour une classe donnée
    */
   isSpellAvailableForClass(spell, character) {
-    // Logique basique - dans un vrai jeu, cela dépendrait des listes de sorts par classe
-    // Pour l'instant, on considère que tous les sorts sont disponibles selon le niveau du personnage
+    // Vérifier si le sort a une liste de classes définies
+    if (!spell.class || !Array.isArray(spell.class)) {
+      return false
+    }
+    
+    // Vérifier si la classe du personnage est dans la liste des classes autorisées
+    if (!spell.class.includes(character.class)) {
+      return false
+    }
     
     // Les cantrips sont disponibles dès le niveau 1
     if (spell.level === 0) return character.level >= 1
@@ -394,17 +401,13 @@ export class SpellService {
   
     
     if (!character.activeEffects) {
-      // console.log('❌ isSpellActive: No activeEffects on character')
+
       return false
     }
-    
     // Vérifier dans les effets actifs
     const isActive = character.activeEffects.some(effect => {
-      // console.log(`🔍 isSpellActive: Checking effect - sourceSpellId: "${effect.sourceSpellId}", name: "${effect.name}"`)
       return effect.sourceSpellId === spellId || effect.name === spellId
     })
-    
-    // console.log(`🔍 isSpellActive: Result for "${spellId}": ${isActive}`)
     return isActive
   }
 
