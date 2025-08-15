@@ -316,8 +316,13 @@ export class CompanionAI {
             break
             
           case 'area_damage':
-            // Sorts de zone
-            const groupedEnemies = CompanionAI.findGroupedEnemies(aliveEnemies, 2)
+            // Sorts de zone - enrichir les ennemis avec leurs positions
+            const enemiesWithPositions = aliveEnemies.map(enemy => ({
+              ...enemy,
+              position: gameState.combatPositions?.[enemy.name] || { x: 0, y: 0 }
+            }))
+            
+            const groupedEnemies = CompanionAI.findGroupedEnemies(enemiesWithPositions, 2)
             if (groupedEnemies.length >= 2) {
               const aoeSpells = CompanionAI.getAvailableSpells(companion)
               if (aoeSpells.includes('Boule de Feu')) {
@@ -504,9 +509,38 @@ export class CompanionAI {
    * Trouve les ennemis groupés dans un rayon donné
    */
   static findGroupedEnemies(enemies, radius = 2) {
-    // Logique simplifiée : retourne tous les ennemis pour l'instant
-    // À améliorer avec calcul de distance réel
-    return enemies.length >= 2 ? enemies : []
+    if (!enemies || enemies.length < 2) return []
+    
+    const groups = []
+    const processed = new Set()
+    
+    enemies.forEach((enemy, index) => {
+      if (processed.has(index) || !enemy.position) return
+      
+      const group = [enemy]
+      processed.add(index)
+      
+      // Chercher les ennemis proches
+      enemies.forEach((otherEnemy, otherIndex) => {
+        if (otherIndex === index || processed.has(otherIndex) || !otherEnemy.position) return
+        
+        const distance = calculateDistance(enemy.position, otherEnemy.position)
+        if (distance <= radius) {
+          group.push(otherEnemy)
+          processed.add(otherIndex)
+        }
+      })
+      
+      // Ajouter le groupe s'il contient au moins 2 ennemis
+      if (group.length >= 2) {
+        groups.push(group)
+      }
+    })
+    
+    // Retourner le plus grand groupe trouvé
+    return groups.length > 0 ? groups.reduce((largest, current) => 
+      current.length > largest.length ? current : largest
+    ) : []
   }
 
   /**

@@ -64,10 +64,32 @@ export const spells = {
         damage: { dice: "8d6", bonus: 0, type: "feu" },
         areaOfEffect: { shape: "sphere", radius: 20 }, // 20 feet = 4 squares radius
         savingThrow: { ability: "dexterite", dc: "spell" },
+        isAreaEffect: true,
+        saveType: "dexterite",
+        saveDC: null, // Calculé automatiquement
         requiresAttackRoll: false,
         castableOutOfCombat: false,
         projectiles: 1,
         class: ["Magicien"]
+    },
+    "Toile d'araignée": {
+        name: "Toile d'araignée",
+        level: 2,
+        school: "Invocation",
+        castingTime: "1 action",
+        range: "18 mètres",
+        description: "Vous invoquez une masse de toiles d'araignée épaisses et collantes à un point de votre choix situé à portée. Les toiles remplissent un cube de 6 mètres d'arête à partir de ce point. Les créatures dans la zone sont entravées.",
+        damage: null,
+        areaOfEffect: { shape: "cube", size: 20 }, // 20 feet cube
+        savingThrow: { ability: "dexterite", dc: "spell" },
+        isAreaEffect: true,
+        saveType: "dexterite",
+        saveDC: null,
+        effect: "restrained",
+        duration: "1 heure",
+        requiresAttackRoll: false,
+        castableOutOfCombat: true,
+        class: ["Magicien", "Sorcier"]
     },
     "Armure du Mage": {
         name: "Armure du Mage",

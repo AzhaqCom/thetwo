@@ -4,6 +4,7 @@ import { CombatEngine } from '../services/combatEngine'
 import { CombatService } from '../services/CombatService'
 import { CharacterManager } from '../services/characterManager'
 import { GameLogic } from '../services/gameLogic'
+import { CombatEffects } from '../services/combatEffects'
 import { rollD20WithModifier, getModifier, calculateDistance } from '../utils/calculations'
 import { isValidGridPosition, isPositionOccupied } from '../utils/validation'
 import { GRID_WIDTH, GRID_HEIGHT, COMBAT_PHASES } from '../utils/constants'
@@ -282,8 +283,19 @@ export const useCombatStore = create(
           break
         }
 
-        // Sauvegarder la position de début de tour pour le joueur
+        // Traiter les effets de début de tour pour le nouveau combattant
         const newCombatant = state.turnOrder[nextIndex]
+        let effectMessages = []
+        
+        if (newCombatant?.type === 'enemy') {
+          const enemy = state.combatEnemies.find(e => e.name === newCombatant.name)
+          if (enemy) {
+            effectMessages = CombatEffects.processStartOfTurnEffects(enemy)
+          }
+        }
+        // TODO: Gérer les effets pour joueur et compagnons
+
+        // Sauvegarder la position de début de tour pour le joueur
         const newPositions = { ...state.combatPositions }
         
         if (newCombatant?.type === 'player') {
@@ -295,6 +307,11 @@ export const useCombatStore = create(
           if (companionPos) {
             newPositions[`${companionId}StartPos`] = { ...companionPos }
           }
+        }
+
+        // Log des messages d'effets pour debug
+        if (effectMessages.length > 0) {
+          console.log('Effets de début de tour:', effectMessages)
         }
 
         return {
@@ -549,7 +566,15 @@ export const useCombatStore = create(
         const enemyPosition = combatPositions[enemyName]
         if (!enemyPosition) return
 
-        // 1. Calculer le mouvement optimal avec les compagnons actifs
+        // 1. Vérifier les effets qui limitent les actions
+        const effectModifiers = CombatEffects.calculateEffectModifiers(enemy)
+        
+        if (effectModifiers.incapacitated) {
+          console.log(`${enemyName} est incapacité par des effets et ne peut pas agir`)
+          return
+        }
+
+        // 2. Calculer le mouvement optimal (si autorisé)
         const combatState = {
           playerCharacter,
           activeCompanions,
@@ -557,19 +582,29 @@ export const useCombatStore = create(
           combatPositions
         }
 
-        const optimalPosition = CombatEngine.calculateOptimalMovement(
-          { ...enemy, type: 'enemy' },
-          enemyPosition,
-          combatState
-        )
+        let finalPosition = enemyPosition
+        
+        if (effectModifiers.canMove && !CombatEffects.hasEffect(enemy, 'restrained')) {
+          const optimalPosition = CombatEngine.calculateOptimalMovement(
+            { ...enemy, type: 'enemy' },
+            enemyPosition,
+            combatState
+          )
 
-        if (optimalPosition) {
-         
-          get().moveCharacter(enemyName, optimalPosition)
+          if (optimalPosition) {
+            get().moveCharacter(enemyName, optimalPosition)
+            finalPosition = optimalPosition
+          }
+        } else {
+          console.log(`${enemyName} ne peut pas bouger à cause d'effets (${enemy.activeEffects?.map(e => e.name).join(', ') || 'aucun effet visible'})`)
         }
 
-        // 2. Calculer et exécuter la meilleure attaque
-        const finalPosition = optimalPosition || enemyPosition
+        // 3. Calculer et exécuter la meilleure attaque (si autorisé)
+        if (!effectModifiers.canAct) {
+          console.log(`${enemyName} ne peut pas attaquer à cause d'effets`)
+          return
+        }
+
         const enemyAttack = enemy.attacks?.[0] || {
           name: "Attaque de base",
           type: "melee",
@@ -595,13 +630,17 @@ export const useCombatStore = create(
             target = targets[0] // Prendre le premier disponible (compagnon)
           }
           
-    
+          // 4. Exécuter l'attaque avec modificateurs d'effets
+          let damageResult = CombatEngine.calculateDamage(enemyAttack)
           
-          // 3. Exécuter l'attaque simplifiée
-          const damageResult = CombatEngine.calculateDamage(enemyAttack)
+          // Appliquer les modificateurs d'attaque (désavantage, etc.)
+          if (effectModifiers.attackDisadvantage) {
+            console.log(`${enemyName} attaque avec désavantage à cause d'effets`)
+            // Simuler le désavantage en réduisant les dégâts
+            damageResult.damage = Math.floor(damageResult.damage * 0.75)
+          }
 
-          
-          // 4. Appliquer les dégâts selon le type de cible
+          // 5. Appliquer les dégâts selon le type de cible
           const targetPos = combatPositions.player
           
           if (targetPos && target.position.x === targetPos.x && target.position.y === targetPos.y) {
@@ -619,7 +658,7 @@ export const useCombatStore = create(
             }
           }
         } else {
-         
+          console.log(`${enemyName} n'a aucune cible à portée`)
         }
       },
 

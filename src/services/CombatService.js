@@ -2,6 +2,7 @@ import { enemyTemplates } from '../data/enemies'
 import { getModifier } from '../utils/calculations'
 import { CombatEngine } from './combatEngine'
 import { CompanionAI } from './companionAI'
+import { CombatEffects } from './combatEffects'
 
 /**
  * Service gérant toute la logique métier du combat
@@ -260,56 +261,121 @@ export class CombatService {
    * Exécute un sort
    */
   executeSpell(caster, spell, targets, results) {
-    results.messages.push({
-      text: `🔮 ${caster.name} lance ${spell.name}`,
-      type: 'spell'
-    })
-    
-    // Traiter chaque cible
-    targets.forEach(target => {
-      if (spell.requiresAttackRoll) {
-        // Sorts nécessitant un jet d'attaque (comme Rayon de givre)
-        const attackRoll = this.rollD20()
-        const spellAttackBonus = this.getSpellAttackBonus(caster)
-        const totalAttack = attackRoll + spellAttackBonus
+    // Gestion spéciale pour les sorts de zone
+    if (spell.isAreaEffect && targets.length > 1) {
+      results.messages.push({
+        text: `🔮💥 ${caster.name} lance ${spell.name} (zone d'effet sur ${targets.length} cibles)`,
+        type: 'spell'
+      })
+      
+      // Pour les sorts de zone, calculer les dégâts une fois et les appliquer à tous
+      let baseDamage = 0
+      if (spell.damage) {
+        baseDamage = this.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
+      }
+      
+      targets.forEach(target => {
+        let finalDamage = baseDamage
         
-        const criticalHit = attackRoll === 20
-        const hit = totalAttack >= target.ac || criticalHit
+        // Jets de sauvegarde pour AoE (si applicable)
+        if (spell.saveType) {
+          const saveRoll = this.rollD20()
+          const saveBonus = this.getSaveBonus(target, spell.saveType)
+          const saveDC = spell.saveDC || (8 + this.getSpellAttackBonus(caster))
+          
+          if (saveRoll + saveBonus >= saveDC) {
+            finalDamage = Math.floor(finalDamage / 2) // Demi-dégâts en cas de réussite
+            results.messages.push({
+              text: `🛡️ ${target.name} résiste partiellement (${finalDamage} dégâts)`,
+              type: 'save-success'
+            })
+          } else {
+            results.messages.push({
+              text: `💥 ${target.name} subit les pleins effets (${finalDamage} dégâts)`,
+              type: 'save-fail'
+            })
+            
+            // Appliquer les effets supplémentaires si échec de sauvegarde
+            if (spell.effect) {
+              const effect = CombatEffects.applyEffect(target, spell.effect, 3, caster.name)
+              results.effects.push({
+                type: spell.effect,
+                targetId: target.id || target.name,
+                source: caster.name,
+                duration: 3,
+                effectId: effect?.id
+              })
+            }
+          }
+        } else if (spell.effect) {
+          // Effet automatique sans sauvegarde
+          const effect = CombatEffects.applyEffect(target, spell.effect, 3, caster.name)
+          results.effects.push({
+            type: spell.effect,
+            targetId: target.id || target.name,
+            source: caster.name,
+            duration: 3,
+            effectId: effect?.id
+          })
+        }
         
-        if (hit) {
+        if (finalDamage > 0) {
+          results.damage.push({ targetId: target.id || target.name, damage: finalDamage })
+        }
+      })
+    } else {
+      // Gestion normale pour sorts à cible unique ou multiple sans AoE
+      results.messages.push({
+        text: `🔮 ${caster.name} lance ${spell.name}`,
+        type: 'spell'
+      })
+      
+      // Traiter chaque cible individuellement
+      targets.forEach(target => {
+        if (spell.requiresAttackRoll) {
+          // Sorts nécessitant un jet d'attaque (comme Rayon de givre)
+          const attackRoll = this.rollD20()
+          const spellAttackBonus = this.getSpellAttackBonus(caster)
+          const totalAttack = attackRoll + spellAttackBonus
+          
+          const criticalHit = attackRoll === 20
+          const hit = totalAttack >= target.ac || criticalHit
+          
+          if (hit) {
+            let damage = 0
+            if (spell.damage) {
+              damage = this.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
+              if (criticalHit) damage *= 2
+            }
+            
+            results.messages.push({
+              text: `⚔️ ${spell.name} touche ${target.name} et inflige ${damage} dégâts`,
+              type: criticalHit ? 'critical' : 'hit'
+            })
+            
+            results.damage.push({ targetId: target.id || target.name, damage })
+          } else {
+            results.messages.push({
+              text: `❌ ${spell.name} manque ${target.name} (${totalAttack} vs CA ${target.ac})`,
+              type: 'miss'
+            })
+          }
+        } else {
+          // Sorts à touche automatique (comme Projectile Magique)
           let damage = 0
           if (spell.damage) {
             damage = this.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
-            if (criticalHit) damage *= 2
           }
           
           results.messages.push({
-            text: `⚔️ ${spell.name} touche ${target.name} et inflige ${damage} dégâts`,
-            type: criticalHit ? 'critical' : 'hit'
+            text: `💥 ${spell.name} touche automatiquement ${target.name} et inflige ${damage} dégâts`,
+            type: 'spell-hit'
           })
           
           results.damage.push({ targetId: target.id || target.name, damage })
-        } else {
-          results.messages.push({
-            text: `❌ ${spell.name} manque ${target.name} (${totalAttack} vs CA ${target.ac})`,
-            type: 'miss'
-          })
         }
-      } else {
-        // Sorts à touche automatique (comme Projectile Magique)
-        let damage = 0
-        if (spell.damage) {
-          damage = this.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
-        }
-        
-        results.messages.push({
-          text: `💥 ${spell.name} touche automatiquement ${target.name} et inflige ${damage} dégâts`,
-          type: 'spell-hit'
-        })
-        
-        results.damage.push({ targetId: target.id || target.name, damage })
-      }
-    })
+      })
+    }
     
     return results
   }
@@ -366,6 +432,21 @@ export class CombatService {
     const abilityMod = getModifier(abilityScore || 10)
     
     return abilityMod + proficiencyBonus
+  }
+
+  /**
+   * Calcule le bonus de sauvegarde d'une créature
+   */
+  getSaveBonus(creature, saveType) {
+    if (!creature.stats) return 0
+    
+    const abilityMod = getModifier(creature.stats[saveType] || 10)
+    const proficiencyBonus = creature.level ? Math.ceil(creature.level / 4) + 1 : 0
+    
+    // Pour les ennemis, on peut ajouter des bonus spéciaux de sauvegarde si définis
+    const specialSaveBonus = creature.saveBonus?.[saveType] || 0
+    
+    return abilityMod + proficiencyBonus + specialSaveBonus
   }
 
   /**
@@ -666,6 +747,45 @@ export class CombatService {
           })
           results.messages.push({
             text: `🔥 ${companion.name} lance un trait de feu sur ${target.name} (${damage} dégâts de feu)`,
+            type: 'spell'
+          })
+        }
+        break
+        
+      case 'Boule de Feu':
+        if (Array.isArray(target)) {
+          // Sort de zone - appliquer à tous les ennemis du groupe
+          target.forEach(enemy => {
+            const damage = this.rollD6() * 6 + getModifier(companion.stats.charisme) // 6d6
+            results.damage.push({
+              targetId: enemy.name,
+              damage,
+              source: companion.name,
+              damageType: 'feu'
+            })
+          })
+          results.messages.push({
+            text: `🔥💥 ${companion.name} lance une boule de feu sur ${target.length} ennemis`,
+            type: 'spell'
+          })
+        }
+        break
+        
+      case 'Toile d\'araignée':
+        if (Array.isArray(target)) {
+          // Sort de contrôle de zone - appliquer l'effet "restrained"
+          target.forEach(enemy => {
+            const effect = CombatEffects.applyEffect(enemy, 'restrained', 3, companion.name)
+            results.effects.push({
+              type: 'restrained',
+              targetId: enemy.name,
+              source: companion.name,
+              duration: 3,
+              effectId: effect?.id
+            })
+          })
+          results.messages.push({
+            text: `🕸️ ${companion.name} entoile ${target.length} ennemis (entravés pour 3 tours)`,
             type: 'spell'
           })
         }
