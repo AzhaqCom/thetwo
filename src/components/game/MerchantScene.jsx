@@ -208,7 +208,7 @@ const MerchantScene = ({
       </div>
 
       {/* Debug info */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* {process.env.NODE_ENV === 'development' && (
         <div className="debug-info">
           <details>
             <summary>Debug Info - Marchand</summary>
@@ -221,7 +221,7 @@ const MerchantScene = ({
             </div>
           </details>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

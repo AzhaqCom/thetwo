@@ -81,14 +81,14 @@ const DialogueScene = ({
       )}
 
       {/* Informations de debug en mode développement */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* {process.env.NODE_ENV === 'development' && (
         <div className="debug-info">
           <details>
             <summary>Debug Info</summary>
             <pre>{JSON.stringify(StoryService.getSceneDebugInfo(scene, gameState), null, 2)}</pre>
           </details>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

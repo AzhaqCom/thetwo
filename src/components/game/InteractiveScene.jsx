@@ -137,7 +137,7 @@ const InteractiveScene = ({
       )}
 
       {/* Informations de debug */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* {process.env.NODE_ENV === 'development' && (
         <div className="debug-info">
           <details>
             <summary>Debug Info - Scène Interactive</summary>
@@ -149,7 +149,7 @@ const InteractiveScene = ({
             </div>
           </details>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

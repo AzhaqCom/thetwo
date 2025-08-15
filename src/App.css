@@ -1008,7 +1008,7 @@ button {
     color: #e0d0b8;
     font-size: 1.8rem;
     margin-bottom: 10px;
-    text-align: center;
+    
 }
 
 .character-class-race {
@@ -1059,7 +1059,7 @@ button {
     border-radius: 8px;
     padding: 30px;
     max-width: 800px;
-    width: 100%;
+
     margin-bottom: 0px;
 }
 
@@ -1138,6 +1138,20 @@ button {
 
     .selection-header h1 {
         font-size: 2rem;
+    }
+
+    .game-container {
+        flex-direction: column;
+        overflow: auto;
+        height: auto;
+
+    }
+    .main-content {
+        width: 100%;
+    }
+    .sidebar{
+        width: 100%;
+        padding: 0;
     }
 }
 
