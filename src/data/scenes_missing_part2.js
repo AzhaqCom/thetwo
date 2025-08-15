@@ -490,6 +490,64 @@ export const missingScenesP2 = {
         next: "fin_resident_local"
       }
     ]
+  },
+
+  "team_complete": {
+    metadata: {
+      type: SCENE_TYPES.TEXT,
+      chapter: "acte3",
+      tags: ["team", "complete"],
+      title: "L'Équipe Réunie"
+    },
+    content: {
+      text: "Avec Zara qui se joint à votre groupe, votre équipe est maintenant complète. Kael apporte son expertise de chasseur, Finn ses inventions ingénieuses, et Zara ses connaissances des énergies planaires. Ensemble, vous formez une alliance redoutable pour affronter les défis à venir.",
+      variations: {
+        without_kael: "Avec Zara, Finn et toi, vous formez une équipe équilibrée entre science et magie.",
+        without_finn: "Avec Zara et Kael, vous combinez expertise martiale et connaissances arcaniques.",
+        solo_plus_zara: "Avec Zara à tes côtés, tu as maintenant une alliée experte en phénomènes planaires."
+      }
+    },
+    conditions: {
+      show_variation: {
+        without_kael: "!gameFlags.kaelJoined && gameFlags.finnJoined",
+        without_finn: "gameFlags.kaelJoined && !gameFlags.finnJoined",
+        solo_plus_zara: "!gameFlags.kaelJoined && !gameFlags.finnJoined"
+      }
+    },
+    choices: [
+      {
+        text: "Partir ensemble vers la chambre secrète",
+        next: "recherche_lame",
+        consequences: {
+          flags: { teamComplete: true, zaraJoined: true }
+        }
+      },
+      {
+        text: "Prendre le temps de planifier ensemble",
+        next: "planification_equipe"
+      }
+    ]
+  },
+
+  "alliance_prudente": {
+    metadata: {
+      type: SCENE_TYPES.TEXT,
+      chapter: "acte3",
+      tags: ["alliance", "caution"],
+      title: "Alliance Prudente"
+    },
+    content: {
+      text: "Tu acceptes l'aide de Zara tout en gardant une certaine réserve. Après tout, dans cette situation, il vaut mieux rester vigilant. Zara semble comprendre ta prudence : 'Sage précaution. La confiance se gagne avec le temps.'"
+    },
+    choices: [
+      {
+        text: "Avancer ensemble vers la lame",
+        next: "recherche_lame",
+        consequences: {
+          flags: { zaraJoined: true, cautious: true }
+        }
+      }
+    ]
   }
 };
 

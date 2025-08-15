@@ -1,6 +1,8 @@
 import tyrionImage from '../assets/tyrion.png';
 import rhingannImage from '../assets/rhingann.png'
 import kaelImage from '../assets/kael.png'
+import finnImage from '../assets/finn.png'
+import zaraImage from '../assets/zara.png'
 
 export const companions = {
     "tyrion": {
@@ -139,6 +141,128 @@ export const companions = {
             spellSlots: null,
             knownSpells: [],
             preparedSpells: []
+        }
+    },
+    "finn": {
+        name: "Finn",
+        level: 1,
+        race: "Gnome",
+        class: "Inventeur",
+        historic: "Génie Mécanique",
+        role: "support",
+        maxHP: 10,
+        currentHP: 10,
+        ac: 13,
+        initiative: 0,
+        speed: "7.5m",
+        proficiencyBonus: 2,
+        hitDice: 1,
+        hitDiceType: 8,
+        type: "companion",
+        stats: {
+            force: 8,
+            dexterite: 14,
+            constitution: 12,
+            intelligence: 18,
+            sagesse: 13,
+            charisme: 11
+        },
+        movement: 5,
+        image: finnImage,
+        attacks: [
+            {
+                name: "Dague de précision",
+                type: "melee",
+                range: 1,
+                description: "Une dague légère et précise",
+                damageDice: "1d4",
+                damageType: "perforant",
+                stat: "dexterite"
+            },
+            {
+                name: "Projectile énergétique",
+                type: "ranged",
+                range: 6,
+                description: "Dispositif de tir à énergie concentrée",
+                damageDice: "1d6",
+                damageType: "force",
+                stat: "intelligence"
+            }
+        ],
+        inventory: ["Détecteur planaire Mark VII", "Kit d'inventeur", "Composants mécaniques"],
+        aiPriority: ["support_skill", "ranged_attack", "heal"],
+        spellcasting: {
+            class: "Inventeur",
+            spellSlots: {
+                "1": { total: 1, used: 0 }
+            },
+            knownSpells: ["Détection de la magie", "Réparation"],
+            preparedSpells: ["Détection de la magie", "Réparation"],
+            slotsRemaining: {
+                "1": 1
+            }
+        }
+    },
+    "zara": {
+        name: "Zara",
+        level: 2,
+        race: "Humaine",
+        class: "Sorcière",
+        historic: "Érudite Planaire",
+        role: "dps",
+        maxHP: 14,
+        currentHP: 14,
+        ac: 12,
+        initiative: 0,
+        speed: "9m",
+        proficiencyBonus: 2,
+        hitDice: 2,
+        hitDiceType: 6,
+        type: "companion",
+        stats: {
+            force: 9,
+            dexterite: 13,
+            constitution: 14,
+            intelligence: 16,
+            sagesse: 15,
+            charisme: 17
+        },
+        movement: 6,
+        image: zaraImage,
+        attacks: [
+            {
+                name: "Bâton mystique",
+                type: "melee",
+                range: 1,
+                description: "Un bâton imprégné d'énergie magique",
+                damageDice: "1d6",
+                damageType: "contondant",
+                stat: "force"
+            },
+            {
+                name: "Trait de feu",
+                type: "ranged",
+                range: 12,
+                description: "Projectile magique enflammé",
+                damageDice: "1d10",
+                damageType: "feu",
+                stat: "charisme"
+            }
+        ],
+        inventory: ["Grimoire planaire", "Composants de sorts", "Cristal de focalisation"],
+        aiPriority: ["ranged_spell", "area_damage", "debuff"],
+        spellcasting: {
+            class: "Sorcière",
+            spellSlots: {
+                "1": { total: 3, used: 0 },
+                "2": { total: 1, used: 0 }
+            },
+            knownSpells: ["Trait de feu", "Bouclier", "Détection de la magie", "Invisibilité", "Toile d'araignée"],
+            preparedSpells: ["Trait de feu", "Bouclier", "Détection de la magie", "Invisibilité"],
+            slotsRemaining: {
+                "1": 3,
+                "2": 1
+            }
         }
     }
 

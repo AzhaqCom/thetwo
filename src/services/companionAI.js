@@ -1,8 +1,10 @@
 import { calculateDistance, getModifier } from '../utils/calculations'
 import { spells } from '../data/spells'
+import { CombatEngine } from './combatEngine'
 
 /**
- * Service d'IA pour les compagnons selon leur rôle
+ * Service d'IA pour les compagnons selon leur rôle et aiPriority
+ * Architecture refactorisée pour séparer la logique du store
  */
 export class CompanionAI {
   
@@ -75,182 +77,412 @@ export class CompanionAI {
   }
 
   /**
-   * IA pour compagnon TANK
+   * Trouve la meilleure attaque selon le type et la priorité
+   */
+  static getBestAttack(companion, attackType = null, targets = []) {
+    if (!companion.attacks || companion.attacks.length === 0) return null
+    
+    // Filtrer par type si spécifié
+    let availableAttacks = companion.attacks
+    if (attackType) {
+      availableAttacks = companion.attacks.filter(attack => attack.type === attackType)
+    }
+    
+    if (availableAttacks.length === 0) return companion.attacks[0] // Fallback
+    
+    // Pour l'instant, retourne la première attaque du type demandé
+    // TODO: Améliorer avec logique de choix plus sophistiquée
+    return availableAttacks[0]
+  }
+
+  /**
+   * Trouve les sorts disponibles du compagnon
+   */
+  static getAvailableSpells(companion) {
+    if (!companion.spellcasting || !companion.spellcasting.knownSpells) return []
+    
+    return companion.spellcasting.knownSpells.filter(spellName => 
+      CompanionAI.canCastSpell(companion, spellName)
+    )
+  }
+
+  /**
+   * Évalue si une position est dans la portée d'attaque
+   */
+  static isInRange(attackerPos, targetPos, attack) {
+    const distance = calculateDistance(attackerPos, targetPos)
+    const range = attack.range || 1
+    return distance <= range
+  }
+
+  /**
+   * IA pour compagnon TANK - Utilise aiPriority
    */
   static tankAI = {
     priority: (companion, gameState) => {
       const actions = []
-      
-      // 1. Se positionner entre les ennemis et les alliés fragiles
+      const companionPos = gameState.combatPositions?.[companion.id]
       const aliveEnemies = (gameState.combatEnemies || []).filter(e => e.currentHP > 0)
-      if (aliveEnemies.length > 0) {
-        actions.push({
-          type: 'position',
-          priority: 90,
-          description: 'Se positionner défensivement'
-        })
-      }
       
-      // 2. Attaquer l'ennemi le plus proche
-      const companionPos = gameState.combatPositions?.[companion.id] || gameState.combatPositions?.companion
-      if (companionPos) {
-        const closestEnemy = CompanionAI.findClosestEnemy(companionPos, aliveEnemies)
-        if (closestEnemy) {
-          actions.push({
-            type: 'attack',
-            target: closestEnemy,
-            priority: 70,
-            description: `Attaquer ${closestEnemy.name}`
-          })
-        }
-      }
-      
-      return actions.sort((a, b) => b.priority - a.priority)
-    },
-    
-    shouldCastSpell: () => null // Le tank n'a pas de sorts
-  }
+      if (!companionPos) return actions
 
-  /**
-   * IA pour compagnon HEALER
-   */
-  static healerAI = {
-    priority: (companion, gameState) => {
-      const actions = []
-      
-      // 1. Priorité absolue : soigner si quelqu'un < 50% HP
-      const mostWounded = CompanionAI.findMostWoundedAlly(gameState)
-      if (mostWounded && mostWounded.hpPercentage < 0.5) {
-        if (CompanionAI.canCastSpell(companion, 'Soins')) {
-          actions.push({
-            type: 'spell',
-            spell: 'Soins',
-            target: mostWounded,
-            priority: 100,
-            description: `Soigner ${mostWounded.name} (${Math.round(mostWounded.hpPercentage * 100)}% HP)`
-          })
-        }
-      }
-      
-      // 2. Buffer les alliés si tout le monde > 75% HP et sorts disponibles
-      if (!mostWounded || mostWounded.hpPercentage > 0.75) {
-        if (CompanionAI.canCastSpell(companion, 'Bénédiction')) {
-          actions.push({
-            type: 'spell',
-            spell: 'Bénédiction',
-            target: 'party',
-            priority: 80,
-            description: 'Bénir l\'équipe'
-          })
-        }
+      // Traiter les priorités dans l'ordre défini par aiPriority
+      companion.aiPriority?.forEach((priorityType, index) => {
+        const basePriority = 100 - (index * 10) // Premier élément = priorité max
         
-        if (CompanionAI.canCastSpell(companion, 'Aide')) {
-          actions.push({
-            type: 'spell',
-            spell: 'Aide',
-            target: 'party',
-            priority: 75,
-            description: 'Renforcer l\'équipe'
-          })
+        switch (priorityType) {
+          case 'protect':
+            // Protéger les alliés fragiles
+            const fragileAlly = CompanionAI.findMostWoundedAlly(gameState)
+            if (fragileAlly && fragileAlly.hpPercentage < 0.3) {
+              actions.push({
+                type: 'protect',
+                target: fragileAlly,
+                priority: basePriority,
+                description: `Protéger ${fragileAlly.name}`
+              })
+            }
+            break
+            
+          case 'taunt':
+            // Attirer l'attention des ennemis
+            if (aliveEnemies.length > 0) {
+              actions.push({
+                type: 'taunt',
+                targets: aliveEnemies,
+                priority: basePriority,
+                description: 'Attirer l\'attention'
+              })
+            }
+            break
+            
+          case 'melee_attack':
+            // Attaque au corps à corps
+            const meleeAttack = CompanionAI.getBestAttack(companion, 'melee')
+            const closestEnemy = CompanionAI.findClosestEnemy(companionPos, aliveEnemies)
+            if (closestEnemy && meleeAttack) {
+              actions.push({
+                type: 'attack',
+                attack: meleeAttack,
+                target: closestEnemy,
+                priority: basePriority,
+                description: `${meleeAttack.name} sur ${closestEnemy.name}`
+              })
+            }
+            break
+            
+          case 'ranged_attack':
+            // Attaque à distance si disponible
+            const rangedAttack = CompanionAI.getBestAttack(companion, 'ranged')
+            if (rangedAttack && aliveEnemies.length > 0) {
+              const target = CompanionAI.findWeakestEnemy(aliveEnemies)
+              actions.push({
+                type: 'attack',
+                attack: rangedAttack,
+                target: target,
+                priority: basePriority,
+                description: `${rangedAttack.name} sur ${target.name}`
+              })
+            }
+            break
         }
-      }
-      
-      // 3. Attaque en dernier recours
-      const companionPos = gameState.combatPositions?.[companion.id] || gameState.combatPositions?.companion
-      if (companionPos) {
-        const aliveEnemies = (gameState.combatEnemies || []).filter(e => e.currentHP > 0)
-        const closestEnemy = CompanionAI.findClosestEnemy(companionPos, aliveEnemies)
-        if (closestEnemy) {
-          actions.push({
-            type: 'attack',
-            target: closestEnemy,
-            priority: 40,
-            description: `Attaquer ${closestEnemy.name} (dernier recours)`
-          })
-        }
-      }
+      })
       
       return actions.sort((a, b) => b.priority - a.priority)
-    },
-    
-    shouldCastSpell: (companion, gameState) => {
-      // Logique de sorts pour healer (appelée par l'IA principale)
-      const mostWounded = CompanionAI.findMostWoundedAlly(gameState)
-      
-      if (mostWounded && mostWounded.hpPercentage < 0.5 && CompanionAI.canCastSpell(companion, 'Soins')) {
-        return { spell: 'Soins', target: mostWounded }
-      }
-      
-      if ((!mostWounded || mostWounded.hpPercentage > 0.75) && CompanionAI.canCastSpell(companion, 'Bénédiction')) {
-        return { spell: 'Bénédiction', target: 'party' }
-      }
-      
-      return null
     }
   }
 
   /**
-   * IA pour compagnon DPS
+   * IA pour compagnon HEALER - Utilise aiPriority
+   */
+  static healerAI = {
+    priority: (companion, gameState) => {
+      const actions = []
+      const companionPos = gameState.combatPositions?.[companion.id]
+      const aliveEnemies = (gameState.combatEnemies || []).filter(e => e.currentHP > 0)
+      
+      if (!companionPos) return actions
+
+      // Traiter les priorités dans l'ordre défini par aiPriority
+      companion.aiPriority?.forEach((priorityType, index) => {
+        const basePriority = 100 - (index * 10)
+        
+        switch (priorityType) {
+          case 'heal':
+            // Soigner les alliés blessés
+            const mostWounded = CompanionAI.findMostWoundedAlly(gameState)
+            if (mostWounded && mostWounded.hpPercentage < 0.6) {
+              if (CompanionAI.canCastSpell(companion, 'Soins')) {
+                actions.push({
+                  type: 'spell',
+                  spell: 'Soins',
+                  target: mostWounded,
+                  priority: basePriority,
+                  description: `Soigner ${mostWounded.name} (${Math.round(mostWounded.hpPercentage * 100)}% HP)`
+                })
+              }
+            }
+            break
+            
+          case 'buff':
+            // Améliorer les alliés
+            const availableSpells = CompanionAI.getAvailableSpells(companion)
+            if (availableSpells.includes('Bénédiction')) {
+              actions.push({
+                type: 'spell',
+                spell: 'Bénédiction',
+                target: 'party',
+                priority: basePriority,
+                description: 'Bénir l\'équipe'
+              })
+            }
+            break
+            
+          case 'ranged_support':
+            // Support à distance
+            const rangedAttack = CompanionAI.getBestAttack(companion, 'ranged')
+            if (rangedAttack && aliveEnemies.length > 0) {
+              const target = CompanionAI.findWeakestEnemy(aliveEnemies)
+              actions.push({
+                type: 'attack',
+                attack: rangedAttack,
+                target: target,
+                priority: basePriority,
+                description: `${rangedAttack.name} sur ${target.name}`
+              })
+            }
+            break
+            
+          case 'melee_attack':
+            // Attaque au corps à corps en dernier recours
+            const meleeAttack = CompanionAI.getBestAttack(companion, 'melee')
+            const closestEnemy = CompanionAI.findClosestEnemy(companionPos, aliveEnemies)
+            if (closestEnemy && meleeAttack) {
+              actions.push({
+                type: 'attack',
+                attack: meleeAttack,
+                target: closestEnemy,
+                priority: basePriority,
+                description: `${meleeAttack.name} sur ${closestEnemy.name} (dernier recours)`
+              })
+            }
+            break
+        }
+      })
+      
+      return actions.sort((a, b) => b.priority - a.priority)
+    }
+  }
+
+  /**
+   * IA pour compagnon DPS - Étendue avec support des sorts et attaques à distance
    */
   static dpsAI = {
     priority: (companion, gameState) => {
       const actions = []
+      const companionPos = gameState.combatPositions?.[companion.id]
       const aliveEnemies = (gameState.combatEnemies || []).filter(e => e.currentHP > 0)
       
-      // 1. Utiliser sorts AOE si plusieurs ennemis groupés
-      const groupedEnemies = CompanionAI.findGroupedEnemies(aliveEnemies, 2) // Rayon de 2 cases
-      if (groupedEnemies.length >= 2 && CompanionAI.canCastSpell(companion, 'Boule de Feu')) {
-        actions.push({
-          type: 'spell',
-          spell: 'Boule de Feu',
-          target: groupedEnemies,
-          priority: 95,
-          description: `Boule de feu sur ${groupedEnemies.length} ennemis`
-        })
-      }
-      
-      // 2. Sort de dégâts simple sur l'ennemi le plus faible
-      const weakestEnemy = CompanionAI.findWeakestEnemy(aliveEnemies)
-      if (weakestEnemy && CompanionAI.canCastSpell(companion, 'Projectile Magique')) {
-        actions.push({
-          type: 'spell',
-          spell: 'Projectile Magique',
-          target: weakestEnemy,
-          priority: 85,
-          description: `Projectile magique sur ${weakestEnemy.name}`
-        })
-      }
-      
-      // 3. Attaque physique si plus de magie
-      const companionPos = gameState.combatPositions?.[companion.id] || gameState.combatPositions?.companion
-      if (companionPos && weakestEnemy) {
-        actions.push({
-          type: 'attack',
-          target: weakestEnemy,
-          priority: 60,
-          description: `Attaquer ${weakestEnemy.name}`
-        })
-      }
+      if (!companionPos) return actions
+
+      // Traiter les priorités dans l'ordre défini par aiPriority
+      companion.aiPriority?.forEach((priorityType, index) => {
+        const basePriority = 100 - (index * 10)
+        
+        switch (priorityType) {
+          case 'ranged_spell':
+            // Sorts à distance
+            const availableSpells = CompanionAI.getAvailableSpells(companion)
+            const target = CompanionAI.findWeakestEnemy(aliveEnemies)
+            
+            // Priorité aux sorts de dégâts
+            if (availableSpells.includes('Trait de feu') && target) {
+              actions.push({
+                type: 'spell',
+                spell: 'Trait de feu',
+                target: target,
+                priority: basePriority,
+                description: `Trait de feu sur ${target.name}`
+              })
+            } else if (availableSpells.includes('Projectile Magique') && target) {
+              actions.push({
+                type: 'spell',
+                spell: 'Projectile Magique',
+                target: target,
+                priority: basePriority,
+                description: `Projectile magique sur ${target.name}`
+              })
+            }
+            break
+            
+          case 'area_damage':
+            // Sorts de zone
+            const groupedEnemies = CompanionAI.findGroupedEnemies(aliveEnemies, 2)
+            if (groupedEnemies.length >= 2) {
+              const aoeSpells = CompanionAI.getAvailableSpells(companion)
+              if (aoeSpells.includes('Boule de Feu')) {
+                actions.push({
+                  type: 'spell',
+                  spell: 'Boule de Feu',
+                  target: groupedEnemies,
+                  priority: basePriority,
+                  description: `Boule de feu sur ${groupedEnemies.length} ennemis`
+                })
+              } else if (aoeSpells.includes('Toile d\'araignée')) {
+                actions.push({
+                  type: 'spell',
+                  spell: 'Toile d\'araignée',
+                  target: groupedEnemies,
+                  priority: basePriority,
+                  description: `Toile d'araignée sur ${groupedEnemies.length} ennemis`
+                })
+              }
+            }
+            break
+            
+          case 'debuff':
+            // Sorts de débuff
+            const strongestEnemy = aliveEnemies.reduce((strongest, enemy) => {
+              return (!strongest || enemy.currentHP > strongest.currentHP) ? enemy : strongest
+            }, null)
+            
+            const debuffSpells = CompanionAI.getAvailableSpells(companion)
+            if (strongestEnemy && debuffSpells.includes('Lenteur')) {
+              actions.push({
+                type: 'spell',
+                spell: 'Lenteur',
+                target: strongestEnemy,
+                priority: basePriority,
+                description: `Ralentir ${strongestEnemy.name}`
+              })
+            }
+            break
+            
+          case 'ranged_attack':
+            // Attaques à distance physiques
+            const rangedAttack = CompanionAI.getBestAttack(companion, 'ranged')
+            if (rangedAttack && aliveEnemies.length > 0) {
+              const target = CompanionAI.findWeakestEnemy(aliveEnemies)
+              actions.push({
+                type: 'attack',
+                attack: rangedAttack,
+                target: target,
+                priority: basePriority,
+                description: `${rangedAttack.name} sur ${target.name}`
+              })
+            }
+            break
+            
+          case 'melee_attack':
+            // Attaque au corps à corps
+            const meleeAttack = CompanionAI.getBestAttack(companion, 'melee')
+            const closestEnemy = CompanionAI.findClosestEnemy(companionPos, aliveEnemies)
+            if (closestEnemy && meleeAttack) {
+              actions.push({
+                type: 'attack',
+                attack: meleeAttack,
+                target: closestEnemy,
+                priority: basePriority,
+                description: `${meleeAttack.name} sur ${closestEnemy.name}`
+              })
+            }
+            break
+        }
+      })
       
       return actions.sort((a, b) => b.priority - a.priority)
-    },
-    
-    shouldCastSpell: (companion, gameState) => {
+    }
+  }
+
+  /**
+   * IA pour compagnon SUPPORT - Nouveau pour Finn
+   */
+  static supportAI = {
+    priority: (companion, gameState) => {
+      const actions = []
+      const companionPos = gameState.combatPositions?.[companion.id]
       const aliveEnemies = (gameState.combatEnemies || []).filter(e => e.currentHP > 0)
       
-      // AOE en priorité
-      const groupedEnemies = CompanionAI.findGroupedEnemies(aliveEnemies, 2)
-      if (groupedEnemies.length >= 2 && CompanionAI.canCastSpell(companion, 'Boule de Feu')) {
-        return { spell: 'Boule de Feu', target: groupedEnemies }
-      }
+      if (!companionPos) return actions
+
+      // Traiter les priorités dans l'ordre défini par aiPriority
+      companion.aiPriority?.forEach((priorityType, index) => {
+        const basePriority = 100 - (index * 10)
+        
+        switch (priorityType) {
+          case 'support_skill':
+            // Compétences de support
+            const availableSpells = CompanionAI.getAvailableSpells(companion)
+            
+            // Détection de magie pour révéler les ennemis cachés
+            if (availableSpells.includes('Détection de la magie')) {
+              actions.push({
+                type: 'spell',
+                spell: 'Détection de la magie',
+                target: 'area',
+                priority: basePriority,
+                description: 'Détecter la magie'
+              })
+            }
+            
+            // Réparation des équipements alliés
+            if (availableSpells.includes('Réparation')) {
+              actions.push({
+                type: 'spell',
+                spell: 'Réparation',
+                target: 'party',
+                priority: basePriority - 5,
+                description: 'Réparer les équipements'
+              })
+            }
+            break
+            
+          case 'ranged_attack':
+            // Attaques technologiques à distance
+            const rangedAttack = CompanionAI.getBestAttack(companion, 'ranged')
+            if (rangedAttack && aliveEnemies.length > 0) {
+              const target = CompanionAI.findWeakestEnemy(aliveEnemies)
+              actions.push({
+                type: 'attack',
+                attack: rangedAttack,
+                target: target,
+                priority: basePriority,
+                description: `${rangedAttack.name} sur ${target.name}`
+              })
+            }
+            break
+            
+          case 'heal':
+            // Support de soin (inventions médicales)
+            const mostWounded = CompanionAI.findMostWoundedAlly(gameState)
+            if (mostWounded && mostWounded.hpPercentage < 0.4) {
+              actions.push({
+                type: 'heal_support',
+                target: mostWounded,
+                priority: basePriority,
+                description: `Soigner ${mostWounded.name} avec inventions`
+              })
+            }
+            break
+            
+          case 'melee_attack':
+            // Attaque de proximité en dernier recours
+            const meleeAttack = CompanionAI.getBestAttack(companion, 'melee')
+            const closestEnemy = CompanionAI.findClosestEnemy(companionPos, aliveEnemies)
+            if (closestEnemy && meleeAttack) {
+              actions.push({
+                type: 'attack',
+                attack: meleeAttack,
+                target: closestEnemy,
+                priority: basePriority,
+                description: `${meleeAttack.name} sur ${closestEnemy.name}`
+              })
+            }
+            break
+        }
+      })
       
-      // Sort single target
-      const weakestEnemy = CompanionAI.findWeakestEnemy(aliveEnemies)
-      if (weakestEnemy && CompanionAI.canCastSpell(companion, 'Projectile Magique')) {
-        return { spell: 'Projectile Magique', target: weakestEnemy }
-      }
-      
-      return null
+      return actions.sort((a, b) => b.priority - a.priority)
     }
   }
 

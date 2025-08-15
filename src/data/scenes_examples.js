@@ -13,6 +13,8 @@ import finnImage from'../assets/finn.png'
 import zaraImage from '../assets/zara.png'
 import seraphinaCorruptedImage from '../assets/seraphina_corrupted.png'
 import aldwinImage from '../assets/maitre_aldwin.png'
+import ruined_fortress from '../assets/ruined_fortress.jpg'
+import underground_tunnels from'../assets/underground_tunnels.jpg'
 export const newScenes = {
   // === PROLOGUE : L'HÉRITAGE MAUDIT ===
 
@@ -580,7 +582,7 @@ export const newScenes = {
       chapter: "acte1",
       tags: ["exploration", "underground"],
       title: "Les Tunnels Oubliés",
-      background: "/src/assets/underground_tunnels.jpg"
+      background: underground_tunnels
     },
     content: {
       text: "Kael t'emmène vers une cave secrète derrière la taverne. Un passage étroit descend dans les profondeurs rocheuses sous le village. L'air y est frais et humide, et des gravures anciennes ornent les murs de pierre."
@@ -1055,7 +1057,7 @@ export const newScenes = {
       chapter: "acte3",
       tags: ["forteresse", "exploration"],
       title: "Les Ruines de Sombremont",
-      background: "ruined_fortress"
+      background: ruined_fortress
     },
     content: {
       text: "Devant vous s'élèvent les ruines imposantes de ce qui fut autrefois une forteresse majestueuse. Des tours écroulées percent la brume, et une énergie sombre pulse visiblement entre les pierres anciennes. C'était le siège de votre famille."
@@ -1063,7 +1065,7 @@ export const newScenes = {
     hotspots: [
       {
         id: "main_entrance",
-        coordinates: { x: 160, y: 200, width: 120, height: 100 },
+        coordinates: { x: 446, y: 202, width: 87, height: 138 },
         text: "Entrer par l'entrée principale",
         action: {
           type: "scene_transition",
@@ -1072,9 +1074,9 @@ export const newScenes = {
       },
       {
         id: "side_passage",
-        coordinates: { x: 50, y: 150, width: 80, height: 60 },
+        coordinates: { x: 60, y: 307, width: 20, height: 60 },
         text: "Chercher un passage latéral",
-        condition: "gameFlags.kaelJoined",
+        // condition: "gameFlags.kaelJoined",
         action: {
           type: "scene_transition",
           next: "passage_secret"
@@ -1082,7 +1084,7 @@ export const newScenes = {
       },
       {
         id: "magical_observation",
-        coordinates: { x: 300, y: 80, width: 100, height: 100 },
+        coordinates: { x: 821, y: 210, width: 55, height: 55 },
         text: "Analyser les énergies magiques",
         condition: "character.class === 'Magicien' || gameFlags.finnJoined",
         action: {
