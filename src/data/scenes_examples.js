@@ -7,7 +7,7 @@ import { SCENE_TYPES } from '../types/story';
 
 export const newScenes = {
   // === PROLOGUE : L'HÉRITAGE MAUDIT ===
-  
+
   "introduction": {
     metadata: {
       type: SCENE_TYPES.TEXT,
@@ -48,7 +48,7 @@ export const newScenes = {
   },
 
   // === EXPLORATION OPTIONNELLE ===
-  
+
   "exploration_perimetres": {
     metadata: {
       type: SCENE_TYPES.TEXT,
@@ -71,11 +71,11 @@ export const newScenes = {
   },
 
   // === TAVERNE LA LANTERNE VACILLANTE ===
-  
+
   "taverne_lanterne": {
     metadata: {
       type: SCENE_TYPES.DIALOGUE,
-      chapter: "prologue", 
+      chapter: "prologue",
       tags: ["taverne", "social", "information"],
       title: "La Lanterne Vacillante",
       character: "aubergiste_tom",
@@ -151,7 +151,84 @@ export const newScenes = {
       }
     ]
   },
+  "dialogue_creatures": {
+    metadata: {
+      type: SCENE_TYPES.DIALOGUE,
+      chapter: "prologue",
+      tags: ["history"],
+      title: "Des choses bizarres..",
+      character: "aubergiste_tom"
+    },
+    content: {
+      text: "Tom se met a parler tout bas : ' On sait pas trop ce qu'il de passe en ce moment, mais une chose est sûr ce n'est pas normal'",
+      speaker: "Tom l'Aubergiste",
+      mood: "secretive"
+    },
+    choices: [
+      {
+        text: "Insister pour connaître la suite",
+        next: "dialogue_disparition",
 
+      },
+      {
+        text: "Demander des détails sur le domaine familial",
+        next: "dialogue_domaine"
+      }
+    ]
+
+  },
+  "dialogue_domaine": {
+    metadata: {
+      type: SCENE_TYPES.TEXT,
+      chapter: "prologue",
+      tags: ["failure", "alternate"],
+      title: "l'ancien manoir"
+    },
+    content: {
+      text: "Le Domaine {character.familyName} ?! tu peux pas le louper, il se trouve à l'ancien manoir, au bout du sentier nord. Mais méfie-toi... la nuit tombe bientôt.'"
+    },
+    choices: [
+      {
+        text: "Accepter et partir vers le domaine",
+        next: "route_domaine",
+        consequences: {
+          flags: { rejectedByVillagers: true }
+        }
+      },
+      {
+        text: "Prendre une chambre et attendre le matin",
+        next: "chambre_repos"
+      }
+    ]
+  },
+  "chambre_repos": {
+    metadata: {
+      type: SCENE_TYPES.TEXT,
+      chapter: "prologue",
+      tags: ["repos"],
+      title: "Réveil l'esprit embrumé"
+    },
+    content: {
+      text: "Tu n'as pas très bien dormis cette nuit. a completer"
+    },
+    choices: [
+      {
+        text: "Partir vers le domaine",
+        next: "route_domaine",
+
+      },
+      {
+        text: "Aller parler a l'Aubergiste",
+        next: "taverne_lanterne",
+      }, {
+        text: "Retourner parler a Tom",
+        next: "dialogue_ombre",
+        condition: "gameFlags.rejectedByVillager"
+      }
+
+    ]
+
+  },
   "dialogue_disparition": {
     metadata: {
       type: SCENE_TYPES.DIALOGUE,
@@ -162,7 +239,7 @@ export const newScenes = {
     },
     content: {
       text: "Tom jette un coup d'œil nerveux autour de lui avant de continuer : 'La nuit où la Lame Éternelle a disparu. Depuis, les ombres bougent toutes seules, les fermes isolées sont attaquées par... des choses qui ne devraient pas exister. Aldric nous protégeait, mais maintenant...' Sa voix se brise.",
-      speaker: "Tom l'Aubergiste", 
+      speaker: "Tom l'Aubergiste",
       mood: "fearful"
     },
     choices: [
@@ -170,7 +247,7 @@ export const newScenes = {
         text: "Proposer ton aide pour résoudre ce problème",
         next: "rencontre_kael",
         consequences: {
-          flags: { 
+          flags: {
             knowsAboutBlade: true,
             offeredHelp: true,
             earnedTrust: true
@@ -215,7 +292,7 @@ export const newScenes = {
   "route_domaine": {
     metadata: {
       type: SCENE_TYPES.TEXT,
-      chapter: "prologue", 
+      chapter: "prologue",
       tags: ["exploration", "mystery", "heritage"],
       title: "Le Sentier vers le Domaine",
       location: "Sentier du Manoir Abandonné"
@@ -286,7 +363,7 @@ export const newScenes = {
     choices: [
       {
         text: "Approcher maintenant que tu en sais plus",
-        next: "entree_manoir_informe" 
+        next: "entree_manoir_informe"
       },
       {
         text: "Attendre et observer plus longtemps",
@@ -389,7 +466,7 @@ export const newScenes = {
   },
 
   // === RENCONTRE DU PREMIER COMPAGNON ===
-  
+
   "rencontre_kael": {
     metadata: {
       type: SCENE_TYPES.DIALOGUE,
@@ -452,7 +529,7 @@ export const newScenes = {
           type: "skillCheck",
           skill: "intuition",
           dc: 10,
-          onSuccess: "kael_trustworthy", 
+          onSuccess: "kael_trustworthy",
           onFailure: "kael_uncertain"
         }
       }
@@ -488,14 +565,14 @@ export const newScenes = {
   },
 
   // === EXPLORATION DES TUNNELS ===
-  
+
   "tunnels_entree": {
     metadata: {
       type: SCENE_TYPES.INTERACTIVE,
       chapter: "acte1",
       tags: ["exploration", "underground"],
       title: "Les Tunnels Oubliés",
-      background: "underground_tunnels"
+      background: "/src/assets/underground_tunnels.jpg"
     },
     content: {
       text: "Kael t'emmène vers une cave secrète derrière la taverne. Un passage étroit descend dans les profondeurs rocheuses sous le village. L'air y est frais et humide, et des gravures anciennes ornent les murs de pierre."
@@ -503,7 +580,7 @@ export const newScenes = {
     hotspots: [
       {
         id: "ancient_carvings",
-        coordinates: { x: 20, y: 30, width: 100, height: 80 },
+        coordinates: { x:585, y: 0, width: 286, height: 500 },
         text: "Examiner les gravures anciennes",
         action: {
           type: "scene_transition",
@@ -511,8 +588,8 @@ export const newScenes = {
         }
       },
       {
-        id: "deeper_passage", 
-        coordinates: { x: 200, y: 150, width: 120, height: 60 },
+        id: "deeper_passage",
+        coordinates: { x: 336, y: 220, width: 100, height: 180 },
         text: "Continuer vers les profondeurs",
         action: {
           type: "scene_transition",
@@ -521,7 +598,7 @@ export const newScenes = {
       },
       {
         id: "strange_symbol",
-        coordinates: { x: 350, y: 50, width: 80, height: 80 },
+        coordinates: { x: 106, y: 115, width: 100, height: 250 },
         text: "Étudier ce symbole étrange",
         condition: "character.class === 'Magicien'",
         action: {
@@ -570,7 +647,7 @@ export const newScenes = {
   "chambre_scellee": {
     metadata: {
       type: SCENE_TYPES.TEXT,
-      chapter: "acte1", 
+      chapter: "acte1",
       tags: ["discovery", "mystery"],
       title: "La Chambre Secrète"
     },
@@ -601,7 +678,7 @@ export const newScenes = {
   },
 
   // === PREMIER COMBAT ===
-  
+
   "premier_combat_ombres": {
     metadata: {
       type: SCENE_TYPES.COMBAT,
@@ -667,7 +744,7 @@ export const newScenes = {
   },
 
   // === ROUTE VERS MILLHAVEN ===
-  
+
   "route_millhaven": {
     metadata: {
       type: SCENE_TYPES.TEXT,
@@ -687,7 +764,7 @@ export const newScenes = {
   },
 
   // === MILLHAVEN - AUBERGE DU REPOS DU VOYAGEUR ===
-  
+
   "millhaven_auberge": {
     metadata: {
       type: SCENE_TYPES.DIALOGUE,
@@ -786,7 +863,7 @@ export const newScenes = {
   },
 
   // === RENCONTRE DU DEUXIÈME COMPAGNON ===
-  
+
   "rencontre_finn": {
     metadata: {
       type: SCENE_TYPES.DIALOGUE,
@@ -878,7 +955,7 @@ export const newScenes = {
   },
 
   // === EXPLORATION DES MARAIS ===
-  
+
   "marais_exploration": {
     metadata: {
       type: SCENE_TYPES.TEXT,
@@ -912,7 +989,7 @@ export const newScenes = {
   },
 
   // === DEUXIÈME COMBAT ===
-  
+
   "spectres_marais": {
     metadata: {
       type: SCENE_TYPES.COMBAT,
@@ -963,7 +1040,7 @@ export const newScenes = {
   },
 
   // === DÉCOUVERTE DE LA FORTERESSE ===
-  
+
   "forteresse_ruines": {
     metadata: {
       type: SCENE_TYPES.INTERACTIVE,
@@ -1044,7 +1121,7 @@ export const newScenes = {
   },
 
   // === RENCONTRE DU TROISIÈME COMPAGNON ===
-  
+
   "rencontre_zara": {
     metadata: {
       type: SCENE_TYPES.DIALOGUE,
@@ -1147,7 +1224,7 @@ export const newScenes = {
   },
 
   // === TROISIÈME COMBAT - GARDIENS CORROMPUS ===
-  
+
   "recherche_lame": {
     metadata: {
       type: SCENE_TYPES.TEXT,
@@ -1205,7 +1282,7 @@ export const newScenes = {
   },
 
   // === DÉCOUVERTE DE LA LAME ÉTERNELLE ===
-  
+
   "decouverte_lame": {
     metadata: {
       type: SCENE_TYPES.TEXT,
@@ -1236,7 +1313,7 @@ export const newScenes = {
   },
 
   // === ACTE IV : LA TRAHISON ===
-  
+
   "apparition_seraphina": {
     metadata: {
       type: SCENE_TYPES.DIALOGUE,
@@ -1299,7 +1376,7 @@ export const newScenes = {
   },
 
   // === COMBAT FINAL ===
-  
+
   "combat_seraphina": {
     metadata: {
       type: SCENE_TYPES.COMBAT,
@@ -1381,7 +1458,7 @@ export const newScenes = {
   },
 
   // === ÉPILOGUE - DIFFÉRENTES FINS ===
-  
+
   "fin_destruction_lame": {
     metadata: {
       type: SCENE_TYPES.TEXT,
@@ -1445,7 +1522,7 @@ export const newScenes = {
   },
 
   // === ÉPILOGUE FINAL ===
-  
+
   "epilogue_retour_village": {
     metadata: {
       type: SCENE_TYPES.DIALOGUE,

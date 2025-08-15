@@ -35,7 +35,7 @@ export const useGameStore = create(
     (set, get) => ({
       // État initial
       gamePhase: 'character-selection',
-      currentScene: 'dialogue_kael_proposition', // Scène d'introduction par défaut
+      currentScene: 'introduction', // Scène d'introduction par défaut
       sceneHistory: [],
       combatLog: [],
       isShortResting: false,
