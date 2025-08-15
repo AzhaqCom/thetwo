@@ -629,62 +629,35 @@ export const useCombatStore = create(
         const { combatPositions, combatEnemies } = get()
         if (!companion || companion.currentHP <= 0) return
 
-        const companionPosition = combatPositions[companionId]
-        if (!companionPosition) return
-
-        // 1. Calculer le mouvement optimal vers les ennemis
-        const combatState = {
+        // Utiliser la nouvelle architecture séparée
+        const combatService = new CombatService()
+        const gameState = {
           playerCharacter,
           activeCompanions,
           combatEnemies,
           combatPositions
         }
-        
-        const optimalPosition = CombatEngine.calculateOptimalMovement(
-          { ...companion, type: 'companion' },
-          companionPosition,
-          combatState
-        )
 
-        if (optimalPosition) {
-          get().moveCharacter(companionId, optimalPosition)
-        }
+        // Exécuter l'action via le nouveau système d'IA
+        const result = combatService.executeCompanionAction(companionId, companion, gameState)
 
-        // 2. Trouver les cibles à portée d'attaque
-        const finalPosition = optimalPosition || companionPosition
-        const companionAttack = companion.attacks?.[0] || {
-          name: "Attaque de base",
-          type: "melee", 
-          range: 1,
-          damageDice: "1d6",
-          damageBonus: 0
-        }
-
-        const targets = CombatEngine.getTargetsInRange(
-          { ...companion, type: 'companion' },
-          finalPosition,
-          companionAttack,
-          combatState
-        )
-
-        if (targets.length > 0) {
-          // Choisir la cible (ennemi le plus faible ou le plus proche)
-          const target = targets.reduce((chosen, current) => {
-            if (!chosen) return current
-            const currentHP = current.currentHP ?? 0
-            const chosenHP = chosen.currentHP ?? 0
-            // Priorité aux ennemis avec moins de PV
-            if (currentHP < chosenHP && currentHP > 0) return current
-            return chosen
+        if (result && result.success) {
+          // Appliquer les dégâts aux ennemis
+          result.damage?.forEach(dmg => {
+            get().dealDamageToEnemy(dmg.targetId, dmg.damage)
           })
-          
-          if (target && target.name) {
-            // 3. Exécuter l'attaque
-            const damageResult = CombatEngine.calculateDamage(companionAttack)
-            
-            // 4. Appliquer les dégâts à l'ennemi
-            get().dealDamageToEnemy(target.name, damageResult.damage)
-          }
+
+          // Appliquer les soins aux alliés
+          result.healing?.forEach(heal => {
+            if (heal.targetId === 'player') {
+              get().dealDamageToPlayer(-heal.amount) // Soin = dégâts négatifs
+            } else {
+              get().dealDamageToCompanionById(heal.targetId, -heal.amount)
+            }
+          })
+
+          // Appliquer les effets (pour plus tard)
+          // TODO: Implémenter la gestion des effets de combat
         }
       },
 

@@ -1,6 +1,7 @@
 import { enemyTemplates } from '../data/enemies'
 import { getModifier } from '../utils/calculations'
 import { CombatEngine } from './combatEngine'
+import { CompanionAI } from './companionAI'
 
 /**
  * Service gérant toute la logique métier du combat
@@ -503,5 +504,278 @@ export class CombatService {
     }
     
     return true
+  }
+
+  /**
+   * NOUVELLE MÉTHODE : Exécute le tour d'un compagnon avec la nouvelle IA
+   */
+  executeCompanionAction(companionId, companion, gameState) {
+    const results = {
+      messages: [],
+      damage: [],
+      healing: [],
+      effects: [],
+      success: false
+    }
+
+    try {
+      // 1. Obtenir la meilleure action via l'IA
+      const bestAction = CompanionAI.getBestAction(companion, gameState)
+      
+      if (!bestAction) {
+        results.messages.push({
+          text: `${companion.name} ne trouve aucune action à effectuer`,
+          type: 'info'
+        })
+        return results
+      }
+
+      // 2. Calculer le mouvement optimal
+      const currentPosition = gameState.combatPositions[companionId]
+      const optimalPosition = CompanionAI.calculateOptimalMovement(
+        companion, 
+        currentPosition, 
+        gameState
+      )
+
+      // 3. Exécuter l'action selon son type
+      switch (bestAction.type) {
+        case 'attack':
+          return this.executeCompanionAttack(companion, bestAction, gameState, results)
+          
+        case 'spell':
+          return this.executeCompanionSpell(companion, bestAction, gameState, results)
+          
+        case 'heal_support':
+          return this.executeCompanionHeal(companion, bestAction, gameState, results)
+          
+        case 'protect':
+        case 'taunt':
+          return this.executeCompanionSupport(companion, bestAction, gameState, results)
+          
+        default:
+          results.messages.push({
+            text: `Action inconnue: ${bestAction.type}`,
+            type: 'error'
+          })
+          return results
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'exécution de l\'action du compagnon:', error)
+      results.messages.push({
+        text: `Erreur lors de l'action de ${companion.name}`,
+        type: 'error'
+      })
+      return results
+    }
+  }
+
+  /**
+   * Exécute une attaque de compagnon (physique ou ranged)
+   */
+  executeCompanionAttack(companion, action, gameState, results) {
+    const attack = action.attack || companion.attacks[0]
+    const target = action.target
+
+    if (!attack || !target) {
+      results.messages.push({
+        text: `${companion.name} ne peut pas attaquer`,
+        type: 'error'
+      })
+      return results
+    }
+
+    // Jet d'attaque
+    const attackRoll = this.rollD20()
+    const attackBonus = this.getAttackBonus(companion, attack)
+    const totalAttack = attackRoll + attackBonus
+    
+    const criticalHit = attackRoll === 20
+    const hit = totalAttack >= target.ac || criticalHit
+    
+    if (hit) {
+      let damage = CombatEngine.calculateDamage(attack).damage
+      if (criticalHit) damage *= 2
+      
+      const attackTypeIcon = attack.type === 'ranged' ? '🏹' : '⚔️'
+      const criticalText = criticalHit ? ' (CRITIQUE!)' : ''
+      
+      results.messages.push({
+        text: `${attackTypeIcon} ${companion.name} utilise ${attack.name} sur ${target.name} (${damage} dégâts)${criticalText}`,
+        type: criticalHit ? 'critical' : 'success'
+      })
+      
+      results.damage.push({ 
+        targetId: target.name, 
+        damage,
+        source: companion.name,
+        attackType: attack.type 
+      })
+      results.success = true
+    } else {
+      results.messages.push({
+        text: `💨 ${companion.name} rate son attaque sur ${target.name}`,
+        type: 'miss'
+      })
+    }
+    
+    return results
+  }
+
+  /**
+   * Exécute un sort de compagnon
+   */
+  executeCompanionSpell(companion, action, gameState, results) {
+    const spellName = action.spell
+    const target = action.target
+    
+    // Vérifier si le sort peut être lancé
+    if (!CompanionAI.canCastSpell(companion, spellName)) {
+      results.messages.push({
+        text: `${companion.name} ne peut pas lancer ${spellName}`,
+        type: 'error'
+      })
+      return results
+    }
+
+    // Exécuter selon le type de sort
+    switch (spellName) {
+      case 'Soins':
+        if (target && target.id) {
+          const healAmount = this.rollD8() + 4 // Sort de soin de base
+          results.healing.push({
+            targetId: target.id,
+            amount: healAmount,
+            source: companion.name
+          })
+          results.messages.push({
+            text: `✨ ${companion.name} soigne ${target.name} (+${healAmount} PV)`,
+            type: 'healing'
+          })
+        }
+        break
+        
+      case 'Trait de feu':
+        if (target) {
+          const damage = this.rollD10() + getModifier(companion.stats.charisme)
+          results.damage.push({
+            targetId: target.name,
+            damage,
+            source: companion.name,
+            damageType: 'feu'
+          })
+          results.messages.push({
+            text: `🔥 ${companion.name} lance un trait de feu sur ${target.name} (${damage} dégâts de feu)`,
+            type: 'spell'
+          })
+        }
+        break
+        
+      case 'Détection de la magie':
+        results.messages.push({
+          text: `🔍 ${companion.name} détecte les auras magiques environnantes`,
+          type: 'spell'
+        })
+        results.effects.push({
+          type: 'detection',
+          source: companion.name,
+          duration: 10
+        })
+        break
+        
+      default:
+        results.messages.push({
+          text: `✨ ${companion.name} lance ${spellName}`,
+          type: 'spell'
+        })
+    }
+    
+    // Consommer le slot de sort
+    this.consumeSpellSlot(companion, spellName)
+    results.success = true
+    return results
+  }
+
+  /**
+   * Exécute une action de soin/support
+   */
+  executeCompanionHeal(companion, action, gameState, results) {
+    const target = action.target
+    
+    if (!target) {
+      results.messages.push({
+        text: `${companion.name} ne trouve personne à soigner`,
+        type: 'info'
+      })
+      return results
+    }
+
+    // Soin via inventions (pour Finn)
+    const healAmount = this.rollD6() + 2
+    results.healing.push({
+      targetId: target.id,
+      amount: healAmount,
+      source: companion.name
+    })
+    
+    results.messages.push({
+      text: `🔧 ${companion.name} soigne ${target.name} avec ses inventions (+${healAmount} PV)`,
+      type: 'healing'
+    })
+    
+    results.success = true
+    return results
+  }
+
+  /**
+   * Exécute une action de support tactique
+   */
+  executeCompanionSupport(companion, action, gameState, results) {
+    switch (action.type) {
+      case 'protect':
+        results.messages.push({
+          text: `🛡️ ${companion.name} protège ${action.target.name}`,
+          type: 'support'
+        })
+        results.effects.push({
+          type: 'protection',
+          targetId: action.target.id,
+          source: companion.name,
+          duration: 1
+        })
+        break
+        
+      case 'taunt':
+        results.messages.push({
+          text: `💢 ${companion.name} attire l'attention des ennemis`,
+          type: 'support'
+        })
+        results.effects.push({
+          type: 'taunt',
+          source: companion.name,
+          targets: action.targets.map(t => t.name),
+          duration: 1
+        })
+        break
+    }
+    
+    results.success = true
+    return results
+  }
+
+  /**
+   * Utilitaires pour les dés
+   */
+  rollD6() { return Math.floor(Math.random() * 6) + 1 }
+  rollD8() { return Math.floor(Math.random() * 8) + 1 }
+  rollD10() { return Math.floor(Math.random() * 10) + 1 }
+
+  /**
+   * Consomme un slot de sort
+   */
+  consumeSpellSlot(companion, spellName) {
+    // TODO: Implémenter la consommation de slots
+    // Pour l'instant, on log juste
+    console.log(`${companion.name} a utilisé un slot pour ${spellName}`)
   }
 }

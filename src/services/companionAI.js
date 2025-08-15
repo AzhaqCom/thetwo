@@ -511,9 +511,22 @@ export class CompanionAI {
 
   /**
    * Point d'entrée principal : détermine la meilleure action pour un compagnon
+   * Architecture refactorisée - sépare la logique du store
    */
   static getBestAction(companion, gameState) {
-    if (!companion || !companion.role) return null
+    if (!companion || !companion.role) {
+      console.warn('Compagnon invalide ou sans rôle:', companion)
+      return null
+    }
+    
+    // Enrichir gameState avec les informations nécessaires
+    const enrichedGameState = {
+      ...gameState,
+      playerCharacter: gameState.playerCharacter,
+      activeCompanions: gameState.activeCompanions || [],
+      combatEnemies: gameState.combatEnemies || [],
+      combatPositions: gameState.combatPositions || {}
+    }
     
     let aiModule
     switch (companion.role) {
@@ -526,12 +539,46 @@ export class CompanionAI {
       case 'dps':
         aiModule = CompanionAI.dpsAI
         break
+      case 'support':
+        aiModule = CompanionAI.supportAI
+        break
       default:
         console.warn(`Rôle de compagnon inconnu: ${companion.role}`)
         return null
     }
     
-    const possibleActions = aiModule.priority(companion, gameState)
-    return possibleActions.length > 0 ? possibleActions[0] : null
+    const possibleActions = aiModule.priority(companion, enrichedGameState)
+    const bestAction = possibleActions.length > 0 ? possibleActions[0] : null
+    
+    if (bestAction) {
+      console.log(`🤖 ${companion.name} (${companion.role}): ${bestAction.description}`)
+    }
+    
+    return bestAction
+  }
+
+  /**
+   * Nouvelle méthode : calcule le mouvement optimal pour un compagnon
+   */
+  static calculateOptimalMovement(companion, currentPosition, gameState) {
+    // Déléguer au CombatEngine existant
+    return CombatEngine.calculateOptimalMovement(
+      { ...companion, type: 'companion' },
+      currentPosition,
+      gameState
+    )
+  }
+
+  /**
+   * Nouvelle méthode : trouve les cibles à portée pour une action donnée
+   */
+  static getTargetsInRange(companion, position, action, gameState) {
+    // Déléguer au CombatEngine existant
+    return CombatEngine.getTargetsInRange(
+      { ...companion, type: 'companion' },
+      position,
+      action,
+      gameState
+    )
   }
 }
