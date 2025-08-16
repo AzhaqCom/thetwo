@@ -35,7 +35,7 @@ export const useGameStore = create(
     (set, get) => ({
       // État initial
       gamePhase: 'character-selection',
-      currentScene: 'forteresse_ruines', // Scène d'introduction par défaut
+      currentScene: 'premier_combat_ombres', // Scène d'introduction par défaut
       sceneHistory: [],
       combatLog: [],
       isShortResting: false,
@@ -348,7 +348,7 @@ export const useGameStore = create(
             // Import dynamique pour éviter la dépendance circulaire
             import('./characterStore').then(({ useCharacterStore }) => {
               const { addItemToInventory } = useCharacterStore.getState()
-
+              const { addCombatMessage} = get()
               consequences.items.forEach(itemId => {
                 // Importer les données d'items
                 Promise.all([
@@ -369,7 +369,7 @@ export const useGameStore = create(
                       id: itemId
                     }
                     addItemToInventory(itemToAdd)
-                    console.log(`✅ Objet obtenu : ${itemData.name}`)
+                    addCombatMessage(` Objet obtenu : ${itemData.name}`)
                   } else {
                     console.error(`❌ Item non trouvé dans items.js ou weapons.js : ${itemId}`)
                   }
@@ -453,8 +453,7 @@ export const useGameStore = create(
 
 // Sélecteurs optimisés
 export const gameSelectors = {
-  isInCombat: (state) =>
-    typeof state.currentScene === 'object' && state.currentScene.type === 'combat',
+  isInCombat: (state) => false, // Plus de combats en tant que scènes - utiliser combatStore à la place
 
   isResting: (state) =>
     state.isShortResting || state.isLongResting,

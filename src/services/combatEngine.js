@@ -1,12 +1,129 @@
 /**
- * Combat Engine Service - Pure business logic for combat mechanics
+ * Combat Engine - Pure calculations and game rules
+ * Contains only pure functions without side effects or state management
+ * All orchestration logic is handled by CombatService
  */
 
-import { rollDice, rollD20WithModifier, calculateDistance } from '../utils/calculations'
+import { rollDice, rollD20WithModifier, calculateDistance, getModifier, rollD20 } from '../utils/calculations'
 import { isValidGridPosition, isPositionOccupied, isTargetInRange } from '../utils/validation'
 import { GRID_WIDTH, GRID_HEIGHT, ENTITY_TYPES } from '../utils/constants'
 
 export class CombatEngine {
+  /**
+   * Rolls a standard d20
+   * @returns {number} Result between 1-20
+   */
+  static rollD20() {
+    return Math.floor(Math.random() * 20) + 1
+  }
+
+  /**
+   * Rolls damage dice from a string format
+   * @param {string} damageString - Format: "1d8+2" or "2d6"
+   * @returns {number} Total damage rolled
+   */
+  static rollDamage(damageString) {
+    const match = damageString.match(/(\d+)d(\d+)(\+(\d+))?/)
+    if (!match) return 0
+    
+    const [, numDice, dieSize, , bonus] = match
+    let total = 0
+    
+    for (let i = 0; i < parseInt(numDice); i++) {
+      total += Math.floor(Math.random() * parseInt(dieSize)) + 1
+    }
+    
+    return total + (parseInt(bonus) || 0)
+  }
+
+  /**
+   * Calculates attack bonus for a character and weapon
+   * @param {Object} character - The attacking character
+   * @param {Object} weapon - The weapon being used
+   * @returns {number} Total attack bonus
+   */
+  static calculateAttackBonus(character, weapon) {
+    // For enemies, use predefined attack bonus if available
+    if (weapon.attackBonus !== undefined) {
+      return weapon.attackBonus
+    }
+    
+    // For player characters, calculate bonus
+    const proficiencyBonus = character.level ? Math.ceil(character.level / 4) + 1 : 2
+    
+    if (!character.stats) {
+      console.error('❌ Character.stats missing in calculateAttackBonus:', character)
+      return 0
+    }
+    
+    // Use weapon's stat, or default to STR for melee, DEX for ranged
+    let stat = 'force'
+    if (weapon.stat) {
+      stat = weapon.stat
+    } else if (weapon.category === 'ranged' || weapon.type === 'ranged' || (weapon.range && weapon.range > 1)) {
+      stat = 'dexterite'
+    }
+    
+    const statValue = character.stats[stat]
+    if (statValue === undefined) {
+      console.error(`❌ Stat ${stat} missing for character:`, character)
+      return proficiencyBonus
+    }
+    
+    const abilityMod = getModifier(statValue)
+    return abilityMod + proficiencyBonus
+  }
+
+  /**
+   * Calculates spell attack bonus
+   * @param {Object} caster - The spellcaster
+   * @returns {number} Spell attack bonus
+   */
+  static calculateSpellAttackBonus(caster) {
+    const proficiencyBonus = caster.level ? Math.ceil(caster.level / 4) + 1 : 2
+    
+    if (!caster.spellcasting || !caster.spellcasting.ability) {
+      return proficiencyBonus
+    }
+    
+    const spellcastingAbility = caster.spellcasting.ability
+    const abilityScore = caster.stats[spellcastingAbility]
+    const abilityMod = getModifier(abilityScore || 10)
+    
+    return abilityMod + proficiencyBonus
+  }
+
+  /**
+   * Calculates saving throw bonus
+   * @param {Object} creature - The creature making the save
+   * @param {string} saveType - Type of save (constitution, dexterite, etc.)
+   * @returns {number} Save bonus
+   */
+  static calculateSaveBonus(creature, saveType) {
+    if (!creature.stats) return 0
+    
+    const abilityMod = getModifier(creature.stats[saveType] || 10)
+    const proficiencyBonus = creature.level ? Math.ceil(creature.level / 4) + 1 : 0
+    const specialSaveBonus = creature.saveBonus?.[saveType] || 0
+    
+    return abilityMod + proficiencyBonus + specialSaveBonus
+  }
+
+  /**
+   * Checks if a character is defeated (HP <= 0)
+   * @param {Object} character - Character to check
+   * @returns {boolean} True if defeated
+   */
+  static isDefeated(character) {
+    return character.currentHP <= 0
+  }
+
+  /**
+   * Utility dice rolls
+   */
+  static rollD6() { return Math.floor(Math.random() * 6) + 1 }
+  static rollD8() { return Math.floor(Math.random() * 8) + 1 }
+  static rollD10() { return Math.floor(Math.random() * 10) + 1 }
   /**
    * Calculates damage from an attack
    * @param {Object} attack - Attack object with damage dice and bonuses
@@ -119,6 +236,15 @@ export class CombatEngine {
 
     const idealDistance = this.getIdealDistance(entity)
 
+    // Nouveau : Pour les compagnons à distance, vérifier s'ils sont en corps à corps
+    const isRangedRole = entity.role === 'dps' || entity.role === 'support' || entity.role === 'healer'
+    const isAdjacentToEnemy = this.isAdjacentToAnyEnemy(entity, currentPos, combatState)
+    
+    // Si compagnon à distance est adjacent à un ennemi, priorité = s'éloigner prudemment
+    if (isRangedRole && isAdjacentToEnemy && idealDistance > 1) {
+      return this.findSafeRetreatPosition(entity, currentPos, combatState, idealDistance)
+    }
+
     // If already at ideal distance or closer, don't move
     if (closestTarget.distance <= idealDistance) return null
 
@@ -201,6 +327,34 @@ export class CombatEngine {
   static getIdealDistance(entity) {
     if (!entity.attacks) return 1
 
+    // Nouveau : Prioriser selon le rôle du compagnon
+    if (entity.role) {
+      switch (entity.role) {
+        case 'tank':
+          return 1 // Tanks restent au contact
+        
+        case 'healer':
+        case 'support':
+          // Support/healer restent à distance mais pas trop loin pour soigner
+          return 3
+        
+        case 'dps':
+          // DPS privilégient la distance s'ils ont des attaques à distance
+          const hasRangedAttack = entity.attacks.some(attack => 
+            attack.type === 'ranged' || (attack.range && attack.range > 1)
+          )
+          if (hasRangedAttack) {
+            const rangedAttack = entity.attacks.find(attack => attack.type === 'ranged')
+            return Math.min(5, rangedAttack?.range || 4) // Distance de sécurité
+          }
+          return 1 // DPS corps à corps
+        
+        default:
+          break // Fallback à l'ancienne logique
+      }
+    }
+
+    // Ancienne logique pour ennemis ou entités sans rôle
     const hasRangedAttack = entity.attacks.some(attack => 
       attack.type === 'ranged' || (attack.range && attack.range > 1)
     )
@@ -214,8 +368,98 @@ export class CombatEngine {
       const rangedAttack = entity.attacks.find(attack => attack.type === 'ranged')
       return Math.min(4, rangedAttack?.range || 4) // Stay at range
     } else {
-      return 1 // Mixed, prefer melee range
+      return 1 // Mixed, prefer melee range (ennemis par défaut)
     }
+  }
+
+  /**
+   * Vérifie si une entité est adjacente à un ennemi
+   */
+  static isAdjacentToAnyEnemy(entity, position, combatState) {
+    const enemies = entity.type === 'enemy' 
+      ? [combatState.playerCharacter, ...(combatState.activeCompanions || [])]
+      : combatState.combatEnemies || []
+
+    return enemies.some(enemy => {
+      if (!enemy || enemy.currentHP <= 0) return false
+      
+      const enemyPos = entity.type === 'enemy' 
+        ? (enemy.id ? combatState.combatPositions?.[enemy.id] : combatState.combatPositions?.player)
+        : combatState.combatPositions?.[enemy.name]
+      
+      if (!enemyPos) return false
+      
+      const distance = calculateDistance(position, enemyPos)
+      return distance <= 1
+    })
+  }
+
+  /**
+   * Trouve une position de retraite sûre pour les compagnons à distance
+   */
+  static findSafeRetreatPosition(entity, currentPos, combatState, idealDistance) {
+    const maxMovement = entity.movement || 6
+    const enemies = combatState.combatEnemies || []
+    let bestPosition = null
+    let bestScore = -1
+
+    for (let dx = -maxMovement; dx <= maxMovement; dx++) {
+      for (let dy = -maxMovement; dy <= maxMovement; dy++) {
+        const manhattanDistance = Math.abs(dx) + Math.abs(dy)
+        if (manhattanDistance === 0 || manhattanDistance > maxMovement) continue
+
+        const newPos = { x: currentPos.x + dx, y: currentPos.y + dy }
+        
+        // Vérifier validité de base
+        if (!this.isValidPosition(newPos, combatState)) continue
+
+        // Calculer si cette position déclencherait une attaque d'opportunité
+        const wouldTriggerOA = this.wouldTriggerOpportunityAttack(currentPos, newPos, combatState)
+        
+        // Si la position déclencherait une AO, la pénaliser fortement
+        if (wouldTriggerOA) continue
+
+        // Calculer la distance aux ennemis depuis cette nouvelle position
+        const nearestEnemyDistance = enemies.reduce((minDist, enemy) => {
+          if (!enemy || enemy.currentHP <= 0) return minDist
+          const enemyPos = combatState.combatPositions?.[enemy.name]
+          if (!enemyPos) return minDist
+          
+          const dist = calculateDistance(newPos, enemyPos)
+          return Math.min(minDist, dist)
+        }, Infinity)
+
+        // Score : préférer être proche de la distance idéale, loin des ennemis
+        const distanceToIdeal = Math.abs(nearestEnemyDistance - idealDistance)
+        const score = nearestEnemyDistance * 10 - distanceToIdeal * 5
+
+        if (score > bestScore) {
+          bestScore = score
+          bestPosition = newPos
+        }
+      }
+    }
+
+    return bestPosition
+  }
+
+  /**
+   * Vérifie si un mouvement déclencherait une attaque d'opportunité
+   */
+  static wouldTriggerOpportunityAttack(fromPos, toPos, combatState) {
+    const enemies = combatState.combatEnemies || []
+    
+    return enemies.some(enemy => {
+      if (!enemy || enemy.currentHP <= 0) return false
+      const enemyPos = combatState.combatPositions?.[enemy.name]
+      if (!enemyPos) return false
+      
+      const wasAdjacent = calculateDistance(fromPos, enemyPos) <= 1
+      const willBeAdjacent = calculateDistance(toPos, enemyPos) <= 1
+      
+      // Attaque d'opportunité si on était adjacent et qu'on ne l'est plus
+      return wasAdjacent && !willBeAdjacent
+    })
   }
 
   /**

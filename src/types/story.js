@@ -10,7 +10,8 @@ export const SCENE_TYPES = {
   MERCHANT: 'merchant',
   COMBAT: 'combat',
   REST_LONG: 'rest_long',
-  REST_SHORT: 'rest_short'
+  REST_SHORT: 'rest_short',
+  REST_CHOICE: 'rest_choice'  // Nouveau : Choix entre repos court/long
 };
 
 // Types d'actions possibles

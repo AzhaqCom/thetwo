@@ -6,15 +6,16 @@
 import { SCENE_TYPES } from '../types/story';
 import { missingScenesP2 } from './scenes_missing_part2';
 import { finalMissingScenes } from './scenes_final_missing';
-import aubergisteImage from  '../assets/tom-aubergiste.jpg';
-import kaelImage from'../assets/kael.png'
+import { testScenes } from './scene_test';
+import aubergisteImage from '../assets/tom-aubergiste.jpg';
+import kaelImage from '../assets/kael.png'
 import seraphinaImage from '../assets/dame_seraphina.jpg'
-import finnImage from'../assets/finn.png'
+import finnImage from '../assets/finn.png'
 import zaraImage from '../assets/zara.png'
 import seraphinaCorruptedImage from '../assets/seraphina_corrupted.png'
 import aldwinImage from '../assets/maitre_aldwin.png'
 import ruined_fortress from '../assets/ruined_fortress.jpg'
-import underground_tunnels from'../assets/underground_tunnels.jpg'
+import underground_tunnels from '../assets/underground_tunnels.jpg'
 export const newScenes = {
   // === PROLOGUE : L'HÉRITAGE MAUDIT ===
 
@@ -39,12 +40,14 @@ export const newScenes = {
         mage: "character.class === 'Magicien'"
       }
     },
-    choices: [
+    choices: [  
+
       {
         text: "Se rendre directement à la taverne du village",
-        next: "taverne_lanterne",
+        next: "taverne_lanterne", 
         consequences: {
-          flags: { arrivedAtVillage: true }
+          flags: { arrivedAtVillage: true },
+          companions: ["kael"]
         }
       },
       {
@@ -53,7 +56,8 @@ export const newScenes = {
         consequences: {
           flags: { exploredPerimeter: true }
         }
-      }
+      },
+
     ]
   },
 
@@ -167,7 +171,8 @@ export const newScenes = {
       chapter: "prologue",
       tags: ["history"],
       title: "Des choses bizarres..",
-      character: "aubergiste_tom"
+      character: "aubergiste_tom",
+      location: "Ravenscroft - Taverne"
     },
     content: {
       text: "Tom se met a parler tout bas : ' On sait pas trop ce qu'il de passe en ce moment, mais une chose est sûr ce n'est pas normal'",
@@ -545,7 +550,6 @@ export const newScenes = {
       }
     ]
   },
-
   "kael_rejoint": {
     metadata: {
       type: SCENE_TYPES.TEXT,
@@ -566,10 +570,7 @@ export const newScenes = {
       },
       {
         text: "Prendre du repos avant l'exploration",
-        next: "repos_avec_kael",
-        action: {
-          type: "shortRest"
-        }
+        next: "repos_court_avec_kael"  
       }
     ]
   },
@@ -590,7 +591,7 @@ export const newScenes = {
     hotspots: [
       {
         id: "ancient_carvings",
-        coordinates: { x:585, y: 0, width: 286, height: 500 },
+        coordinates: { x: 585, y: 0, width: 286, height: 500 },
         text: "Examiner les gravures anciennes",
         action: {
           type: "scene_transition",
@@ -695,12 +696,12 @@ export const newScenes = {
       chapter: "acte1",
       tags: ["combat", "ombres"],
       title: "Attaque des Ombres Affamées",
-      nextScene: "apres_premier_combat"
+      next: "apres_premier_combat"
     },
     content: {
       text: "En sortant des tunnels vers les marais, vous êtes immédiatement attaqués par trois créatures d'ombre qui semblaient vous attendre. Leurs formes vaporeuses ondulent dans la brume nocturne, et leurs yeux rougeoyants fixent vos âmes avec une faim dévorante."
     },
-    enemies: [{ type: 'ombre', count: 2 }],
+    enemies: [{ type: 'ombre', count: 1 }],
     enemyPositions: [
       { x: 7, y: 0 },
       { x: 7, y: 1 }
@@ -740,14 +741,15 @@ export const newScenes = {
         text: "Se diriger vers la ville de Millhaven",
         next: "route_millhaven",
         consequences: {
-          flags: { firstCombatWon: true }
+          flags: { firstCombatWon: true },
+
         }
       },
       {
         text: "Retourner au village pour se reposer",
-        next: "repos_village",
         action: {
-          type: "shortRest"
+          type: "shortRest",
+          next: "repos_village"
         }
       }
     ]
@@ -1006,7 +1008,7 @@ export const newScenes = {
       chapter: "acte2",
       tags: ["combat", "spectres"],
       title: "Spectres des Marais",
-      nextScene: "apres_spectres"
+      next: "apres_spectres"
     },
     content: {
       text: "Des formes translucides émergent de la brume : des spectres de voyageurs perdus dans les marais. Contrairement aux ombres précédentes, ces créatures sont plus organisées et semblent communiquer entre elles dans un langage sifflant."
@@ -1270,7 +1272,7 @@ export const newScenes = {
       chapter: "acte3",
       tags: ["combat", "gardiens"],
       title: "Gardiens Corrompus",
-      nextScene: "decouverte_lame"
+      next: "decouverte_lame"
     },
     content: {
       text: "Les gardiens corrompus attaquent sans merci ! Ces anciens protecteurs de votre lignée ont été transformés en créatures hybrides, mi-humaines mi-ombres. Leur corruption leur donne une force surnaturelle, mais aussi une vulnérabilité à la lumière pure."
@@ -1393,7 +1395,7 @@ export const newScenes = {
       chapter: "acte4",
       tags: ["boss", "final"],
       title: "Seraphina la Corrompue",
-      nextScene: "apres_combat_final"
+      next: "apres_combat_final"
     },
     content: {
       text: "Seraphina se transforme sous vos yeux, l'énergie planaire la corrompant en une créature mi-humaine mi-ombre. Ses mercenaires attaquent tandis qu'elle invoque des sorts puissants. C'est le combat le plus difficile que vous ayez jamais affronté !"
@@ -2054,7 +2056,8 @@ export const newScenes = {
         text: "Accepter son aide malgré tes doutes",
         next: "kael_rejoint",
         consequences: {
-          flags: { kaelJoined: true, hasDoubts: true }
+          flags: { kaelJoined: true, hasDoubts: true },
+          companions: ["kael"]
         }
       },
       {
@@ -2111,6 +2114,17 @@ export const newScenes = {
         }
       }
     ]
+  },
+ 
+  "repos_court_avec_kael": {
+    metadata: {
+      type: SCENE_TYPES.REST_SHORT,    
+      title: "Repos avec Kael"
+    },
+    content: {
+      text: "Kael approuve votre décision. 'Sage choix. Prenons quelques minutes pour nous reposer et planifier notre approche.' Vous vous installez confortablement pendant que Kael partage ses  connaissances sur les tunnels."
+    },
+    next: "tunnels_entree"            
   },
 
   // === SCÈNES DE MILLHAVEN ===
@@ -2472,9 +2486,9 @@ export const newScenes = {
     choices: [
       {
         text: "Partir vers Millhaven le lendemain",
-        next: "route_millhaven",
         action: {
-          type: "longRest"
+          type: "longRest",
+          next: "route_millhaven"
         }
       }
     ]
@@ -2610,12 +2624,12 @@ export const newScenes = {
       chapter: "prologue",
       tags: ["test", "trust"],
       title: "Épreuve des Ombres",
-      nextScene: "apres_test_kael"
+      next: "apres_test_kael"
     },
     content: {
       text: "Kael vous mène vers le cimetière où trois ombres mineures rôdent entre les tombes. 'Montrez-moi que vous pouvez tenir bon face à ces créatures', dit-il en dégainant son épée."
     },
-    enemies: [{ type: 'ombre_mineure', count: 3 }],
+    enemies: [{ type: 'ombre', count: 1 }],
     enemyPositions: [
       { x: 4, y: 1 },
       { x: 5, y: 3 },
@@ -2701,9 +2715,12 @@ export const newScenes = {
 
   // === AJOUT DES SCÈNES DE LA PARTIE 2 ===
   , ...missingScenesP2,
-  
+
   // === AJOUT DES DERNIÈRES SCÈNES MANQUANTES ===
-  ...finalMissingScenes
+  ...finalMissingScenes,
+
+  // === SCÈNES DE TEST ===
+  ...testScenes
 };
 
 export default newScenes;

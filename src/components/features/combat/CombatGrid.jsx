@@ -6,8 +6,7 @@ import { useCombatStore } from '../../../stores/combatStore'
  */
 export const CombatGrid = ({
   playerCharacter,
-  playerCompanion,
-  activeCompanions = [], // Nouveau : compagnons actifs
+  activeCompanions = [], // Compagnons actifs
   enemies,
   positions,
   selectedAction,
@@ -54,7 +53,7 @@ export const CombatGrid = ({
     }
 
     return null
-  }, [positions, playerCharacter, playerCompanion, activeCompanions, enemies])
+  }, [positions, playerCharacter, activeCompanions, enemies])
 
 
   const getHealthColor = (currentHP, maxHP) => {
@@ -337,10 +336,10 @@ export const CombatGrid = ({
           <span className="combat-grid__legend-icon">🧙‍♂️</span>
           <span>Joueur</span>
         </div>
-        {playerCompanion && (
+        {activeCompanions.length > 0 && (
           <div className="combat-grid__legend-item">
             <span className="combat-grid__legend-icon">🐺</span>
-            <span>Compagnon</span>
+            <span>Compagnons</span>
           </div>
         )}
         <div className="combat-grid__legend-item">

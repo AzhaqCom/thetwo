@@ -34,6 +34,9 @@ export const enemyTemplates = {
         currentHP: 7,
         ac: 15,
         xp: 50,
+        // Nouveau système d'IA
+        role: "skirmisher", // Rôle : escarmoucheur agile
+        aiPriority: ["hit_and_run", "ranged_attack", "melee_attack"],
         stats: {
             force: 8,
             dexterite: 14,
@@ -53,6 +56,17 @@ export const enemyTemplates = {
                 damageBonus: 2,
                 damageType: "tranchant",
                 description: "Attaque au corps à corps avec une arme : +4 au toucher, allonge 1,50 m, une cible. Touché : 5 (1d6 + 2) dégâts tranchants."
+            },
+            {
+                name: "Arc court",
+                type: "ranged",
+                attackBonus: 4,
+                range: 6,
+                targets: 1,
+                damageDice: "1d6",
+                damageBonus: 2,
+                damageType: "perforant",
+                description: "Attaque à distance : +4 au toucher, portée 24/96 m, une cible. Touché : 5 (1d6 + 2) dégâts perforants."
             }
         ],
         image: "https://www.aidedd.org/dnd/images/goblin.jpg"

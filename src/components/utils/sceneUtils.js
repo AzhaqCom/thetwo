@@ -115,10 +115,6 @@ const processAllyAction = (action, handlers) => {
             handlers.setActiveCompanions(newActiveCompanions);
         }
         
-        // Compatibilité avec l'ancien système (pour le premier compagnon)
-        if (handlers.setPlayerCompanion && !useCharacterStore.getState().playerCompanion) {
-            handlers.setPlayerCompanion(companionToAdd);
-        }
         
         // Ajouter aux flags du jeu
         const gameStore = useGameStore.getState();
@@ -163,7 +159,7 @@ const processSkillCheckAction = (action, handlers) => {
             playerCharacter
         );
     } else {
-        // Format ancien
+        // Fallback pour format simple
         handlers.handleSkillCheck(
             action.skill,
             action.dc,
@@ -255,33 +251,3 @@ export const getGameStateForStory = () => {
     };
 };
 
-/**
- * Vérifie si une scène utilise le nouveau format
- * @param {Object} scene - La scène à vérifier
- * @returns {boolean} True si c'est le nouveau format
- */
-export const isNewSceneFormat = (scene) => {
-    return scene.metadata && Object.values(SCENE_TYPES).includes(scene.metadata.type);
-};
-
-/**
- * Adapte une scène de l'ancien format vers le nouveau format
- * @param {Object} oldScene - Scène de l'ancien format
- * @param {string} sceneId - ID de la scène
- * @returns {Object} Scène au nouveau format
- */
-export const adaptLegacyScene = (oldScene, sceneId) => {
-    return {
-        metadata: {
-            type: SCENE_TYPES.TEXT,
-            title: `Scène ${sceneId}`,
-            tags: ['legacy']
-        },
-        content: {
-            text: oldScene.text
-        },
-        choices: oldScene.choices || [],
-        conditions: {},
-        effects: {}
-    };
-};

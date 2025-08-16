@@ -21,7 +21,6 @@ export const useCharacterStore = create(
       (set, get) => ({
         // État des personnages
         playerCharacter: null,
-        playerCompanion: null, // Gardé pour compatibilité temporaire
         playerCompanions: [], // Nouveau: Array de tous les compagnons (max 3)
         activeCompanions: [], // Compagnons actuellement déployés en mission/combat
         selectedCharacter: null, // OBSOLÈTE: Alias pour playerCharacter pour compatibilité avec les composants - utiliser playerCharacter directement
@@ -42,10 +41,6 @@ export const useCharacterStore = create(
           playerCharacter: character ? GameLogic.deepClone(character) : null
         })),
 
-        // Définir le compagnon (compatibilité)
-        setPlayerCompanion: (companion) => set({ 
-          playerCompanion: companion ? GameLogic.deepClone(companion) : null 
-        }),
 
         // === GESTION MULTIPLE DES COMPAGNONS ===
         
@@ -100,11 +95,6 @@ export const useCharacterStore = create(
             : null
         })),
 
-        updatePlayerCompanion: (updates) => set((state) => ({
-          playerCompanion: state.playerCompanion 
-            ? { ...state.playerCompanion, ...updates }
-            : null
-        })),
 
         // Mettre à jour un compagnon par ID
         updateCompanion: (companionId, updates) => set((state) => ({
@@ -112,11 +102,7 @@ export const useCharacterStore = create(
             companion.id === companionId
               ? { ...companion, ...updates }
               : companion
-          ),
-          // Mettre à jour aussi playerCompanion si c'est le même pour compatibilité
-          playerCompanion: state.playerCompanion?.id === companionId
-            ? { ...state.playerCompanion, ...updates }
-            : state.playerCompanion
+          )
         })),
 
         // === GESTION DES DÉGÂTS ET SOINS ===
@@ -128,12 +114,6 @@ export const useCharacterStore = create(
           return syncCharacter({ playerCharacter: updatedCharacter })
         }),
 
-        takeDamageCompanion: (damage) => set((state) => {
-          if (!state.playerCompanion) return state
-          
-          const updatedCompanion = CharacterManager.takeDamage(state.playerCompanion, damage)
-          return { playerCompanion: updatedCompanion }
-        }),
 
         // Dégâts à un compagnon par ID
         takeDamageCompanionById: (companionId, damage) => set((state) => {
@@ -145,11 +125,7 @@ export const useCharacterStore = create(
           return {
             playerCompanions: state.playerCompanions.map(c =>
               c.id === companionId ? updatedCompanion : c
-            ),
-            // Compatibilité
-            playerCompanion: state.playerCompanion?.id === companionId 
-              ? updatedCompanion 
-              : state.playerCompanion
+            )
           }
         }),
 
@@ -160,12 +136,6 @@ export const useCharacterStore = create(
           return syncCharacter({ playerCharacter: updatedCharacter })
         }),
 
-        healCompanion: (healing) => set((state) => {
-          if (!state.playerCompanion) return state
-          
-          const updatedCompanion = CharacterManager.heal(state.playerCompanion, healing)
-          return { playerCompanion: updatedCompanion }
-        }),
 
         // Soigner un compagnon par ID
         healCompanionById: (companionId, healing) => set((state) => {
@@ -177,11 +147,7 @@ export const useCharacterStore = create(
           return {
             playerCompanions: state.playerCompanions.map(c =>
               c.id === companionId ? updatedCompanion : c
-            ),
-            // Compatibilité
-            playerCompanion: state.playerCompanion?.id === companionId 
-              ? updatedCompanion 
-              : state.playerCompanion
+            )
           }
         }),
 
@@ -201,12 +167,6 @@ export const useCharacterStore = create(
           return syncCharacter({ playerCharacter: updatedCharacter })
         }),
 
-        longRestCompanion: () => set((state) => {
-          if (!state.playerCompanion) return state
-          
-          const updatedCompanion = CharacterManager.longRest(state.playerCompanion)
-          return { playerCompanion: updatedCompanion }
-        }),
 
         // Repos long pour un compagnon par ID
         longRestCompanionById: (companionId) => set((state) => {
@@ -218,21 +178,16 @@ export const useCharacterStore = create(
           return {
             playerCompanions: state.playerCompanions.map(c =>
               c.id === companionId ? updatedCompanion : c
-            ),
-            // Compatibilité
-            playerCompanion: state.playerCompanion?.id === companionId 
-              ? updatedCompanion 
-              : state.playerCompanion
+            )
           }
         }),
 
-        // Repos complet (joueur + compagnon)
+        // Repos complet (joueur + tous les compagnons)
         longRestAll: () => {
-          const { longRestPlayer, longRestCompanion, playerCompanions } = get()
+          const { longRestPlayer, playerCompanions } = get()
           longRestPlayer()
-          longRestCompanion()
           
-          // Repos pour tous les compagnons actifs
+          // Repos pour tous les compagnons
           playerCompanions.forEach(companion => {
             get().longRestCompanionById(companion.id)
           })
@@ -240,7 +195,7 @@ export const useCharacterStore = create(
 
         // Dépenser un dé de vie pendant un repos court
         spendHitDie: (targetCharacter = 'player') => set((state) => {
-          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          const character = state.playerCharacter
           if (!character) return state
 
           // Vérifications
@@ -262,17 +217,13 @@ export const useCharacterStore = create(
             hitDice: character.hitDice - 1
           }
 
-          if (targetCharacter === 'player') {
-            return syncCharacter({ playerCharacter: updatedCharacter })
-          } else {
-            return { playerCompanion: updatedCharacter }
-          }
+          return syncCharacter({ playerCharacter: updatedCharacter })
         }),
 
         // === GESTION DE L'EXPÉRIENCE ET NIVEAUX ===
 
         addExperience: (xp, targetCharacter = 'player') => set((state) => {
-          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          const character = state.playerCharacter
           if (!character) return state
           const updatedCharacter = CharacterManager.addExperience(character, xp)
           const newState = { ...state }
@@ -299,13 +250,9 @@ export const useCharacterStore = create(
             }
           ]
 
-          if (targetCharacter === 'player') {
-            newState.playerCharacter = updatedCharacter
-            // Synchroniser selectedCharacter
-            newState.selectedCharacter = updatedCharacter
-          } else {
-            newState.playerCompanion = updatedCharacter
-          }
+          newState.playerCharacter = updatedCharacter
+          // Synchroniser selectedCharacter
+          newState.selectedCharacter = updatedCharacter
 
           return newState
         }),
@@ -329,21 +276,17 @@ export const useCharacterStore = create(
         }),
 
         consumeSpellSlot: (spellLevel, targetCharacter = 'player') => set((state) => {
-          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          const character = state.playerCharacter
           if (!character) return state
 
           const updatedCharacter = CharacterManager.consumeSpellSlot(character, spellLevel)
           
-          if (targetCharacter === 'player') {
-            return syncCharacter({ playerCharacter: updatedCharacter })
-          } else {
-            return { playerCompanion: updatedCharacter }
-          }
+          return syncCharacter({ playerCharacter: updatedCharacter })
         }),
 
         prepareSpell: (spellName, targetCharacter = 'player') => {
           const state = get()
-          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          const character = state.playerCharacter
           
           if (!character) {
             return { success: false, message: `Aucun personnage ${targetCharacter} trouvé` }
@@ -368,18 +311,14 @@ export const useCharacterStore = create(
           }
 
           // Mettre à jour le store
-          if (targetCharacter === 'player') {
-            set(syncCharacter({ playerCharacter: updatedCharacter }))
-          } else {
-            set({ playerCompanion: updatedCharacter })
-          }
+          set(syncCharacter({ playerCharacter: updatedCharacter }))
 
           return { success: true, message: `${spellName} préparé avec succès` }
         },
 
         unprepareSpell: (spellName, targetCharacter = 'player') => {
           const state = get()
-          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          const character = state.playerCharacter
           
           if (!character) {
             return { success: false, message: `Aucun personnage ${targetCharacter} trouvé` }
@@ -392,11 +331,7 @@ export const useCharacterStore = create(
           }
 
           // Mettre à jour le store
-          if (targetCharacter === 'player') {
-            set(syncCharacter({ playerCharacter: updatedCharacter }))
-          } else {
-            set({ playerCompanion: updatedCharacter })
-          }
+          set(syncCharacter({ playerCharacter: updatedCharacter }))
 
           return { success: true, message: `${spellName} retiré des sorts préparés` }
         },
@@ -404,7 +339,7 @@ export const useCharacterStore = create(
         // === GESTION DE L'ÉQUIPEMENT ===
 
         equipItem: (itemId, targetCharacter = 'player') => set((state) => {
-          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          const character = state.playerCharacter
           if (!character) return state
 
           // Chercher l'objet dans l'inventaire OU dans weapons.js
@@ -474,11 +409,7 @@ export const useCharacterStore = create(
               equipment: newEquipment
             }
 
-            if (targetCharacter === 'player') {
-              return syncCharacter({ playerCharacter: { ...character, ...updates } })
-            } else {
-              return { playerCompanion: { ...character, ...updates } }
-            }
+            return syncCharacter({ playerCharacter: { ...character, ...updates } })
           } else {
             // Équiper directement (stocker seulement l'ID)
             newEquipment[slot] = itemId
@@ -493,16 +424,12 @@ export const useCharacterStore = create(
               equipment: newEquipment
             }
 
-            if (targetCharacter === 'player') {
-              return syncCharacter({ playerCharacter: { ...character, ...updates } })
-            } else {
-              return { playerCompanion: { ...character, ...updates } }
-            }
+            return syncCharacter({ playerCharacter: { ...character, ...updates } })
           }
         }),
 
         unequipItem: (itemId, targetCharacter = 'player') => set((state) => {
-          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          const character = state.playerCharacter
           if (!character || !character.equipment) return state
 
           // Chercher l'objet équipé (maintenant ce sont des IDs)
@@ -535,17 +462,13 @@ export const useCharacterStore = create(
             equipment: newEquipment
           }
 
-          if (targetCharacter === 'player') {
-            return syncCharacter({ playerCharacter: { ...character, ...updates } })
-          } else {
-            return { playerCompanion: { ...character, ...updates } }
-          }
+          return syncCharacter({ playerCharacter: { ...character, ...updates } })
         }),
 
         // === GESTION DE L'INVENTAIRE ===
 
         addItemToInventory: (item, targetCharacter = 'player') => set((state) => {
-          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          const character = state.playerCharacter
           if (!character) return state
 
           const currentInventory = character.inventory || []
@@ -577,18 +500,14 @@ export const useCharacterStore = create(
               quantity: quantityToAdd
             }]
           }
-
+         
           const updates = { inventory: newInventory }
 
-          if (targetCharacter === 'player') {
-            return syncCharacter({ playerCharacter: { ...character, ...updates } })
-          } else {
-            return { playerCompanion: { ...character, ...updates } }
-          }
+          return syncCharacter({ playerCharacter: { ...character, ...updates } })
         }),
 
         removeItemFromInventory: (itemId, targetCharacter = 'player', quantityToRemove = 1) => set((state) => {
-          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          const character = state.playerCharacter
           if (!character) return state
 
           const currentInventory = character.inventory || []
@@ -615,16 +534,12 @@ export const useCharacterStore = create(
 
           const updates = { inventory: newInventory }
 
-          if (targetCharacter === 'player') {
-            return syncCharacter({ playerCharacter: { ...character, ...updates } })
-          } else {
-            return { playerCompanion: { ...character, ...updates } }
-          }
+          return syncCharacter({ playerCharacter: { ...character, ...updates } })
         }),
 
         useItem: (itemId, targetCharacter = 'player') => {
           // Cette fonction retourne des informations pour que le composant puisse afficher le bon message
-          const character = targetCharacter === 'player' ? get().playerCharacter : get().playerCompanion
+          const character = get().playerCharacter
           if (!character) return { success: false, message: 'Personnage non trouvé' }
 
           // D'abord chercher l'item dans l'inventaire du personnage
@@ -646,14 +561,10 @@ export const useCharacterStore = create(
               const healAmount = updatedCharacter.currentHP - oldHP
               
               // Mettre à jour le personnage
-              if (targetCharacter === 'player') {
-                set({ 
-                  playerCharacter: updatedCharacter,
-                  selectedCharacter: updatedCharacter
-                })
-              } else {
-                set({ playerCompanion: updatedCharacter })
-              }
+              set({ 
+                playerCharacter: updatedCharacter,
+                selectedCharacter: updatedCharacter
+              })
               
               // Retirer UNE SEULE unité de l'objet s'il est consommable
               if (itemData.type === 'consumable') {
@@ -687,14 +598,10 @@ export const useCharacterStore = create(
               })
 
               // Mettre à jour le personnage
-              if (targetCharacter === 'player') {
-                set({ 
-                  playerCharacter: updatedCharacter,
-                  selectedCharacter: updatedCharacter
-                })
-              } else {
-                set({ playerCompanion: updatedCharacter })
-              }
+              set({ 
+                playerCharacter: updatedCharacter,
+                selectedCharacter: updatedCharacter
+              })
 
               // Retirer UNE SEULE unité de l'objet s'il est consommable
               if (item.consumable || item.type === 'consumable') {
@@ -737,7 +644,7 @@ export const useCharacterStore = create(
 
         // Nettoyer les doublons dans l'inventaire en regroupant par nom/id
         consolidateInventory: (targetCharacter = 'player') => set((state) => {
-          const character = targetCharacter === 'player' ? state.playerCharacter : state.playerCompanion
+          const character = state.playerCharacter
           if (!character || !character.inventory) return state
 
           const consolidatedInventory = []
@@ -764,16 +671,11 @@ export const useCharacterStore = create(
 
           const updates = { inventory: consolidatedInventory }
 
-          if (targetCharacter === 'player') {
-            return syncCharacter({ playerCharacter: { ...character, ...updates } })
-          } else {
-            return { playerCompanion: { ...character, ...updates } }
-          }
+          return syncCharacter({ playerCharacter: { ...character, ...updates } })
         }),
 
         resetCharacters: () => set({
           playerCharacter: null,
-          playerCompanion: null,
           playerCompanions: [],
           activeCompanions: [],
           activeEffects: [],
@@ -794,8 +696,6 @@ export const useCharacterStore = create(
 export const characterSelectors = {
   getPlayerCharacter: (state) => state.playerCharacter,
   
-  getPlayerCompanion: (state) => state.playerCompanion,
-  
   // Nouveaux sélecteurs pour compagnons multiples
   getAllCompanions: (state) => state.playerCompanions,
   
@@ -809,16 +709,12 @@ export const characterSelectors = {
   
   getCompanionsByRole: (state, role) =>
     state.playerCompanions.filter(c => c.role === role),
-    
-  hasCompanion: (state) => state.playerCompanion !== null,
   
   hasCompanions: (state) => state.playerCompanions.length > 0,
   
   hasActiveCompanions: (state) => state.activeCompanions.length > 0,
   
   isPlayerAlive: (state) => state.playerCharacter?.currentHP > 0,
-  
-  isCompanionAlive: (state) => state.playerCompanion?.currentHP > 0,
   
   isCompanionAliveById: (state, companionId) => {
     const companion = state.playerCompanions.find(c => c.id === companionId)
@@ -828,11 +724,6 @@ export const characterSelectors = {
   getPlayerHPPercentage: (state) => 
     state.playerCharacter 
       ? Math.round((state.playerCharacter.currentHP / state.playerCharacter.maxHP) * 100)
-      : 0,
-  
-  getCompanionHPPercentage: (state) =>
-    state.playerCompanion
-      ? Math.round((state.playerCompanion.currentHP / state.playerCompanion.maxHP) * 100)
       : 0,
   
   canLevelUp: (state) => state.levelUpPending,

@@ -69,12 +69,13 @@ export class GameLogic {
    * @returns {null} Always returns null as rest is handled by context
    */
   static processRestAction(action, context, restType) {
+    const nextScene = action.next || action.nextScene
     if (restType === 'long') {
-      context.startLongRest(action.nextScene)
+      context.startLongRest(nextScene)
     } else {
-      context.startShortRest(action.nextScene)
+      context.startShortRest(nextScene)
     }
-    return null
+    return null // Le repos gère la transition de scène
   }
 
   /**

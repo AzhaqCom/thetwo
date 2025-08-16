@@ -14,6 +14,7 @@ export const RestPanel = ({
   type,
   character,
   onRestComplete,
+  onCancel,        // Nouveau prop pour gérer l'annulation depuis l'extérieur
   className = ''
 }) => {
   // Stores
@@ -121,14 +122,17 @@ export const RestPanel = ({
     setRestType(null)
     setGamePhase('normal')
     addCombatMessage('Repos annulé', 'rest-cancel')
+    
+    // Appeler le callback externe si fourni
+    onCancel?.()
   }
 
-  // Rendu du sélecteur de type de repos
+  // Rendu du sélecteur de type de repos (seulement si pas de type forcé)
   if (!restType && !restInProgress) {
     return (
       <Card className={`rest-panel ${className}`}>
         <CardHeader>
-          <h3>😴 Repos pour {activeCharacter.name}</h3>
+          <h3>😴 Choix de repos pour {activeCharacter.name}</h3>
           
           {/* Indicateurs de besoin de repos */}
           <div className="rest-panel__status">
@@ -160,6 +164,8 @@ export const RestPanel = ({
             character={activeCharacter}
             restData={restData}
             onSelect={handleRestTypeSelect}
+            showBackButton={onCancel ? true : false}  // Bouton retour seulement si onCancel fourni
+            onBack={onCancel}
           />
         </CardBody>
       </Card>
@@ -182,14 +188,14 @@ export const RestPanel = ({
             restData={restData}
             onSpendHitDie={handleSpendHitDie}
             onCompleteRest={handleCompleteShortRest}
-            onCancelRest={handleCancelRest}
+            onCancelRest={onCancel ? handleCancelRest : undefined}  // Annulation seulement si onCancel fourni
           />
         ) : (
           <LongRestManager
             character={activeCharacter}
             restData={restData}
             onCompleteRest={handleCompleteLongRest}
-            onCancelRest={handleCancelRest}
+            onCancelRest={onCancel ? handleCancelRest : undefined}  // Annulation seulement si onCancel fourni
           />
         )}
       </CardBody>

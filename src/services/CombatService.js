@@ -1,7 +1,7 @@
 import { enemyTemplates } from '../data/enemies'
-import { getModifier } from '../utils/calculations'
+import { getModifier, getInitiativeBonus, getSpellAttackBonus, getConstitutionModifier } from '../utils/calculations'
 import { CombatEngine } from './combatEngine'
-import { CompanionAI } from './companionAI'
+import { EntityAI } from './EntityAI'
 import { CombatEffects } from './combatEffects'
 
 /**
@@ -11,17 +11,17 @@ export class CombatService {
   /**
    * Initialise un nouveau combat
    */
-  initializeCombat(playerCharacter, playerCompanion, encounterData) {
+  initializeCombat(playerCharacter, activeCompanions, encounterData) {
     // Créer les ennemis
     const enemies = this.createEnemiesFromEncounter(encounterData)
     
     // Créer l'ordre d'initiative
-    const turnOrder = this.rollInitiative(playerCharacter, playerCompanion, enemies)
+    const turnOrder = this.rollInitiative(playerCharacter, activeCompanions, enemies)
     
     // Positions initiales
     const positions = this.initializePositions(
       playerCharacter, 
-      playerCompanion, 
+      activeCompanions, 
       enemies, 
       encounterData.enemyPositions
     )
@@ -71,7 +71,7 @@ export class CombatService {
   /**
    * Lance l'initiative pour tous les combattants
    */
-  rollInitiative(playerCharacter, playerCompanion, enemies) {
+  rollInitiative(playerCharacter, activeCompanions, enemies) {
     const combatants = []
 
     // Vérification de sécurité
@@ -81,7 +81,7 @@ export class CombatService {
     }
 
     // Joueur
-    const playerInit = this.rollD20() + getModifier(playerCharacter.stats.dexterite)
+    const playerInit = this.rollD20() + getInitiativeBonus(playerCharacter)
     combatants.push({
       ...playerCharacter,
       id: 'player',
@@ -90,21 +90,23 @@ export class CombatService {
       isAlive: true
     })
 
-    // Compagnon
-    if (playerCompanion) {
-      const companionInit = this.rollD20() + getModifier(playerCompanion.stats.dexterite)
-      combatants.push({
-        ...playerCompanion,
-        id: 'companion', 
-        type: 'companion',
-        initiative: companionInit,
-        isAlive: true
+    // Compagnons actifs
+    if (activeCompanions && activeCompanions.length > 0) {
+      activeCompanions.forEach(companion => {
+        const companionInit = this.rollD20() + getInitiativeBonus(companion)
+        combatants.push({
+          ...companion,
+          id: companion.id || companion.name.toLowerCase(),
+          type: 'companion',
+          initiative: companionInit,
+          isAlive: true
+        })
       })
     }
 
     // Ennemis
     enemies.forEach(enemy => {
-      const enemyInit = this.rollD20() + getModifier(enemy.stats.dexterite)
+      const enemyInit = this.rollD20() + getInitiativeBonus(enemy)
       combatants.push({
         ...enemy,
         initiative: enemyInit
@@ -128,15 +130,22 @@ export class CombatService {
   /**
    * Initialise les positions de combat
    */
-  initializePositions(playerCharacter, playerCompanion, enemies, customPositions = null) {
+  initializePositions(playerCharacter, activeCompanions, enemies, customPositions = null) {
     const positions = {
       // Positions par défaut du joueur
       player: { x: 1, y: 2 },
-      companion: playerCompanion ? { x: 0, y: 2 } : null,
       
       // État de mouvement
-      playerHasMoved: false,
-      companionHasMoved: false
+      playerHasMoved: false
+    }
+
+    // Ajouter les positions des compagnons actifs
+    if (activeCompanions && activeCompanions.length > 0) {
+      activeCompanions.forEach((companion, index) => {
+        const companionId = companion.id || companion.name.toLowerCase()
+        positions[companionId] = { x: 0, y: index + 1 }
+        positions[`${companionId}HasMoved`] = false
+      })
     }
 
     // Positions des ennemis
@@ -484,12 +493,12 @@ export class CombatService {
   /**
    * Vérifie les conditions de victoire/défaite
    */
-  checkCombatEnd(playerCharacter, playerCompanion, enemies) {
+  checkCombatEnd(playerCharacter, activeCompanions, enemies) {
     const playerDefeated = this.isDefeated(playerCharacter)
-    const companionDefeated = playerCompanion ? this.isDefeated(playerCompanion) : true
+    const allCompanionsDefeated = activeCompanions.length === 0 || activeCompanions.every(companion => this.isDefeated(companion))
     const allEnemiesDefeated = enemies.every(enemy => this.isDefeated(enemy))
     
-    if (playerDefeated && companionDefeated) {
+    if (playerDefeated && allCompanionsDefeated) {
       return 'defeat'
     }
     
@@ -600,8 +609,8 @@ export class CombatService {
     }
 
     try {
-      // 1. Obtenir la meilleure action via l'IA
-      const bestAction = CompanionAI.getBestAction(companion, gameState)
+      // 1. Obtenir la meilleure action via l'IA unifiée
+      const bestAction = EntityAI.getBestAction(companion, gameState)
       
       if (!bestAction) {
         results.messages.push({
@@ -613,7 +622,7 @@ export class CombatService {
 
       // 2. Calculer le mouvement optimal
       const currentPosition = gameState.combatPositions[companionId]
-      const optimalPosition = CompanionAI.calculateOptimalMovement(
+      const optimalPosition = EntityAI.calculateOptimalMovement(
         companion, 
         currentPosition, 
         gameState
@@ -711,7 +720,7 @@ export class CombatService {
     const target = action.target
     
     // Vérifier si le sort peut être lancé
-    if (!CompanionAI.canCastSpell(companion, spellName)) {
+    if (!EntityAI.canCastSpell(companion, spellName)) {
       results.messages.push({
         text: `${companion.name} ne peut pas lancer ${spellName}`,
         type: 'error'

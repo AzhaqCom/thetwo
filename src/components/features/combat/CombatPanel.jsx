@@ -13,8 +13,7 @@ import { CombatLog } from '../../ui/CombatLog'
  */
 export const CombatPanel = ({
   playerCharacter,
-  playerCompanion,
-  activeCompanions = [], // Nouveau : compagnons actifs
+  activeCompanions = [], // Compagnons actifs
   encounterData,
   onCombatEnd,
   onReplayCombat,
@@ -67,11 +66,10 @@ export const CombatPanel = ({
 
     // Initialiser le combat avec les compagnons actifs
     if (!isInitialized) {
-      // Utiliser le premier compagnon actif pour compatibilité
-      const primaryCompanion = activeCompanions.length > 0 ? activeCompanions[0] : playerCompanion
+      // Initialiser avec tous les compagnons actifs
       initializeCombat(encounterData, playerCharacter, activeCompanions)
     }
-  }, [encounterData, combatKey, isInitialized, playerCharacter, playerCompanion, activeCompanions, initializeCombat, startCombat, resetCombat, addCombatMessage, turnOrder])
+  }, [encounterData, combatKey, isInitialized, playerCharacter, activeCompanions, initializeCombat, startCombat, resetCombat, addCombatMessage, turnOrder])
 
   useEffect(() => {
     // On se déclenche UNIQUEMENT quand la phase est la bonne.
@@ -117,7 +115,7 @@ export const CombatPanel = ({
         setPhase('executing-turn')
       }
     }
-  }, [phase, currentTurn, setPhase, enemies, playerCharacter, playerCompanion]);
+  }, [phase, currentTurn, setPhase, enemies, playerCharacter, activeCompanions]);
 
   // Gestion des actions de combat
   const handleActionSelect = useCallback((action) => {
@@ -350,7 +348,6 @@ export const CombatPanel = ({
         <div className="combat-grid-section">
           <CombatGrid
             playerCharacter={playerCharacter}
-            playerCompanion={playerCompanion}
             activeCompanions={activeCompanions}
             enemies={enemies}
             positions={positions}

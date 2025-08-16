@@ -27,7 +27,7 @@ export const CombatTurnManager = ({
   } = useCombatStore()
   
   const { addCombatMessage } = useGameStore()
-  const { takeDamagePlayer, takeDamageCompanionById, playerCharacter, playerCompanion, getActiveCompanions } = useCharacterStore()
+  const { takeDamagePlayer, takeDamageCompanionById, playerCharacter, getActiveCompanions } = useCharacterStore()
   
   // Services
   const combatService = new CombatService()
@@ -106,7 +106,7 @@ export const CombatTurnManager = ({
     }
 
     return target
-  }, [playerCharacter, playerCompanion, addCombatMessage, getActiveCompanions])
+  }, [playerCharacter, addCombatMessage, getActiveCompanions])
 
   /**
    * Applique les dégâts à une cible selon son type
@@ -347,7 +347,7 @@ export const CombatTurnManager = ({
       }, 300)
     }, movementResult.moved ? 800 : 400)
 
-  }, [enemies, playerCharacter, playerCompanion, handleMovement, getTarget, executeAttack, onNextTurn, onPhaseChange])
+  }, [enemies, playerCharacter, handleMovement, getTarget, executeAttack, onNextTurn, onPhaseChange])
 
   /**
    * EXECUTION DU TOUR DE COMPAGNON  
@@ -358,8 +358,8 @@ export const CombatTurnManager = ({
     const activeCompanions = getActiveCompanions()
     console.log('🤝 Active companions available:', activeCompanions)
     
-    // Récupérer le bon personnage compagnon depuis le turn order
-    const actualCompanion = companionTurn.character || playerCompanion
+    // Récupérer le bon personnage compagnon depuis le turn order ou les compagnons actifs
+    const actualCompanion = companionTurn.character || activeCompanions.find(c => c.id === companionTurn.id || c.name === companionTurn.name)
     console.log('🤝 Actual companion to use:', actualCompanion)
     
     if (!actualCompanion || actualCompanion.currentHP <= 0) {
@@ -431,7 +431,7 @@ export const CombatTurnManager = ({
       }, 500)
     }, movementResult.moved ? 1000 : 500)
 
-  }, [playerCompanion, enemies, combatService, updateEnemyPosition, addCombatMessage, executeAttack, onNextTurn, onPhaseChange])
+  }, [getActiveCompanions, enemies, combatService, updateEnemyPosition, addCombatMessage, executeAttack, onNextTurn, onPhaseChange])
 
   // Protection contre les re-exécutions multiples
   const [isExecuting, setIsExecuting] = React.useState(false)
@@ -571,7 +571,7 @@ export const CombatTurnManager = ({
         setIsExecuting(false)
         onNextTurn()
     }
-  }, [phase, currentTurn, isExecuting, lastExecutedTurn, handleEnemyTurn, handleCompanionTurn, onNextTurn, onPhaseChange, playerCharacter, playerCompanion, enemies])
+  }, [phase, currentTurn, isExecuting, lastExecutedTurn, handleEnemyTurn, handleCompanionTurn, onNextTurn, onPhaseChange, playerCharacter, enemies])
 
   // Ce composant est invisible, il ne rend rien
   return null

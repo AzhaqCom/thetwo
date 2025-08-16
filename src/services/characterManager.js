@@ -2,7 +2,7 @@
  * Character Manager Service - Pure business logic for character management
  */
 
-import { getModifier, rollDie } from '../utils/calculations'
+import { getModifier, rollDie, getSpellAttackBonus, getConstitutionModifier } from '../utils/calculations'
 import { levels } from '../data/levels'
 
 export class CharacterManager {
@@ -63,8 +63,7 @@ export class CharacterManager {
 
     switch (action.actionType) {
       case 'spell':
-        const spellcastingAbility = this.getSpellcastingAbility(character)
-        return getModifier(character.stats[spellcastingAbility]) + proficiencyBonus
+        return getSpellAttackBonus(character)
 
       case 'weapon':
         let statToUse = action.stat || 'force'
@@ -120,7 +119,7 @@ export class CharacterManager {
 
     // Calculate HP gain
     const hitDie = this.getHitDie(character.class)
-    const conModifier = getModifier(character.stats.constitution)
+    const conModifier = getConstitutionModifier(character)
     const hpGain = Math.max(1, rollDie(hitDie) + conModifier)
 
     const updatedCharacter = {
@@ -192,7 +191,7 @@ export class CharacterManager {
     if (hitDieSpent <= 0) return character
 
     const hitDie = this.getHitDie(character.class)
-    const conModifier = getModifier(character.stats.constitution)
+    const conModifier = getConstitutionModifier(character)
     
     let healing = 0
     const availableHitDice = character.hitDice || Math.floor(character.level / 2)

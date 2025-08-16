@@ -5,6 +5,7 @@ import { CombatService } from '../services/CombatService'
 import { CharacterManager } from '../services/characterManager'
 import { GameLogic } from '../services/gameLogic'
 import { CombatEffects } from '../services/combatEffects'
+import { EntityAI } from '../services/EntityAI'
 import { rollD20WithModifier, getModifier, calculateDistance } from '../utils/calculations'
 import { isValidGridPosition, isPositionOccupied } from '../utils/validation'
 import { GRID_WIDTH, GRID_HEIGHT, COMBAT_PHASES } from '../utils/constants'
@@ -574,7 +575,7 @@ export const useCombatStore = create(
           return
         }
 
-        // 2. Calculer le mouvement optimal (si autorisé)
+        // 2. Utiliser la nouvelle IA unifiée si l'ennemi a un rôle défini
         const combatState = {
           playerCharacter,
           activeCompanions,
@@ -582,83 +583,143 @@ export const useCombatStore = create(
           combatPositions
         }
 
-        let finalPosition = enemyPosition
-        
-        if (effectModifiers.canMove && !CombatEffects.hasEffect(enemy, 'restrained')) {
-          const optimalPosition = CombatEngine.calculateOptimalMovement(
+        if (enemy.role && enemy.aiPriority) {
+          // Nouveau système d'IA par rôle
+          const bestAction = EntityAI.getBestAction(enemy, combatState)
+          
+          if (bestAction) {
+            // Exécuter l'action intelligente
+            get().executeEnemyAction(enemy, bestAction, combatState)
+          } else {
+            console.log(`${enemyName} (${enemy.role}) ne trouve aucune action`)
+          }
+        } else {
+          // Ancienne logique pour ennemis sans rôle défini
+          let finalPosition = enemyPosition
+          
+          if (effectModifiers.canMove && !CombatEffects.hasEffect(enemy, 'restrained')) {
+            const optimalPosition = CombatEngine.calculateOptimalMovement(
+              { ...enemy, type: 'enemy' },
+              enemyPosition,
+              combatState
+            )
+
+            if (optimalPosition) {
+              get().moveCharacter(enemyName, optimalPosition)
+              finalPosition = optimalPosition
+            }
+          } else {
+            console.log(`${enemyName} ne peut pas bouger à cause d'effets (${enemy.activeEffects?.map(e => e.name).join(', ') || 'aucun effet visible'})`)
+          }
+
+          // Ancienne logique d'attaque basique
+          if (!effectModifiers.canAct) {
+            console.log(`${enemyName} ne peut pas attaquer à cause d'effets`)
+            return
+          }
+
+          const enemyAttack = enemy.attacks?.[0] || {
+            name: "Attaque de base",
+            type: "melee",
+            range: 1,
+            damageDice: "1d6",
+            damageBonus: 0
+          }
+
+          const targets = CombatEngine.getTargetsInRange(
             { ...enemy, type: 'enemy' },
-            enemyPosition,
+            finalPosition,
+            enemyAttack,
             combatState
           )
 
-          if (optimalPosition) {
-            get().moveCharacter(enemyName, optimalPosition)
-            finalPosition = optimalPosition
-          }
-        } else {
-          console.log(`${enemyName} ne peut pas bouger à cause d'effets (${enemy.activeEffects?.map(e => e.name).join(', ') || 'aucun effet visible'})`)
-        }
-
-        // 3. Calculer et exécuter la meilleure attaque (si autorisé)
-        if (!effectModifiers.canAct) {
-          console.log(`${enemyName} ne peut pas attaquer à cause d'effets`)
-          return
-        }
-
-        const enemyAttack = enemy.attacks?.[0] || {
-          name: "Attaque de base",
-          type: "melee",
-          range: 1,
-          damageDice: "1d6",
-          damageBonus: 0
-        }
-
-        const targets = CombatEngine.getTargetsInRange(
-          { ...enemy, type: 'enemy' },
-          finalPosition,
-          enemyAttack,
-          combatState
-        )
-
-        if (targets.length > 0) {
-          // Choisir la cible - priorité au joueur, sinon compagnon
-          let target = targets.find(t => combatPositions.player && 
-            t.position.x === combatPositions.player.x && 
-            t.position.y === combatPositions.player.y)
-          
-          if (!target) {
-            target = targets[0] // Prendre le premier disponible (compagnon)
-          }
-          
-          // 4. Exécuter l'attaque avec modificateurs d'effets
-          let damageResult = CombatEngine.calculateDamage(enemyAttack)
-          
-          // Appliquer les modificateurs d'attaque (désavantage, etc.)
-          if (effectModifiers.attackDisadvantage) {
-            console.log(`${enemyName} attaque avec désavantage à cause d'effets`)
-            // Simuler le désavantage en réduisant les dégâts
-            damageResult.damage = Math.floor(damageResult.damage * 0.75)
-          }
-
-          // 5. Appliquer les dégâts selon le type de cible
-          const targetPos = combatPositions.player
-          
-          if (targetPos && target.position.x === targetPos.x && target.position.y === targetPos.y) {
-            // Cible = joueur
-            get().dealDamageToPlayer(damageResult.damage)
-          } else {
-            // Cible = compagnon - trouver lequel par position
-            const targetCompanion = activeCompanions.find(companion => {
-              const companionPos = combatPositions[companion.id]
-              return companionPos && companionPos.x === target.position.x && companionPos.y === target.position.y
-            })
+          if (targets.length > 0) {
+            let target = targets.find(t => combatPositions.player && 
+              t.position.x === combatPositions.player.x && 
+              t.position.y === combatPositions.player.y)
             
-            if (targetCompanion) {
-              get().dealDamageToCompanionById(targetCompanion.id, damageResult.damage)
+            if (!target) {
+              target = targets[0]
             }
+            
+            let damageResult = CombatEngine.calculateDamage(enemyAttack)
+            
+            if (effectModifiers.attackDisadvantage) {
+              console.log(`${enemyName} attaque avec désavantage à cause d'effets`)
+              damageResult.damage = Math.floor(damageResult.damage * 0.75)
+            }
+
+            const targetPos = combatPositions.player
+            
+            if (targetPos && target.position.x === targetPos.x && target.position.y === targetPos.y) {
+              get().dealDamageToPlayer(damageResult.damage)
+            } else {
+              const targetCompanion = activeCompanions.find(companion => {
+                const companionPos = combatPositions[companion.id]
+                return companionPos && companionPos.x === target.position.x && companionPos.y === target.position.y
+              })
+              
+              if (targetCompanion) {
+                get().dealDamageToCompanionById(targetCompanion.id, damageResult.damage)
+              }
+            }
+          } else {
+            console.log(`${enemyName} n'a aucune cible à portée`)
           }
-        } else {
-          console.log(`${enemyName} n'a aucune cible à portée`)
+        }
+      },
+
+      /**
+       * Exécute une action d'ennemi selon la nouvelle IA
+       */
+      executeEnemyAction: (enemy, action, combatState) => {
+        console.log(`Executing ${action.type} for ${enemy.name}:`, action.description)
+        
+        switch (action.type) {
+          case 'attack':
+            // Attaque normale
+            if (action.attack && action.target) {
+              const damageResult = CombatEngine.calculateDamage(action.attack)
+              
+              // Identifier le type de cible et appliquer les dégâts
+              if (action.target.id === 'player') {
+                get().dealDamageToPlayer(damageResult.damage)
+              } else if (action.target.id) {
+                get().dealDamageToCompanionById(action.target.id, damageResult.damage)
+              }
+            }
+            break
+            
+          case 'hit_and_run':
+            // Tactique spéciale : retraite puis attaque à distance
+            // TODO: Implémenter la logique de retraite
+            console.log(`${enemy.name} utilise une tactique de harcèlement`)
+            if (action.attack && action.targets.length > 0) {
+              const target = action.targets[0]
+              const damageResult = CombatEngine.calculateDamage(action.attack)
+              
+              if (target.id === 'player') {
+                get().dealDamageToPlayer(damageResult.damage)
+              } else if (target.id) {
+                get().dealDamageToCompanionById(target.id, damageResult.damage)
+              }
+            }
+            break
+            
+          case 'charge':
+            // Charge vers la cible
+            console.log(`${enemy.name} charge ${action.target.name}`)
+            // TODO: Implémenter le mouvement de charge
+            break
+            
+          case 'retreat':
+            // Retraite tactique
+            console.log(`${enemy.name} se replie tactiquement`)
+            // TODO: Implémenter la logique de retraite
+            break
+            
+          default:
+            console.warn(`Type d'action ennemi inconnu: ${action.type}`)
         }
       },
 

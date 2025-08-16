@@ -19,6 +19,7 @@ export const missingScenesP2 = {
       text: "Tu t'approches discrètement des voix. Tes pas silencieux te permettent d'entendre clairement la conversation : une femme semble prisonnière d'un cercle magique et supplie pour de l'aide. Elle mentionne Dame Seraphina et une 'trahison'."
     },
     choices: [
+    
       {
         text: "Révéler ta présence pour l'aider",
         next: "rencontre_zara",
@@ -98,7 +99,7 @@ export const missingScenesP2 = {
     choices: [
       {
         text: "Vérifier que Zara va bien",
-        next: "zara_liberee_difficile",
+        next: "zara_liberee",
         consequences: {
           flags: { liberationDifficile: true }
         }

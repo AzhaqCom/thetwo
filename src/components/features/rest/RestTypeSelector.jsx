@@ -8,6 +8,8 @@ export const RestTypeSelector = ({
   character,
   restData,
   onSelect,
+  showBackButton = false,
+  onBack,
   className = ''
 }) => {
   const renderRestOption = (type, title, icon, duration, benefits, canTake = true) => (
@@ -149,6 +151,19 @@ export const RestTypeSelector = ({
           </ul>
         </div>
       </div>
+      
+      {/* Bouton retour seulement pour REST_CHOICE */}
+      {showBackButton && (
+        <div className="rest-type-selector__back">
+          <Button
+            variant="secondary"
+            onClick={onBack}
+            className="rest-back-button"
+          >
+            ← Retour
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
