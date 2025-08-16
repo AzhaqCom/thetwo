@@ -16,9 +16,49 @@ import seraphinaCorruptedImage from '../assets/seraphina_corrupted.png'
 import aldwinImage from '../assets/maitre_aldwin.png'
 import ruined_fortress from '../assets/ruined_fortress.jpg'
 import underground_tunnels from '../assets/underground_tunnels.jpg'
+import marchand from '../assets/marchand.jpg';
 export const newScenes = {
   // === PROLOGUE : L'HÉRITAGE MAUDIT ===
-
+  "simpleShopScene": {
+    metadata: {
+      type: 'merchant',
+      character: 'merchant_1',
+      shop_type: 'general_store'
+    },
+    content: {
+      text: "Bienvenue dans ma boutique !",
+      speaker: "Tom le Marchand",
+      portrait: marchand
+    },
+    shop: {
+      currency: "or",
+      inventory: [
+        {
+          id: "arccheat",
+          price: 50,
+          stock: 1
+        }, {
+          id: "potionOfHealing",
+          price: 10,
+          stock: -1
+        }
+      ]
+    },
+    choices: [
+      {
+        text: "Voir les marchandises",
+        action: { type: "openShop" }
+      },
+      {
+        text: "Vendre des objets",
+        action: { type: "openSellInterface" }
+      },
+      {
+        text: "Au revoir",
+        next: "town_square"
+      }
+    ]
+  },
   "introduction": {
     metadata: {
       type: SCENE_TYPES.TEXT,
@@ -40,11 +80,11 @@ export const newScenes = {
         mage: "character.class === 'Magicien'"
       }
     },
-    choices: [  
+    choices: [
 
       {
         text: "Se rendre directement à la taverne du village",
-        next: "taverne_lanterne", 
+        next: "taverne_lanterne",
         consequences: {
           flags: { arrivedAtVillage: true },
           companions: ["kael"]
@@ -570,7 +610,7 @@ export const newScenes = {
       },
       {
         text: "Prendre du repos avant l'exploration",
-        next: "repos_court_avec_kael"  
+        next: "repos_court_avec_kael"
       }
     ]
   },
@@ -709,9 +749,7 @@ export const newScenes = {
     choices: [
       {
         text: "Engager le combat !",
-        action: {
-          type: "combat"
-        }
+
       }
     ]
   },
@@ -2115,16 +2153,16 @@ export const newScenes = {
       }
     ]
   },
- 
+
   "repos_court_avec_kael": {
     metadata: {
-      type: SCENE_TYPES.REST_SHORT,    
+      type: SCENE_TYPES.REST_SHORT,
       title: "Repos avec Kael"
     },
     content: {
       text: "Kael approuve votre décision. 'Sage choix. Prenons quelques minutes pour nous reposer et planifier notre approche.' Vous vous installez confortablement pendant que Kael partage ses  connaissances sur les tunnels."
     },
-    next: "tunnels_entree"            
+    next: "tunnels_entree"
   },
 
   // === SCÈNES DE MILLHAVEN ===

@@ -1,6 +1,7 @@
 import { calculateDistance, getModifier } from '../utils/calculations'
 import { spells } from '../data/spells'
 import { CombatEngine } from './combatEngine'
+import { SpellService } from './SpellService'
 
 /**
  * Service d'IA unifié pour tous les combattants (compagnons et ennemis)
@@ -257,7 +258,7 @@ export class EntityAI {
   }
 
   /**
-   * Vérifie si l'entité peut lancer un sort
+   * Vérifie si l'entité peut lancer un sort (délègue vers SpellService)
    */
   static canCastSpell(entity, spellName) {
     if (!entity.spellcasting || !entity.spellcasting.knownSpells) return false
@@ -265,23 +266,19 @@ export class EntityAI {
     const spell = spells[spellName]
     if (!spell) return false
     
-    const spellLevel = spell.level
-    const slotsRemaining = entity.spellcasting.slotsRemaining || {}
-    
-    if (spellLevel === 0) return true // Cantrips
-    
-    return (slotsRemaining[spellLevel.toString()] || 0) > 0
+    const spellService = new SpellService()
+    return spellService.canCastSpell(spell, entity)
   }
 
   /**
-   * Trouve les sorts disponibles
+   * Trouve les sorts disponibles (délègue vers SpellService)
    */
   static getAvailableSpells(entity) {
     if (!entity.spellcasting || !entity.spellcasting.knownSpells) return []
     
-    return entity.spellcasting.knownSpells.filter(spellName => 
-      EntityAI.canCastSpell(entity, spellName)
-    )
+    const spellService = new SpellService()
+    return spellService.getKnownSpells(entity)
+      .filter(spell => this.canCastSpell(entity, spell.name))
   }
 
   // ========================================
@@ -810,7 +807,7 @@ export class EntityAI {
   }
 
   /**
-   * Délégation pour la compatibilité avec l'ancien système
+   * Délégation vers CombatEngine pour les calculs de mouvement et ciblage
    */
   static calculateOptimalMovement(entity, currentPosition, gameState) {
     return CombatEngine.calculateOptimalMovement(

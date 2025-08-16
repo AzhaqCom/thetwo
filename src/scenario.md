@@ -24,9 +24,9 @@
   ---
   Acte II : Les Secrets Enfouis
 
-  Combat 1 : Ombres Affamées 🌑
+  Combat 1 :2 Ombres 
 
-  Difficulté : Facile - Des ombres mineures attaquent le village la nuit. Premier contact       
+  Difficulté : Facile - Des ombres attaquent le village la nuit. Premier contact       
   avec l'ennemi mystérieux.
 
   Les Tunnels Oubliés
@@ -46,7 +46,7 @@
   magiques. Il a des instruments pour "détecter" les énergies planaires et rejoint le
   groupe par curiosité scientifique.
 
-  Combat 2 : Spectres des Marais 👻
+  Combat 2 : 3 Spectres
 
   Difficulté : Moyenne - Dans les marais environnants, des esprits de voyageurs perdus,
   plus organisés et dangereux.
@@ -63,7 +63,7 @@
   était piégée dans la forteresse et révèle que quelqu'un contrôle activement l'ouverture       
   de la porte.
 
-  Combat 3 : Gardiens Corrompus ⚔️
+  Combat 3 : Gardiens Corrompus 
 
   Difficulté : Difficile - D'anciens gardiens transformés en créatures hybrides, mi-humains     
    mi-ombres.

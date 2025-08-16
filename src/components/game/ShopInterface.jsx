@@ -89,7 +89,7 @@ const ShopInterface = ({
                   {/* Statistiques de l'objet */}
                   {itemData.type === 'weapon' && (
                     <div className="item-stats">
-                      <span>Dégâts: {itemData.damage}</span>
+                      <span>Dégâts: {itemData.damage.dice}</span>
                     </div>
                   )}
                   

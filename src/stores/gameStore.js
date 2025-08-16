@@ -3,31 +3,12 @@ import { devtools } from 'zustand/middleware'
 import { spells } from '../data/spells'
 import { spellSlotsByLevel } from '../data/character'
 import { rollD20WithModifier, getModifier } from '../utils/calculations'
-import { GameLogic } from '../services/gameLogic'
+import { DataService } from '../services/DataService'
+import { CombatEngine } from '../services/combatEngine'
+import { GameUtils } from '../utils/GameUtils'
 import { initialGameFlags, GameFlagsHelpers } from '../data/gameFlags'
 import { companions } from '../data/companions'
-
-// Mapping des compétences vers les caractéristiques
-const skillToStat = {
-  acrobaties: "dexterite",
-  arcane: "intelligence",
-  athletisme: "force",
-  discretion: "dexterite",
-  dressage: "sagesse",
-  escamotage: "dexterite",
-  histoire: "intelligence",
-  intimidation: "charisme",
-  intuition: "sagesse",
-  investigation: "intelligence",
-  medecine: "sagesse",
-  nature: "intelligence",
-  perception: "sagesse",
-  persuasion: "charisme",
-  religion: "intelligence",
-  representation: "charisme",
-  survie: "sagesse",
-  tromperie: "charisme"
-}
+import { useCharacterStore } from './characterStore'
 
 // Store principal pour la gestion de l'état global du jeu
 export const useGameStore = create(
@@ -35,7 +16,7 @@ export const useGameStore = create(
     (set, get) => ({
       // État initial
       gamePhase: 'character-selection',
-      currentScene: 'premier_combat_ombres', // Scène d'introduction par défaut
+      currentScene: 'introduction', // Scène d'introduction par défaut
       sceneHistory: [],
       combatLog: [],
       isShortResting: false,
@@ -69,7 +50,7 @@ export const useGameStore = create(
       // Gestion des messages
       addCombatMessage: (message, type = 'default') => set((state) => ({
         combatLog: [...state.combatLog, {
-          id: GameLogic.generateId('msg'),
+          id: GameUtils.generateId('msg'),
           message,
           type,
           timestamp: new Date()
@@ -80,7 +61,7 @@ export const useGameStore = create(
 
       addGameMessage: (message, type = 'info') => set((state) => ({
         gameMessages: [...state.gameMessages, {
-          id: GameLogic.generateId('game-msg'),
+          id: GameUtils.generateId('game-msg'),
           message,
           type,
           timestamp: new Date()
@@ -117,29 +98,20 @@ export const useGameStore = create(
         combatKey: state.combatKey + 1
       })),
 
-      // Gestion des tests de compétences
+      // Gestion des tests de compétences (délègue vers CombatEngine)
       handleSkillCheck: (skill, dc, onSuccess, onPartialSuccess, onFailure, character) => {
-        const statName = skillToStat[skill]
-        const statValue = character.stats[statName]
-        const statModifier = getModifier(statValue)
-        const isProficient = character.proficiencies?.skills?.includes(skill) || false
-        const proficiencyBonus = isProficient ? character.proficiencyBonus : 0
-        const skillBonus = statModifier + proficiencyBonus
-        const roll = rollD20WithModifier(skillBonus)
-        const totalRoll = roll
-
         const { addCombatMessage, setCurrentScene } = get()
-
-        addCombatMessage(
-          `Test de ${skill} (${statName}): ${roll - skillBonus} (+${skillBonus} de bonus) = ${totalRoll}. DD: ${dc}`,
-          'skill-check'
-        )
+        
+        // Utiliser CombatEngine pour les calculs
+        const result = CombatEngine.handleSkillCheck(skill, dc, character)
+        
+        addCombatMessage(result.message, 'skill-check')
 
         let nextScene = onFailure
-        if (totalRoll >= dc) {
+        if (result.success) {
           nextScene = onSuccess
           addCombatMessage("✅ Réussite !", 'success')
-        } else if (totalRoll >= (dc - 5) && onPartialSuccess) {
+        } else if (result.total >= (dc - 5) && onPartialSuccess) {
           nextScene = onPartialSuccess
           addCombatMessage("⚠️ Réussite partielle", 'partial')
         } else {
@@ -322,7 +294,7 @@ export const useGameStore = create(
       },
 
       // Méthode pour appliquer des conséquences d'actions
-      applyConsequences: async (consequences) => {
+      applyConsequences: (consequences) => {
         if (!consequences) return
 
         const { setFlags, updateReputation, addToList, updateNpcRelation, addMajorChoice, visitLocation } = get()
@@ -345,41 +317,16 @@ export const useGameStore = create(
         // Ajouter des items à l'inventaire via characterStore
         if (consequences.items && Array.isArray(consequences.items)) {
           try {
-            // Import dynamique pour éviter la dépendance circulaire
-            import('./characterStore').then(({ useCharacterStore }) => {
-              const { addItemToInventory } = useCharacterStore.getState()
-              const { addCombatMessage} = get()
-              consequences.items.forEach(itemId => {
-                // Importer les données d'items
-                Promise.all([
-                  import('../data/items'),
-                  import('../data/weapons')
-                ]).then(([{ items }, { weapons }]) => {
-                  // Chercher d'abord dans items.js (consommables)
-                  let itemData = items[itemId]
-
-                  // Si pas trouvé dans items.js, chercher dans weapons.js
-                  if (!itemData) {
-                    itemData = weapons[itemId]
-                  }
-
-                  if (itemData) {
-                    const itemToAdd = {
-                      ...itemData,
-                      id: itemId
-                    }
-                    addItemToInventory(itemToAdd)
-                    addCombatMessage(` Objet obtenu : ${itemData.name}`)
-                  } else {
-                    console.error(`❌ Item non trouvé dans items.js ou weapons.js : ${itemId}`)
-                  }
-                }).catch(error => {
-                  console.error('Erreur lors du chargement des données d\'items:', error)
-                })
-              })
-            }).catch(error => {
-              console.error('Erreur lors de l\'ajout d\'items:', error)
-            })
+            // Import statique maintenant que la dépendance circulaire est résolue
+            const { addItemToInventory } = useCharacterStore.getState()
+            const { addCombatMessage } = get()
+            
+            // Utiliser DataService pour traiter les récompenses d'items
+            DataService.processItemRewards(
+              consequences.items,
+              addItemToInventory,
+              addCombatMessage
+            )
           } catch (error) {
             console.error('Erreur lors de l\'ajout d\'items:', error)
           }
@@ -388,8 +335,7 @@ export const useGameStore = create(
         // Ajouter des compagnons de manière asynchrone mais attendue
         if (consequences.companions && Array.isArray(consequences.companions)) {
           try {
-            // Import du characterStore de manière dynamique pour éviter la dépendance circulaire
-            const { useCharacterStore } = await import('./characterStore')
+            // Import statique maintenant que la dépendance circulaire est résolue
             const { addCompanion, setActiveCompanions } = useCharacterStore.getState()
             const { addCombatMessage } = get()
             consequences.companions.forEach(companionId => {

@@ -38,13 +38,21 @@
 
 ### **Phase 3 - Amélioration (Priority 3)**
 
-#### 🔄 **Tâches En Cours**
-- [ ] **En cours** : Séparer clairement CombatService et CombatEngine
+#### ✅ **Tâches Terminées**
+- [x] **TERMINÉ** : Séparer clairement CombatService et CombatEngine
+- [x] **TERMINÉ** : Supprimer les commentaires legacy
+- [x] **TERMINÉ** : Nettoyer les imports inutilisés
 
-#### ⏳ **Tâches Restantes**
-- [ ] Supprimer les commentaires legacy
-- [ ] Nettoyer les imports inutilisés
-- [ ] Documenter l'architecture finale
+#### ✅ **Tâches Terminées**
+- [x] **TERMINÉ** : Documenter l'architecture finale (voir ARCHITECTURE.md)
+
+#### 🎉 **Phase 3 - TERMINÉE !**
+
+#### 🎉 **Résultats Phase 3 :**
+- **CombatService** délègue maintenant tous les calculs purs vers **CombatEngine**
+- Commentaires legacy supprimés (`ancien système`, `obsolète`, `compatibilité`)
+- Import `getConstitutionModifier` inutilisé supprimé de CombatService
+- Architecture claire : **CombatEngine = Calculs** | **CombatService = Orchestration**
 
 ---
 

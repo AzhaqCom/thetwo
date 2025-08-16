@@ -1,7 +1,9 @@
 import { enemyTemplates } from '../data/enemies'
-import { getModifier, getInitiativeBonus, getSpellAttackBonus, getConstitutionModifier } from '../utils/calculations'
+import { spells } from '../data/spells'
+import { getModifier } from '../utils/calculations'
 import { CombatEngine } from './combatEngine'
-import { EntityAI } from './EntityAI'
+import { EntityAI_Hybrid } from './EntityAI_Hybrid'
+import { SpellService } from './SpellService'
 import { CombatEffects } from './combatEffects'
 
 /**
@@ -81,7 +83,7 @@ export class CombatService {
     }
 
     // Joueur
-    const playerInit = this.rollD20() + getInitiativeBonus(playerCharacter)
+    const playerInit = this.rollD20() + CombatEngine.getInitiativeBonus(playerCharacter)
     combatants.push({
       ...playerCharacter,
       id: 'player',
@@ -93,7 +95,7 @@ export class CombatService {
     // Compagnons actifs
     if (activeCompanions && activeCompanions.length > 0) {
       activeCompanions.forEach(companion => {
-        const companionInit = this.rollD20() + getInitiativeBonus(companion)
+        const companionInit = this.rollD20() + CombatEngine.getInitiativeBonus(companion)
         combatants.push({
           ...companion,
           id: companion.id || companion.name.toLowerCase(),
@@ -106,7 +108,7 @@ export class CombatService {
 
     // Ennemis
     enemies.forEach(enemy => {
-      const enemyInit = this.rollD20() + getInitiativeBonus(enemy)
+      const enemyInit = this.rollD20() + CombatEngine.getInitiativeBonus(enemy)
       combatants.push({
         ...enemy,
         initiative: enemyInit
@@ -390,104 +392,45 @@ export class CombatService {
   }
 
   /**
-   * Calcule le bonus d'attaque
+   * Calcule le bonus d'attaque (délègue au CombatEngine)
    */
   getAttackBonus(character, weapon) {
-    // Pour les ennemis, utiliser le bonus d'attaque défini dans l'arme si disponible
-    if (weapon.attackBonus !== undefined) {
-      return weapon.attackBonus
-    }
-    
-    // Pour les personnages joueurs, calculer le bonus
-    const proficiencyBonus = character.level ? Math.ceil(character.level / 4) + 1 : 2
-    
-    // Vérifier que character.stats existe
-    if (!character.stats) {
-      console.error('❌ Character.stats manquant dans getAttackBonus:', character)
-      return 0
-    }
-    
-    // Utiliser le stat défini dans l'arme, ou FOR par défaut pour mêlée, DEX pour distance
-    let stat = 'force'
-    if (weapon.stat) {
-      stat = weapon.stat
-    } else if (weapon.category === 'ranged' || weapon.type === 'ranged' || (weapon.range && weapon.range > 1)) {
-      stat = 'dexterite'
-    }
-    
-    const statValue = character.stats[stat]
-    if (statValue === undefined) {
-      console.error(`❌ Stat ${stat} manquante pour character:`, character)
-      return proficiencyBonus // Retourner au moins le bonus de maîtrise
-    }
-    
-    const abilityMod = getModifier(statValue)
-    
-    return abilityMod + proficiencyBonus
+    return CombatEngine.calculateAttackBonus(character, weapon)
   }
 
   /**
-   * Calcule le bonus d'attaque de sort
+   * Calcule le bonus d'attaque de sort (délègue au CombatEngine)
    */
   getSpellAttackBonus(caster) {
-    const proficiencyBonus = caster.level ? Math.ceil(caster.level / 4) + 1 : 2
-    
-    if (!caster.spellcasting || !caster.spellcasting.ability) {
-      return proficiencyBonus // Fallback
-    }
-    
-    const spellcastingAbility = caster.spellcasting.ability
-    const abilityScore = caster.stats[spellcastingAbility]
-    const abilityMod = getModifier(abilityScore || 10)
-    
-    return abilityMod + proficiencyBonus
+    return CombatEngine.calculateSpellAttackBonus(caster)
   }
 
   /**
-   * Calcule le bonus de sauvegarde d'une créature
+   * Calcule le bonus de sauvegarde (délègue au CombatEngine)
    */
   getSaveBonus(creature, saveType) {
-    if (!creature.stats) return 0
-    
-    const abilityMod = getModifier(creature.stats[saveType] || 10)
-    const proficiencyBonus = creature.level ? Math.ceil(creature.level / 4) + 1 : 0
-    
-    // Pour les ennemis, on peut ajouter des bonus spéciaux de sauvegarde si définis
-    const specialSaveBonus = creature.saveBonus?.[saveType] || 0
-    
-    return abilityMod + proficiencyBonus + specialSaveBonus
+    return CombatEngine.calculateSaveBonus(creature, saveType)
   }
 
   /**
-   * Lance les dégâts d'une arme
+   * Lance les dégâts d'une arme (délègue au CombatEngine)
    */
   rollDamage(damageString) {
-    // Format: "1d8+2" ou "2d6"
-    const match = damageString.match(/(\d+)d(\d+)(\+(\d+))?/)
-    if (!match) return 0
-    
-    const [, numDice, dieSize, , bonus] = match
-    let total = 0
-    
-    for (let i = 0; i < parseInt(numDice); i++) {
-      total += Math.floor(Math.random() * parseInt(dieSize)) + 1
-    }
-    
-    return total + (parseInt(bonus) || 0)
+    return CombatEngine.rollDamage(damageString)
   }
 
   /**
-   * Lance un dé à 20 faces
+   * Lance un dé à 20 faces (délègue au CombatEngine)
    */
   rollD20() {
-    return Math.floor(Math.random() * 20) + 1
+    return CombatEngine.rollD20()
   }
 
   /**
-   * Vérifie si un combattant est vaincu
+   * Vérifie si un combattant est vaincu (délègue au CombatEngine)
    */
   isDefeated(character) {
-    return character.currentHP <= 0
+    return CombatEngine.isDefeated(character)
   }
 
   /**
@@ -610,7 +553,7 @@ export class CombatService {
 
     try {
       // 1. Obtenir la meilleure action via l'IA unifiée
-      const bestAction = EntityAI.getBestAction(companion, gameState)
+      const bestAction = EntityAI_Hybrid.getBestAction(companion, gameState)
       
       if (!bestAction) {
         results.messages.push({
@@ -622,7 +565,7 @@ export class CombatService {
 
       // 2. Calculer le mouvement optimal
       const currentPosition = gameState.combatPositions[companionId]
-      const optimalPosition = EntityAI.calculateOptimalMovement(
+      const optimalPosition = CombatEngine.calculateOptimalMovement(
         companion, 
         currentPosition, 
         gameState
@@ -720,7 +663,7 @@ export class CombatService {
     const target = action.target
     
     // Vérifier si le sort peut être lancé
-    if (!EntityAI.canCastSpell(companion, spellName)) {
+    if (!SpellService.canCastSpell(companion, spells[spellName])) {
       results.messages.push({
         text: `${companion.name} ne peut pas lancer ${spellName}`,
         type: 'error'
@@ -893,11 +836,18 @@ export class CombatService {
   }
 
   /**
-   * Utilitaires pour les dés
+   * Utilitaires pour les dés (délègue au CombatEngine)
    */
-  rollD6() { return Math.floor(Math.random() * 6) + 1 }
-  rollD8() { return Math.floor(Math.random() * 8) + 1 }
-  rollD10() { return Math.floor(Math.random() * 10) + 1 }
+  rollD6() { return CombatEngine.rollD6() }
+  rollD8() { return CombatEngine.rollD8() }
+  rollD10() { return CombatEngine.rollD10() }
+
+  /**
+   * Trouve la meilleure cible pour une entité (logique d'orchestration)
+   */
+  findBestTarget(attacker, attackerPos, combatState) {
+    return CombatEngine.findBestTarget(attacker, attackerPos, combatState)
+  }
 
   /**
    * Consomme un slot de sort

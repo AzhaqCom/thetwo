@@ -16,6 +16,7 @@ export const characterTemplates = {
         hitDice: 1,
         hitDiceType: 6,
         type: "player",
+        gold: 1000, 
         stats: {
             force: 10,
             dexterite: 15,

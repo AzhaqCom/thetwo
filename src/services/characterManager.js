@@ -2,8 +2,9 @@
  * Character Manager Service - Pure business logic for character management
  */
 
-import { getModifier, rollDie, getSpellAttackBonus, getConstitutionModifier } from '../utils/calculations'
-import { levels } from '../data/levels'
+import { getModifier, rollDie, getConstitutionModifier } from '../utils/calculations'
+import { CombatEngine } from './combatEngine'
+import { ProgressionEngine } from './ProgressionEngine'
 
 export class CharacterManager {
   /**
@@ -63,7 +64,7 @@ export class CharacterManager {
 
     switch (action.actionType) {
       case 'spell':
-        return getSpellAttackBonus(character)
+        return CombatEngine.calculateSpellAttackBonus(character)
 
       case 'weapon':
         let statToUse = action.stat || 'force'
@@ -346,6 +347,6 @@ export class CharacterManager {
    * @returns {number} XP required for next level
    */
   static getXPToNextLevel(currentLevel) {
-    return this.getXPForLevel(currentLevel + 1)
+    return ProgressionEngine.getXPToNextLevel(currentLevel)
   }
 }

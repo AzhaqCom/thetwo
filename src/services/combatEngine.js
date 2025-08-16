@@ -4,8 +4,8 @@
  * All orchestration logic is handled by CombatService
  */
 
-import { rollDice, rollD20WithModifier, calculateDistance, getModifier, rollD20 } from '../utils/calculations'
-import { isValidGridPosition, isPositionOccupied, isTargetInRange } from '../utils/validation'
+import { rollDice, rollD20WithModifier, calculateDistance, getModifier, rollDie } from '../utils/calculations'
+import { isValidGridPosition } from '../utils/validation'
 import { GRID_WIDTH, GRID_HEIGHT, ENTITY_TYPES } from '../utils/constants'
 
 export class CombatEngine {
@@ -119,6 +119,111 @@ export class CombatEngine {
   }
 
   /**
+   * Checks if an attack hits based on attack roll vs AC
+   * @param {number} attackRoll - The attack roll result
+   * @param {number} targetAC - The target's Armor Class
+   * @returns {boolean} Whether the attack hits
+   */
+  static doesAttackHit(attackRoll, targetAC) {
+    return attackRoll >= targetAC
+  }
+
+  /**
+   * Calculates initiative bonus for a character
+   * @param {Object} character - Character with stats
+   * @returns {number} Initiative bonus (Dex modifier)
+   */
+  static getInitiativeBonus(character) {
+    return getModifier(character.stats?.dexterite || 10)
+  }
+
+  /**
+   * Validates if a position is occupied by any character
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @param {Object} positions - All character positions
+   * @param {Array} entities - Array of entities (enemies, companions)
+   * @param {string} excludeEntity - Entity name to exclude from check
+   * @returns {boolean} True if position is occupied
+   */
+  static isPositionOccupied(x, y, positions, entities = [], excludeEntity = null) {
+    // Check fixed positions (player)
+    if (positions.player && positions.player.x === x && positions.player.y === y) {
+      return true
+    }
+
+    // Check all companion positions (système multi-compagnons)
+    for (const posKey in positions) {
+      if (posKey !== 'player' && posKey !== excludeEntity && !posKey.endsWith('StartPos')) {
+        const pos = positions[posKey]
+        if (pos && pos.x === x && pos.y === y) {
+          return true
+        }
+      }
+    }
+
+    // Check entities (only living ones block movement)
+    for (const entity of entities) {
+      if (entity.name !== excludeEntity && entity.currentHP > 0) {
+        const entityPos = positions[entity.name]
+        if (entityPos && entityPos.x === x && entityPos.y === y) {
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  /**
+   * Validates if a target is in range of an action
+   * @param {Object} attackerPos - Attacker position
+   * @param {Object} targetPos - Target position
+   * @param {Object} action - The action being performed
+   * @returns {boolean} True if target is in range
+   */
+  static isTargetInRange(attackerPos, targetPos, action) {
+    if (!attackerPos || !targetPos) return false
+    
+    const distance = Math.abs(attackerPos.x - targetPos.x) + Math.abs(attackerPos.y - targetPos.y)
+    const maxRange = this.getActionRange(action)
+    
+    return distance <= maxRange
+  }
+
+  /**
+   * Gets the range of an action in grid squares
+   * @param {Object} action - The action
+   * @returns {number} Range in grid squares
+   */
+  static getActionRange(action) {
+    if (action.actionType === 'spell') {
+      if (typeof action.range === 'string') {
+        if (action.range.includes('mètres')) {
+          const meters = parseInt(action.range)
+          return Math.floor(meters / 1.5) // 1.5m = 1 square
+        }
+        if (action.range === 'Toucher') return 1
+        return 12 // Default ranged
+      }
+      return action.range || 12
+    }
+
+    if (action.actionType === 'weapon') {
+      if (action.category === 'melee') {
+        return action.range?.melee || 1
+      } else if (action.category === 'ranged') {
+        const rangeStr = action.range?.ranged || '80/320'
+        const shortRange = parseInt(rangeStr.split('/')[0])
+        return Math.floor(shortRange / 5) // Convert feet to squares
+      }
+      return 1
+    }
+
+    return 1
+  }
+
+  /**
    * Utility dice rolls
    */
   static rollD6() { return Math.floor(Math.random() * 6) + 1 }
@@ -156,7 +261,7 @@ export class CombatEngine {
 
     if (!attackerPos) return targets
 
-    const maxRange = isTargetInRange.getActionRange ? isTargetInRange.getActionRange(action) : (action.range || 1)
+    const maxRange = this.getActionRange(action)
 
     // Check player as target (if attacker is enemy)
     if (attacker.type === ENTITY_TYPES.ENEMY && playerCharacter?.currentHP > 0 && combatPositions.player) {
@@ -261,7 +366,7 @@ export class CombatEngine {
         const newPos = { x: currentPos.x + dx, y: currentPos.y + dy }
 
         if (!isValidGridPosition(newPos.x, newPos.y)) continue
-        if (isPositionOccupied(newPos.x, newPos.y, combatState.combatPositions, combatState.combatEnemies, entity.name)) continue
+        if (this.isPositionOccupied(newPos.x, newPos.y, combatState.combatPositions, combatState.combatEnemies, entity.name)) continue
 
         const distanceToTarget = calculateDistance(newPos, closestTarget.target.position)
         const distanceFromIdeal = Math.abs(distanceToTarget - idealDistance)
@@ -306,7 +411,6 @@ export class CombatEngine {
         })
       }
       
-      // Plus de compatibilité ancien système nécessaire
     } else {
       // Player/Companion target enemies
       combatEnemies.forEach(enemy => {
@@ -350,11 +454,11 @@ export class CombatEngine {
           return 1 // DPS corps à corps
         
         default:
-          break // Fallback à l'ancienne logique
+          break
       }
     }
 
-    // Ancienne logique pour ennemis ou entités sans rôle
+    // Logique pour ennemis ou entités sans rôle
     const hasRangedAttack = entity.attacks.some(attack => 
       attack.type === 'ranged' || (attack.range && attack.range > 1)
     )
@@ -568,7 +672,6 @@ export class CombatEngine {
         })
       }
       
-      // Plus de compatibilité ancien système nécessaire
     }
     
     // Pour le compagnon : cibler les ennemis
@@ -634,7 +737,7 @@ export class CombatEngine {
 
     // Vérifier que la position n'est pas occupée
     const { combatPositions, combatEnemies } = combatState
-    const isOccupied = isPositionOccupied(
+    const isOccupied = this.isPositionOccupied(
       targetPos.x, 
       targetPos.y, 
       combatPositions, 
@@ -657,5 +760,93 @@ export class CombatEngine {
     }
 
     return true
+  }
+
+  /**
+   * Handles skill check calculations (moved from gameStore)
+   * @param {string} skill - The skill being tested
+   * @param {number} dc - Difficulty class
+   * @param {Object} character - Character making the check
+   * @returns {Object} Skill check result with roll, total, success
+   */
+  static handleSkillCheck(skill, dc, character) {
+    const skillToStat = {
+      perception: 'sagesse',
+      investigation: 'intelligence', 
+      athletics: 'force',
+      acrobatics: 'dexterite',
+      stealth: 'dexterite',
+      insight: 'sagesse',
+      persuasion: 'charisme',
+      intimidation: 'charisme',
+      deception: 'charisme',
+      history: 'intelligence',
+      arcana: 'intelligence',
+      nature: 'intelligence',
+      religion: 'intelligence',
+      medicine: 'sagesse',
+      survival: 'sagesse',
+      'animal-handling': 'sagesse'
+    }
+
+    const statName = skillToStat[skill]
+    const statValue = character.stats[statName]
+    const statModifier = getModifier(statValue)
+    const isProficient = character.proficiencies?.skills?.includes(skill) || false
+    const proficiencyBonus = isProficient ? character.proficiencyBonus : 0
+    const skillBonus = statModifier + proficiencyBonus
+    
+    const roll = rollD20WithModifier(skillBonus)
+    const success = roll >= dc
+
+    return {
+      roll: roll - skillBonus, // Le dé brut
+      skillBonus,
+      total: roll,
+      dc,
+      success,
+      skill,
+      statName,
+      message: `Test de ${skill} (${statName}): ${roll - skillBonus} (+${skillBonus} de bonus) = ${roll}. DD: ${dc}`
+    }
+  }
+
+  /**
+   * Calculates healing from a hit die during short rest
+   * @param {Object} character - Character taking the rest
+   * @returns {Object} Healing result with amount and updated character
+   */
+  static calculateHitDieHealing(character) {
+    // Vérifications
+    if (character.hitDice <= 0) {
+      return { healing: 0, character, canHeal: false, message: "Aucun dé de vie disponible" }
+    }
+    if (character.currentHP >= character.maxHP) {
+      return { healing: 0, character, canHeal: false, message: "PV déjà au maximum" }
+    }
+
+    // Calculer la guérison
+    const hitDieSize = character.hitDiceType || 8
+    const constitutionModifier = getModifier(character.stats.constitution)
+    const roll = rollDie(hitDieSize)
+    const healing = Math.max(1, roll + constitutionModifier)
+    
+    // Appliquer la guérison
+    const newHP = Math.min(character.maxHP, character.currentHP + healing)
+    
+    const updatedCharacter = {
+      ...character,
+      currentHP: newHP,
+      hitDice: character.hitDice - 1
+    }
+
+    return {
+      healing,
+      character: updatedCharacter,
+      canHeal: true,
+      roll,
+      constitutionModifier,
+      message: `Dé de vie (d${hitDieSize}): ${roll} + ${constitutionModifier} = ${healing} PV récupérés`
+    }
   }
 }

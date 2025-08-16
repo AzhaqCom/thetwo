@@ -1,5 +1,6 @@
 import { spells } from '../data/spells'
 import { getModifier } from '../utils/calculations'
+import { CharacterManager } from './characterManager'
 
 /**
  * Service gérant toute la logique métier des sorts
@@ -443,5 +444,229 @@ export class SpellService {
     if (!character.spellcasting?.preparedSpells) return false
     
     return character.spellcasting.preparedSpells.includes(spellId)
+  }
+
+  // ================================
+  // MÉTHODES MIGRÉES DE SPELLSYSTEM
+  // ================================
+
+  /**
+   * Processes spell casting for a character
+   * @param {Object} character - The character casting the spell
+   * @param {Object} spell - The spell being cast
+   * @param {Array} targets - Target entities
+   * @param {Object} options - Additional casting options
+   * @returns {Object} Spell casting result
+   */
+  static castSpell(character, spell, targets = [], options = {}) {
+    const result = {
+      success: false,
+      character: character,
+      messages: [],
+      effects: []
+    }
+
+    // Validate spell casting
+    const validation = this.validateSpellcast(character, spell)
+    if (!validation.success) {
+      result.messages.push(validation.message)
+      return result
+    }
+
+    // Consume spell slot (cantrips don't consume slots)
+    if (spell.level > 0) {
+      result.character = this.consumeSpellSlot(result.character, spell.level)
+    }
+
+    // Process spell effects
+    const spellEffects = this.processSpellEffects(spell, targets, character, options)
+    result.effects = spellEffects.effects
+    result.messages = [...result.messages, ...spellEffects.messages]
+    
+    // Apply effects to the character (for self-target spells)
+    result.character = this.applySpellEffectsToCharacter(result.character, spell, spellEffects)
+    
+    result.success = true
+
+    return result
+  }
+
+  /**
+   * Validates if a character can cast a spell
+   * @param {Object} character - The character
+   * @param {Object} spell - The spell
+   * @returns {Object} Validation result
+   */
+  static validateSpellcast(character, spell) {
+    if (!character.spellcasting) {
+      return { success: false, message: "Ce personnage ne peut pas lancer de sorts" }
+    }
+
+    // Check if spell is known/prepared
+    const knownSpells = [
+      ...(character.spellcasting.cantrips || []),
+      ...(character.spellcasting.preparedSpells || [])
+    ]
+
+    if (!knownSpells.includes(spell.id)) {
+      return { success: false, message: "Sort non préparé" }
+    }
+
+    // Check spell slot availability (cantrips don't require slots)
+    if (spell.level > 0) {
+      // Use instance method to get available slots
+      const spellService = new SpellService()
+      const spellSlots = spellService.getSpellSlots(character)
+      
+      let hasAvailableSlot = false
+      for (let level = spell.level; level <= 9; level++) {
+        const slot = spellSlots[level]
+        if (slot && slot.available > 0) {
+          hasAvailableSlot = true
+          break
+        }
+      }
+      
+      if (!hasAvailableSlot) {
+        return { success: false, message: "Aucun emplacement de sort disponible" }
+      }
+    }
+
+    return { success: true }
+  }
+
+  /**
+   * Consumes a spell slot for casting
+   * @param {Object} character - The character
+   * @param {number} spellLevel - The level of spell slot to consume
+   * @returns {Object} Updated character
+   */
+  static consumeSpellSlot(character, spellLevel) {
+    if (!character.spellcasting || spellLevel <= 0) return character
+
+    const spellService = new SpellService()
+    const spellSlots = spellService.getSpellSlots(character)
+    
+    // Find the lowest available slot that can cast this spell
+    let slotLevelToUse = null
+    for (let level = spellLevel; level <= 9; level++) {
+      const slot = spellSlots[level]
+      if (slot && slot.available > 0) {
+        slotLevelToUse = level
+        break
+      }
+    }
+    
+    if (!slotLevelToUse) return character // No available slots
+    
+    // Update the spell slots
+    const updatedSlots = {
+      ...spellSlots,
+      [slotLevelToUse]: {
+        ...spellSlots[slotLevelToUse],
+        used: spellSlots[slotLevelToUse].used + 1,
+        available: spellSlots[slotLevelToUse].available - 1
+      }
+    }
+    
+    return {
+      ...character,
+      spellcasting: {
+        ...character.spellcasting,
+        spellSlots: updatedSlots
+      }
+    }
+  }
+
+  /**
+   * Gets prepared spells for a character (including cantrips)
+   * @param {Object} character - The character
+   * @returns {Array} Array of prepared spell names
+   */
+  static getPreparedSpells(character) {
+    if (!character.spellcasting) return []
+    
+    return [
+      ...(character.spellcasting.cantrips || []),
+      ...(character.spellcasting.preparedSpells || [])
+    ]
+  }
+
+  /**
+   * Calculates maximum prepared spells for a character
+   * @param {Object} character - The character
+   * @returns {number} Maximum number of spells that can be prepared
+   */
+  static getMaxPreparedSpells(character) {
+    if (!character.spellcasting) return 0
+
+    const spellcastingAbility = CharacterManager.getSpellcastingAbility(character)
+    const abilityModifier = Math.max(1, getModifier(character.stats[spellcastingAbility]))
+    
+    return character.level + abilityModifier
+  }
+
+  /**
+   * Prepares a spell for a character
+   * @param {Object} character - The character
+   * @param {string} spellName - Name of spell to prepare
+   * @returns {Object} Updated character or null if can't prepare
+   */
+  static prepareSpell(character, spellName) {
+    if (!character.spellcasting) return null
+
+    const currentPrepared = character.spellcasting.preparedSpells || []
+    const maxPrepared = this.getMaxPreparedSpells(character)
+
+    // Check if already prepared
+    if (currentPrepared.includes(spellName)) return character
+
+    // Check if at capacity
+    if (currentPrepared.length >= maxPrepared) return null
+
+    return {
+      ...character,
+      spellcasting: {
+        ...character.spellcasting,
+        preparedSpells: [...currentPrepared, spellName]
+      }
+    }
+  }
+
+  /**
+   * Unprepares a spell for a character
+   * @param {Object} character - The character
+   * @param {string} spellName - Name of spell to unprepare
+   * @returns {Object} Updated character
+   */
+  static unprepareSpell(character, spellName) {
+    if (!character.spellcasting) return character
+
+    const currentPrepared = character.spellcasting.preparedSpells || []
+    
+    return {
+      ...character,
+      spellcasting: {
+        ...character.spellcasting,
+        preparedSpells: currentPrepared.filter(spell => spell !== spellName)
+      }
+    }
+  }
+
+  /**
+   * Placeholder pour les effets de sorts (à implémenter selon besoins)
+   */
+  static processSpellEffects(spell, targets, caster, options) {
+    return {
+      effects: [],
+      messages: [`${caster.name} lance ${spell.name}`]
+    }
+  }
+
+  /**
+   * Placeholder pour appliquer les effets sur le lanceur
+   */
+  static applySpellEffectsToCharacter(character, spell, spellEffects) {
+    return character
   }
 }

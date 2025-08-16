@@ -44,6 +44,24 @@ export const companions = {
         ],
         inventory: [],
         aiPriority: ["protect", "taunt", "melee_attack"],
+        // Modificateurs intelligents pour affiner les décisions
+        aiModifiers: {
+            "protect": {
+                allyLowHPBonus: +60,        // Gros bonus si allié en danger
+                allyUnderAttackBonus: +40,  // Protection active
+                emergencyBonus: +100        // Situation critique
+            },
+            "taunt": {
+                multipleEnemiesBonus: +30,  // Plus d'ennemis = plus utile
+                strongEnemyBonus: +45,      // Contre ennemi dangereux
+                allyInMeleeBonus: +25       // Protéger allié au contact
+            },
+            "melee_attack": {
+                closestEnemyBonus: +20,     // Ennemi le plus proche
+                finishingBonus: +35,        // Achever ennemi faible
+                revengeBonus: +30           // Contre attaquant d'allié
+            }
+        },
         spellcasting: null
     },
     "rhingann": {
@@ -85,6 +103,25 @@ export const companions = {
         ],
         inventory: [],
         aiPriority: ["heal", "buff", "ranged_support"],
+        // Modificateurs intelligents pour healer
+        aiModifiers: {
+            "heal": {
+                criticalHPBonus: +150,      // Allié en danger de mort
+                tankPriorityBonus: +60,     // Prioriser tank
+                selfPreservationBonus: +80, // Se soigner en priorité si bas
+                multipleWoundedBonus: +40   // Plusieurs blessés
+            },
+            "buff": {
+                preCombatBonus: +70,        // Avant combat
+                tankBuffBonus: +50,         // Buffer le tank
+                groupBuffBonus: +45         // Buff de groupe
+            },
+            "ranged_support": {
+                safeDistanceBonus: +30,     // Maintenir distance
+                finishingBonus: +40,        // Achever ennemi faible
+                enemyCasterBonus: +35       // Cibler lanceurs ennemis
+            }
+        },
         spellcasting: {
             class: "Clerc",
             spellSlots: {

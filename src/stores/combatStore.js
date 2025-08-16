@@ -3,11 +3,12 @@ import { devtools } from 'zustand/middleware'
 import { CombatEngine } from '../services/combatEngine'
 import { CombatService } from '../services/CombatService'
 import { CharacterManager } from '../services/characterManager'
-import { GameLogic } from '../services/gameLogic'
+import { GameUtils } from '../utils/GameUtils'
+import { EntityAI_Hybrid } from '../services/EntityAI_Hybrid'
 import { CombatEffects } from '../services/combatEffects'
 import { EntityAI } from '../services/EntityAI'
 import { rollD20WithModifier, getModifier, calculateDistance } from '../utils/calculations'
-import { isValidGridPosition, isPositionOccupied } from '../utils/validation'
+import { isValidGridPosition } from '../utils/validation'
 import { GRID_WIDTH, GRID_HEIGHT, COMBAT_PHASES } from '../utils/constants'
 import { enemyTemplates } from '../data/enemies'
 
@@ -64,9 +65,9 @@ export const useCombatStore = create(
           // Créer le nombre d'instances demandé
           for (let i = 0; i < enemyRef.count; i++) {
             enemyInstances.push({
-              ...GameLogic.deepClone(template),
+              ...GameUtils.deepClone(template),
               name: `${template.name} ${i + 1}`,
-              id: GameLogic.generateId('enemy'),
+              id: GameUtils.generateId('enemy'),
               type: 'enemy'
             })
           }
@@ -151,7 +152,6 @@ export const useCombatStore = create(
           })
         }
         
-        // Plus besoin de compatibilité companionStartPos
 
         return {
           ...state,
@@ -340,7 +340,7 @@ export const useCombatStore = create(
       moveCharacter: (characterId, newPosition) => set((state) => {
         if (!isValidGridPosition(newPosition.x, newPosition.y)) return state
 
-        const isOccupied = isPositionOccupied(
+        const isOccupied = CombatEngine.isPositionOccupied(
           newPosition.x, 
           newPosition.y, 
           state.combatPositions, 
@@ -486,7 +486,7 @@ export const useCombatStore = create(
         }
       },
 
-      // OBSOLÈTE: Remplacé par dealDamageToCompanionById
+      // Méthode dépréciée - utiliser dealDamageToCompanionById
       dealDamageToCompanion: (damage) => {
         console.warn('dealDamageToCompanion is deprecated, use dealDamageToCompanionById')
       },
@@ -585,7 +585,7 @@ export const useCombatStore = create(
 
         if (enemy.role && enemy.aiPriority) {
           // Nouveau système d'IA par rôle
-          const bestAction = EntityAI.getBestAction(enemy, combatState)
+          const bestAction = EntityAI_Hybrid.getBestAction(enemy, combatState)
           
           if (bestAction) {
             // Exécuter l'action intelligente
@@ -594,7 +594,7 @@ export const useCombatStore = create(
             console.log(`${enemyName} (${enemy.role}) ne trouve aucune action`)
           }
         } else {
-          // Ancienne logique pour ennemis sans rôle défini
+          // Logique pour ennemis sans rôle défini
           let finalPosition = enemyPosition
           
           if (effectModifiers.canMove && !CombatEffects.hasEffect(enemy, 'restrained')) {
@@ -612,7 +612,7 @@ export const useCombatStore = create(
             console.log(`${enemyName} ne peut pas bouger à cause d'effets (${enemy.activeEffects?.map(e => e.name).join(', ') || 'aucun effet visible'})`)
           }
 
-          // Ancienne logique d'attaque basique
+          // Logique d'attaque basique
           if (!effectModifiers.canAct) {
             console.log(`${enemyName} ne peut pas attaquer à cause d'effets`)
             return
@@ -779,7 +779,7 @@ export const useCombatStore = create(
             const distance = calculateDistance(currentPos, { x, y })
             
             if (distance <= movementRange && 
-                !isPositionOccupied(x, y, combatPositions, combatEnemies, characterId)) {
+                !CombatEngine.isPositionOccupied(x, y, combatPositions, combatEnemies, characterId)) {
               validSquares.push({ x, y })
             }
           }

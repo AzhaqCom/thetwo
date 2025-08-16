@@ -11,7 +11,17 @@ export const spells = {
         projectiles: 3,
         requiresAttackRoll: false,
         castableOutOfCombat: false,
-        class: ["Magicien"]
+        class: ["Magicien"],
+        // Enrichissement tactique IA
+        aiWeight: 80,           // Bon sort de base
+        targetPreference: "finishing", // Excellent pour finir les ennemis
+        situational: {
+            multipleEnemies: +20,   // Bonus contre plusieurs ennemis
+            lowHPTarget: +40,       // Excellent pour achever
+            guaranteedHit: +30      // Avantage : ne rate jamais
+        },
+        aiRoles: ["dps", "support"], // Recommandé pour ces rôles
+        combatStage: "any"          // Utilisable à tout moment
     },
     "Trait de Feu": {
         name: "Trait de Feu",

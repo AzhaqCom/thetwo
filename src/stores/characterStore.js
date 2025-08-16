@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import { CharacterManager } from '../services/characterManager'
-import { SpellSystem } from '../services/spellSystem'
-import { GameLogic } from '../services/gameLogic'
+import { SpellService } from '../services/SpellService'
+import { CombatEngine } from '../services/combatEngine'
+import { GameUtils } from '../utils/GameUtils'
 import { items } from '../data/items'
 import { weapons } from '../data/weapons'
 
@@ -38,7 +39,7 @@ export const useCharacterStore = create(
 
         // Définir le personnage joueur
         setPlayerCharacter: (character) => set(syncCharacter({ 
-          playerCharacter: character ? GameLogic.deepClone(character) : null
+          playerCharacter: character ? GameUtils.deepClone(character) : null
         })),
 
 
@@ -51,8 +52,8 @@ export const useCharacterStore = create(
             return state
           }
           
-          const companion = GameLogic.deepClone(companionData)
-          companion.id = companion.id || companion.name || GameLogic.generateId('companion')
+          const companion = GameUtils.deepClone(companionData)
+          companion.id = companion.id || companion.name || GameUtils.generateId('companion')
           
           return {
             playerCompanions: [...state.playerCompanions, companion]
@@ -198,24 +199,14 @@ export const useCharacterStore = create(
           const character = state.playerCharacter
           if (!character) return state
 
-          // Vérifications
-          if (character.hitDice <= 0) return state
-          if (character.currentHP >= character.maxHP) return state
-
-          // Calculer la guérison
-          const hitDieSize = character.hitDiceType || 8
-          const constitutionModifier = Math.floor((character.stats.constitution - 10) / 2)
-          const roll = Math.floor(Math.random() * hitDieSize) + 1
-          const healing = Math.max(1, roll + constitutionModifier)
+          // Utiliser CombatEngine pour les calculs de guérison
+          const healingResult = CombatEngine.calculateHitDieHealing(character)
           
-          // Appliquer la guérison
-          const newHP = Math.min(character.maxHP, character.currentHP + healing)
-          
-          const updatedCharacter = {
-            ...character,
-            currentHP: newHP,
-            hitDice: character.hitDice - 1
+          if (!healingResult.canHeal) {
+            return state // Aucune guérison possible
           }
+          
+          const updatedCharacter = healingResult.character
 
           return syncCharacter({ playerCharacter: updatedCharacter })
         }),
@@ -243,7 +234,7 @@ export const useCharacterStore = create(
           newState.experienceGains = [
             ...state.experienceGains,
             {
-              id: GameLogic.generateId('xp'),
+              id: GameUtils.generateId('xp'),
               amount: xp,
               target: targetCharacter,
               timestamp: new Date()
@@ -267,7 +258,7 @@ export const useCharacterStore = create(
         castSpellPlayer: (spell, options = {}) => set((state) => {
           if (!state.playerCharacter) return state
 
-          const result = SpellSystem.castSpell(state.playerCharacter, spell, [], options)
+          const result = SpellService.castSpell(state.playerCharacter, spell, [], options)
           
           
           return {
@@ -292,12 +283,12 @@ export const useCharacterStore = create(
             return { success: false, message: `Aucun personnage ${targetCharacter} trouvé` }
           }
 
-          const updatedCharacter = SpellSystem.prepareSpell(character, spellName)
+          const updatedCharacter = SpellService.prepareSpell(character, spellName)
           
           if (!updatedCharacter) {
             // Vérifier pourquoi la préparation a échoué
             const currentPrepared = character.spellcasting?.preparedSpells || []
-            const maxPrepared = SpellSystem.getMaxPreparedSpells(character)
+            const maxPrepared = SpellService.getMaxPreparedSpells(character)
             
             if (currentPrepared.includes(spellName)) {
               return { success: false, message: `${spellName} est déjà préparé` }
@@ -324,7 +315,7 @@ export const useCharacterStore = create(
             return { success: false, message: `Aucun personnage ${targetCharacter} trouvé` }
           }
 
-          const updatedCharacter = SpellSystem.unprepareSpell(character, spellName)
+          const updatedCharacter = SpellService.unprepareSpell(character, spellName)
           
           if (!updatedCharacter) {
             return { success: false, message: `Impossible de retirer ${spellName}` }
@@ -496,7 +487,7 @@ export const useCharacterStore = create(
             // Nouvel objet, on l'ajoute à l'inventaire
             newInventory = [...currentInventory, {
               ...item,
-              id: item.id || item.name || item.nom || GameLogic.generateId('item'),
+              id: item.id || item.name || item.nom || GameUtils.generateId('item'),
               quantity: quantityToAdd
             }]
           }
@@ -620,7 +611,7 @@ export const useCharacterStore = create(
         addEffect: (effect) => set((state) => ({
           activeEffects: [...state.activeEffects, {
             ...effect,
-            id: effect.id || GameLogic.generateId('effect'),
+            id: effect.id || GameUtils.generateId('effect'),
             startTime: new Date()
           }]
         })),
@@ -741,7 +732,7 @@ export const characterSelectors = {
     state.playerCharacter?.spellcasting?.slotsRemaining || {},
   
   getPreparedSpells: (state) =>
-    SpellSystem.getPreparedSpells(state.playerCharacter || {}),
+    SpellService.getPreparedSpells(state.playerCharacter || {}),
   
   getInventoryItems: (state) => state.playerCharacter?.inventory || [],
   

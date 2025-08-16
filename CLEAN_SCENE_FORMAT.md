@@ -1,13 +1,4 @@
-# 🧹 Format de Scènes Nettoyé - Guide des Bonnes Pratiques
-
 ## ✅ Nouveau Système Unifié
-
-Après la migration, toutes les scènes utilisent maintenant un format cohérent et scalable.
-
-### **Propriétés Essentielles Seulement**
-
-Chaque scène ne contient que les propriétés nécessaires à son fonctionnement :
-
 ```javascript
 {
   metadata: {
@@ -42,6 +33,7 @@ Chaque scène ne contient que les propriétés nécessaires à son fonctionnemen
     portrait: "/path/image.png", // Recommandé
     text: "Dialogue..."          // Obligatoire
   },
+  conditions: { ... },           // Si nécessaire
   choices: [ ... ]               // Obligatoire
 }
 ```

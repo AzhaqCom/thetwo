@@ -5,6 +5,8 @@ export const enemyTemplates = {
         currentHP: 16,
         ac: 12,
         xp: 100,
+        role: "skirmisher", // Ombres = escarmoucheurs furtifs
+        challengeRating: "1/2",
         stats: {
             force: 6,
             dexterite: 14,
@@ -23,7 +25,22 @@ export const enemyTemplates = {
                 damageDice: "2d6",
                 damageBonus: 2,
                 damageType: "necrotique",
-                description: "absorption de force"
+                description: "absorption de force",
+                // Enrichissement tactique
+                aiWeight: 100,      // Priorité de base
+                effects: [
+                    {
+                        type: "debuff",
+                        stat: "force",
+                        reduction: 1,
+                        description: "Réduit la Force de 1"
+                    }
+                ],
+                targetPreference: "weakest", // Préfère les cibles affaiblies
+                situational: {
+                    lowHP: +50,     // Bonus si cible a peu de PV
+                    isolated: +30   // Bonus si cible isolée
+                }
             }
         ],
         image: "https://www.aidedd.org/dnd/images/shadow.jpg"
@@ -34,9 +51,27 @@ export const enemyTemplates = {
         currentHP: 7,
         ac: 15,
         xp: 50,
-        // Nouveau système d'IA
-        role: "skirmisher", // Rôle : escarmoucheur agile
+        challengeRating: "1/4",
+        // Système d'IA hybride : aiPriority + données tactiques
+        role: "skirmisher",
         aiPriority: ["hit_and_run", "ranged_attack", "melee_attack"],
+        // Modificateurs intelligents pour affiner les décisions
+        aiModifiers: {
+            "hit_and_run": { 
+                isolatedTargetBonus: +40,
+                lowHPBonus: +30,
+                multipleEnemiesBonus: +20
+            },
+            "ranged_attack": { 
+                distanceBonus: +25,
+                coverBonus: +35,
+                meleeDisadvantageBonus: +50
+            },
+            "melee_attack": { 
+                corneredBonus: +40,
+                flankedTargetBonus: +30
+            }
+        },
         stats: {
             force: 8,
             dexterite: 14,
@@ -55,7 +90,14 @@ export const enemyTemplates = {
                 damageDice: "1d6",
                 damageBonus: 2,
                 damageType: "tranchant",
-                description: "Attaque au corps à corps avec une arme : +4 au toucher, allonge 1,50 m, une cible. Touché : 5 (1d6 + 2) dégâts tranchants."
+                description: "Attaque au corps à corps avec une arme : +4 au toucher, allonge 1,50 m, une cible. Touché : 5 (1d6 + 2) dégâts tranchants.",
+                // Données tactiques pour l'IA
+                aiWeight: 70,
+                targetPreference: "closest",
+                situational: {
+                    flanking: +20,
+                    desperateBonus: +30  // Quand peu de PV
+                }
             },
             {
                 name: "Arc court",
@@ -66,7 +108,15 @@ export const enemyTemplates = {
                 damageDice: "1d6",
                 damageBonus: 2,
                 damageType: "perforant",
-                description: "Attaque à distance : +4 au toucher, portée 24/96 m, une cible. Touché : 5 (1d6 + 2) dégâts perforants."
+                description: "Attaque à distance : +4 au toucher, portée 24/96 m, une cible. Touché : 5 (1d6 + 2) dégâts perforants.",
+                // Données tactiques pour l'IA
+                aiWeight: 85,
+                targetPreference: "weakest",
+                situational: {
+                    safeDistance: +35,
+                    lowHPTarget: +25,
+                    outOfMeleeRange: +40
+                }
             }
         ],
         image: "https://www.aidedd.org/dnd/images/goblin.jpg"

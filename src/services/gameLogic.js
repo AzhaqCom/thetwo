@@ -3,7 +3,7 @@
  */
 
 import { companions } from '../data/companions'
-import { rollD20WithModifier } from '../utils/calculations'
+import { rollD20WithModifier, getModifier } from '../utils/calculations'
 import { CharacterManager } from './characterManager'
 
 export class GameLogic {
