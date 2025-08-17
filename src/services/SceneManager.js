@@ -6,7 +6,7 @@
 import { SCENE_TYPES } from '../types/story';
 import { StoryService } from './StoryService';
 import { prologueScenes } from '../data/scenes/prologue';
-import { testScenes } from '../data/scenes/scene_test';
+import { acte1Scenes } from '../data/scenes/acte1';
 // import { newScenes } from '../data/scenes_examples';
 
 export class SceneManager {
@@ -64,9 +64,9 @@ export class SceneManager {
       }
 
       // Charger les scènes de test
-      if (testScenes[sceneId]) {
+      if (acte1Scenes[sceneId]) {
         console.log(`Scène "${sceneId}" chargée depuis le nouveau système (test)`);
-        const scene = testScenes[sceneId];
+        const scene = acte1Scenes[sceneId];
         this.loadedScenes.set(sceneId, scene);
         return scene;
       }

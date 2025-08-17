@@ -17,7 +17,8 @@ export const CombatPanel = ({
   encounterData,
   onCombatEnd,
   onReplayCombat,
-  combatKey
+  combatKey,
+  victoryButtonText = "Continuer l'aventure" // Texte personnalisable du bouton de victoire
 }) => {
   // Stores
   const {
@@ -223,6 +224,7 @@ export const CombatPanel = ({
             selectedAction={selectedAction}
             selectedTargets={selectedTargets}
             onSelectAction={handleActionSelect}
+            onClearTargets={() => setActionTargets([])} // Réinitialiser les cibles
             onExecuteAction={handleExecuteAction}
             onPassTurn={handlePassTurn}
             canMove={!positions.playerHasMoved}
@@ -253,7 +255,7 @@ export const CombatPanel = ({
                 clearCombatLog()
                 onCombatEnd?.(encounterData)
               }}>
-                Continuer l'aventure
+                {victoryButtonText}
               </Button>
             </div>
           </Card>

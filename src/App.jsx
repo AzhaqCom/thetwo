@@ -6,26 +6,20 @@ import {
     CharacterSheet,
     CharacterSelection,
     SpecialAbilitiesPanel,
-    CompanionDisplay,
     CompanionParty
 } from './components/features/character';
-import {
-    CombatPanel
-} from './components/features/combat';
+
 import { CombatLog } from './components/ui/CombatLog';
-import {
-    InventoryPanel
-} from './components/features/inventory';
-import {
-    SpellPanel
-} from './components/features/spells';
-// RestPanel remplacé par RestScene
+import {InventoryPanel} from './components/features/inventory';
+import {SpellPanel} from './components/features/spells';
+
 
 // New scene components
 import DialogueScene from './components/game/DialogueScene';
 import InteractiveScene from './components/game/InteractiveScene';
 import MerchantScene from './components/game/MerchantScene';
 import RestScene from './components/game/RestScene';
+import CombatScene from './components/game/CombatScene';
 
 // Custom hooks for logic extraction
 import { useAppHandlers } from './components/hooks/useAppHandlers';
@@ -40,9 +34,9 @@ import {
 } from './stores';
 
 // Utils
-import { 
-    createVirtualRestScene, 
-    getContainerClasses 
+import {
+    createVirtualRestScene,
+    getContainerClasses
 } from './components/utils/sceneRendering';
 import { StoryService } from './services/StoryService';
 import SceneManager from './services/SceneManager';
@@ -72,7 +66,7 @@ function App() {
         setGamePhase,
         setCurrentScene,
         addCombatMessage,
-       
+
     } = useGameStore();
 
     const {
@@ -91,12 +85,17 @@ function App() {
         showError
     } = useUIStore();
 
+    // State pour la gestion du CombatLog dans les scènes de combat
+    const [combatActive, setCombatActive] = React.useState(false);
+
+    // Réinitialiser le state du combat quand on change de scène
+    React.useEffect(() => {
+        setCombatActive(false);
+    }, [currentScene]);
+
     // Use custom hooks for handlers
     const {
         handleCombatVictory,
-        handleItemGain,
-        handleShortRest,
-        handleLongRest,
         handleCastSpellOutOfCombat,
         getGameStateWithCharacter,
         handleNewChoice,
@@ -230,57 +229,60 @@ function App() {
                     </div>
                 );
 
-            case SCENE_TYPES.COMBAT: {
-                // Utiliser SceneManager pour préparer les données de combat
-                const combatData = SceneManager.prepareCombatData(scene);
+            case SCENE_TYPES.COMBAT:
                 return (
+                    <div className='scene-combat'>
+                        <CombatScene
+                            scene={scene}
+                            gameState={gameState}
+                            onChoice={handleNewChoice}
+                            playerCharacter={playerCharacter}
+                            activeCompanions={getActiveCompanions()}
+                            combatKey={combatKey}
+                            onCombatStateChange={setCombatActive}
+                            onCombatEnd={() => {
+                                handleCombatVictory();
+                                if (scene.metadata.nextScene) {
+                                    setCurrentScene(scene.metadata.nextScene);
+                                }
+                            }}
+                            onReplayCombat={() => {
+                                // Restaurer les PV du joueur et du compagnon pour replay
+                                if (playerCharacter) {
+                                    setPlayerCharacter({
+                                        ...playerCharacter,
+                                        currentHP: playerCharacter.maxHP
+                                    });
+                                }
 
-                    <CombatPanel
-                        key={combatKey}
-                        playerCharacter={playerCharacter}
-                        activeCompanions={getActiveCompanions()}
-                        encounterData={combatData}
-                        onCombatEnd={() => {
-                            handleCombatVictory();
-                            if (scene.metadata.nextScene) {
-                                setCurrentScene(scene.metadata.nextScene);
-                            }
-                        }}
-                        onReplayCombat={() => {
-                            // Restaurer les PV du joueur et du compagnon pour replay
-                            if (playerCharacter) {
-                                setPlayerCharacter({
-                                    ...playerCharacter,
-                                    currentHP: playerCharacter.maxHP
-                                });
-                            }
+                                // Restaurer les HP des compagnons actifs
+                                const activeCompanions = getActiveCompanions()
+                                activeCompanions.forEach(companion => {
+                                    // La restauration sera gérée par le système multi-compagnons
+                                })
 
-                            // Restaurer les HP des compagnons actifs
-                            const activeCompanions = getActiveCompanions()
-                            activeCompanions.forEach(companion => {
-                                // La restauration sera gérée par le système multi-compagnons
-                            })
+                                // Réinitialiser complètement le combat
+                                resetCombat();
+                                incrementCombatKey();
+                                addCombatMessage('🔄 Combat réinitialisé !', 'info');
 
-                            // Réinitialiser complètement le combat
-                            resetCombat();
-                            incrementCombatKey();
-                            addCombatMessage('🔄 Combat réinitialisé !', 'info');
+                                // Attendre un tick pour que les changements soient appliqués
+                                setTimeout(() => {
+                                    const restoredPlayer = { ...playerCharacter, currentHP: playerCharacter.maxHP };
+                                    const restoredCompanions = getActiveCompanions().map(companion => ({
+                                        ...companion,
+                                        currentHP: companion.maxHP
+                                    }));
 
-                            // Attendre un tick pour que les changements soient appliqués
-                            setTimeout(() => {
-                                const restoredPlayer = { ...playerCharacter, currentHP: playerCharacter.maxHP };
-                                const restoredCompanions = getActiveCompanions().map(companion => ({
-                                    ...companion,
-                                    currentHP: companion.maxHP
-                                }));
-
-                                initializeCombat(scene, restoredPlayer, restoredCompanions);
-                            }, 100);
-                        }}
-                    />
-
+                                    initializeCombat(scene, restoredPlayer, restoredCompanions);
+                                }, 100);
+                            }}
+                        />
+                       
+                        {/* Afficher le CombatLog seulement quand le combat n'est pas actif */}
+                        {!combatActive && <CombatLog title="Journal" compact={true} />}
+                    </div>
                 );
-            }
 
             case 'error':
                 // === GESTION DES ERREURS ===

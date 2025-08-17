@@ -60,30 +60,58 @@ export class StoryService {
   static getSceneText(scene, gameState) {
     // Commencer par le texte principal
     let finalText = scene.content?.text || '';
-    
-    // Ajouter les variations applicables
-    if (scene.content?.variations) {
-      const applicableVariations = [];
-      
-      // Vérifier les variations dans l'ordre de priorité
-      for (const [variationKey, text] of Object.entries(scene.content.variations)) {
+
+    // Vérifier s'il y a des variations applicables (ancien système)
+    if (scene.content?.variations && scene.conditions?.show_variation) {
+      // Parcourir les variations dans l'ordre de priorité
+      for (const [variationKey, variationText] of Object.entries(scene.content.variations)) {
         if (variationKey === 'default') continue;
-        
+
         // Vérifier si la condition de variation est remplie
-        const condition = scene.conditions?.show_variation?.[variationKey];
-        
+        const condition = scene.conditions.show_variation[variationKey];
+
         if (condition && this.evaluateCondition(condition, gameState)) {
-          applicableVariations.push(text);
+          // REMPLACER le texte au lieu de l'ajouter
+          finalText = variationText;
+          break; // Prendre la première variation qui match
         }
       }
-      
-      // Ajouter les variations au texte principal
-      if (applicableVariations.length > 0) {
-        finalText += '\n' + applicableVariations.join('\n');
-      }
     }
-    
+
+    // Traiter les placeholders (nouveau système)
+    if (scene.content?.placeholders && scene.conditions?.show_placeholder) {
+      finalText = this.resolvePlaceholders(finalText, scene, gameState);
+    }
+
     return this.interpolateText(finalText, gameState);
+  }
+
+  /**
+   * Résout les placeholders dans le texte avec {{PLACEHOLDER}}
+   */
+  static resolvePlaceholders(text, scene, gameState) {
+    if (!text || typeof text !== 'string') return text;
+
+    return text.replace(/\{\{([^}]+)\}\}/g, (match, placeholderName) => {
+      const placeholderConfig = scene.content.placeholders[placeholderName];
+      const placeholderConditions = scene.conditions.show_placeholder[placeholderName];
+
+      if (!placeholderConfig || !placeholderConditions) {
+        return match; // Garder le placeholder si pas de config
+      }
+
+      // Trouver la première condition qui match
+      for (const [variationKey, replacement] of Object.entries(placeholderConfig)) {
+        const condition = placeholderConditions[variationKey];
+        
+        if (condition && this.evaluateCondition(condition, gameState)) {
+          return replacement;
+        }
+      }
+
+      // Si aucune condition ne match, retourner le placeholder original
+      return match;
+    });
   }
 
   /**
@@ -271,11 +299,13 @@ export class StoryService {
     const speaker = scene.content?.speaker || 'Inconnu';
     const portrait = scene.content?.portrait || null;
     const mood = scene.content?.mood || 'neutral';
+    const description = scene.content?.description || '';
 
     return {
       speaker,
       portrait,
       mood,
+      description,
       text: this.getSceneText(scene, gameState)
     };
   }
@@ -337,8 +367,8 @@ export class StoryService {
     // Si le choix a une action, on traite d'abord l'action
     if (choice.action) {
       const actionResult = this.processAction(choice.action, gameState);
-      if (actionResult?.nextScene) {
-        return actionResult.nextScene;
+      if (actionResult?.next) {
+        return actionResult.next;
       }
     }
 
@@ -347,8 +377,8 @@ export class StoryService {
       return choice.next;
     }
 
-    if (typeof choice.next === 'object' && choice.next.nextScene) {
-      return choice.next.nextScene;
+    if (typeof choice.next === 'object' && choice.next.next) {
+      return choice.next.next;
     }
 
     return null;
@@ -360,7 +390,7 @@ export class StoryService {
   static processAction(action, gameState) {
     switch (action.type) {
       case ACTION_TYPES.SCENE_TRANSITION:
-        return { nextScene: action.nextScene };
+        return { next: action.next };
       
       case ACTION_TYPES.SKILL_CHECK:
         return this.processSkillCheck(action, gameState);

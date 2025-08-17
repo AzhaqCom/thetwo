@@ -44,6 +44,10 @@ const DialogueScene = ({
 
       {/* Contenu du dialogue */}
       <div className="dialogue-content">
+          <div className="description-text">
+          {dialogueData.description}
+         
+        </div>
         <div className="dialogue-text">
           {dialogueData.text.split('\n').map((line, index) => (
             line.trim() === '' ? 
@@ -79,16 +83,6 @@ const DialogueScene = ({
           </button>
         </div>
       )}
-
-      {/* Informations de debug en mode développement */}
-      {/* {process.env.NODE_ENV === 'development' && (
-        <div className="debug-info">
-          <details>
-            <summary>Debug Info</summary>
-            <pre>{JSON.stringify(StoryService.getSceneDebugInfo(scene, gameState), null, 2)}</pre>
-          </details>
-        </div>
-      )} */}
     </div>
   );
 };

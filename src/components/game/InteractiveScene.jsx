@@ -47,13 +47,13 @@ const InteractiveScene = ({
 
   return (
     <div className="interactive-scene">
-      <h3 className='title-scene'>{scene.metadata.title}</h3>
+      <h3 className='title-scene'>{scene.content.title}</h3>
       {/* Zone d'image interactive */}
       <div className="scene-image-container">
         <img
           ref={imageRef}
-          src={scene.metadata.background}
-          alt={scene.metadata.title || "Scène interactive"}
+          src={scene.content.background}
+          alt={scene.content.title || "Scène interactive"}
           className="scene-background"
           onLoad={handleImageLoad}
         />

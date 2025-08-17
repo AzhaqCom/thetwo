@@ -15,11 +15,11 @@ export const processSceneAction = (action, handlers) => {
     }
 
     if (typeof action === 'object') {
-        // Gestion du nouveau format avec nextScene
-        if (action.nextScene) {
+        // Gestion du nouveau format avec next
+        if (action.next) {
             // Traiter l'action puis retourner la scène suivante
             processActionEffects(action, handlers);
-            return action.nextScene;
+            return action.next;
         }
 
         switch (action.type) {
@@ -31,14 +31,14 @@ export const processSceneAction = (action, handlers) => {
                     next: action.next,
                 };
             case 'longRest':
-                handlers.startLongRest(action.nextScene);
+                handlers.startLongRest(action.next);
                 return null;
             case 'shortRest':
-                handlers.startShortRest(action.nextScene);
+                handlers.startShortRest(action.next);
                 return null;
             case 'items':
                 handlers.handleItemGain(action.item);
-                return action.nextScene;
+                return action.next;
             case 'ally':
                 return processAllyAction(action, handlers);
             case 'skillCheck':
@@ -122,7 +122,7 @@ const processAllyAction = (action, handlers) => {
         
         handlers.addCombatMessage(`${companionToAdd.name} te rejoint dans ton aventure !`, 'upgrade');
         
-        return action.nextScene;
+        return action.next;
     } else {
         console.error(`Compagnon '${action.ally}' introuvable.`);
         return null;
@@ -167,7 +167,7 @@ const processSetFlagAction = (action, handlers) => {
         gameStore.setFlag(action.flag, action.value);
     }
     
-    return action.nextScene;
+    return action.next;
 };
 
 /**
@@ -181,7 +181,7 @@ const processReputationAction = (action, handlers) => {
         handlers.addCombatMessage(`Réputation ${action.change > 0 ? 'augmentée' : 'diminuée'} de ${Math.abs(action.change)}`, 'info');
     }
     
-    return action.nextScene;
+    return action.next;
 };
 
 /**

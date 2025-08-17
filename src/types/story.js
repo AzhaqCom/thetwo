@@ -57,6 +57,7 @@ export const UnifiedSceneSchema = {
       text: 'string',              // Texte du choix (requis)
       next: 'string',              // ID de la scène suivante (requis)
       condition: 'string',         // Condition pour afficher le choix (optionnel)
+                                   // Ex: "false", "character.level >= 3", "gameFlags.hasKey === true"
       consequences: {              // Effets du choix (optionnel)
         // === PROGRESSION PERSONNAGE ===
         experience: 'number',      // XP à ajouter
@@ -107,6 +108,11 @@ export const UnifiedSceneSchema = {
   // Pour COMBAT uniquement
   enemies: 'array',
   enemyPositions: 'array',
+  onVictory: {                     // Actions à effectuer après la victoire
+    next: 'string',                // Scène suivante
+    text: 'string',                // Texte du bouton de victoire (optionnel)
+    consequences: 'object'         // Conséquences de la victoire (optionnel)
+  },
   
   // Pour REST_* uniquement
   restType: 'string',              // 'short', 'long', ou 'choice'

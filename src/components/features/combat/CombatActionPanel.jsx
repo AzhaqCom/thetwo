@@ -12,7 +12,7 @@ export const CombatActionPanel = ({
   selectedAction,
   selectedTargets,
   onSelectAction,
-  onExecuteAction,
+  onClearTargets, // Nouveau prop pour vider les cibles
   onPassTurn,
   canMove = true,
   onMoveToggle
@@ -229,27 +229,15 @@ export const CombatActionPanel = ({
           <div className="combat-action-instructions">
             <p>
               {selectedAction.areaOfEffect
-                ? "Cliquez sur une case pour cibler la zone d'effet"
-                : needsMoreTargets
-                ? `Sélectionnez ${maxTargets - selectedTargets.length} cible(s) pour exécuter l'action`
-                : "Action prête à être exécutée"}
+                && "Cliquez sur une case pour cibler la zone d'effet"
+                
+                }
             </p>
           </div>
         )}
 
         {/* Cibles sélectionnées */}
-        {selectedTargets.length > 0 && (
-          <div className="combat-selected-targets">
-            <h5>Cibles sélectionnées:</h5>
-            <ul className='combat-selected-targets__list'>
-              {selectedTargets.map((target, index) => (
-                <li key={index} className="selected-target">
-                  {target.name} (PV: {target.currentHP}/{target.maxHP})
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+      
       </CardBody>
 
       <CardFooter>
@@ -257,7 +245,10 @@ export const CombatActionPanel = ({
           {selectedAction && (
             <Button
               variant="ghost"
-              onClick={() => onSelectAction(null)}
+              onClick={() => {
+                onSelectAction(null);
+                onClearTargets?.(); // Réinitialiser les cibles sélectionnées
+              }}
             >
               Annuler
             </Button>

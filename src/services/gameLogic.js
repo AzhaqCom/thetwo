@@ -69,7 +69,7 @@ export class GameLogic {
    * @returns {null} Always returns null as rest is handled by context
    */
   static processRestAction(action, context, restType) {
-    const nextScene = action.next || action.nextScene
+    const nextScene = action.next || action.next
     if (restType === 'long') {
       context.startLongRest(nextScene)
     } else {
@@ -86,7 +86,7 @@ export class GameLogic {
    */
   static processItemAction(action, context) {
     context.handleItemGain(action.item)
-    return action.nextScene
+    return action.next
   }
 
   /**
@@ -104,7 +104,7 @@ export class GameLogic {
         `${companionToAdd.name} te rejoint dans ton aventure !`, 
         'upgrade'
       )
-      return action.nextScene
+      return action.next
     } else {
       console.error(`Compagnon '${action.ally}' introuvable.`)
       return null

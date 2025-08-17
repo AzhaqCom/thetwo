@@ -6,6 +6,52 @@
 import { SCENE_TYPES } from '../../types/story';
 
 export const testScenes = {
+
+
+    test_factionReputation: {
+    id: 'test_factionReputation',
+    type: SCENE_TYPES.TEXT,
+    content: {
+      title: 'Test Réputation Faction',
+      text: 'Voulez-vous tester la réputation des factions ?'
+    },
+    choices: [
+      {
+        text: 'Gagner +10 avec Ravenscroft',
+        next: 'test_faction_check',
+        consequences: {
+          factionReputation: { ravenscroft: 10 }
+        }
+      },
+      {
+        text: 'Perdre -5 avec Mercenaires',
+        next: 'test_faction_check',
+        consequences: {
+          factionReputation: { mercenaires: -5 }
+        }
+      }
+    ]
+  },
+
+  test_faction_check: {
+    id: 'test_faction_check',
+    type: SCENE_TYPES.TEXT,
+    content: {
+      title: 'Vérification Réputation',
+      text: 'Réputation mise à jour ! Vérifiez dans la console ou l\'interface.'
+    },
+    choices: [
+      {
+        text: 'Choix si Ravenscroft >= 5',
+        next: 'test_consequences',
+        condition: "gameFlags.factionReputation.ravenscroft >= 5"
+      },
+      {
+        text: 'Retour au test',
+        next: 'test_factionReputation'
+      }
+    ]
+  },
   // ========== SCENE TEXT ==========
   "test_start": {
     id: "test_start",
@@ -37,6 +83,10 @@ export const testScenes = {
         next: "test_combat"
       },
       {
+        text: "Test Embuscade",
+        next: "test_ambush"
+      },
+      {
         text: "Test Interactive",
         next: "test_interactive"
       },
@@ -63,6 +113,7 @@ export const testScenes = {
       tags: ["test", "hub"]
     }
   },
+
 
   // ========== SCENE DIALOGUE ==========
   "test_dialogue": {
@@ -141,7 +192,8 @@ export const testScenes = {
 
     content: {
       title: "Test Combat",
-      text: "Un ennemi de test apparaît !"
+      text: "Un ennemi de test apparaît !",
+      
     },
 
 
@@ -151,10 +203,20 @@ export const testScenes = {
 
 
     ],
+    // Configuration de victoire (remplace le choix avec condition: false)
+    onVictory: {
+      next: "test_combat_victory",
+      text: "Retourner en héros au village",
+      consequences: {
+        experience: 100,
+        items: ["potion_soin"]
+      }
+    },
+
     choices: [
       {
         text: "Engager le combat !",
-        next: "test_combat_victory"
+        next: "test_combat"
       }
     ],
 
@@ -185,6 +247,44 @@ export const testScenes = {
     ]
   },
 
+  // ========== SCENE COMBAT EMBUSCADE ==========
+  "test_ambush": {
+    id: "test_ambush",
+    type: SCENE_TYPES.COMBAT,
+
+    content: {
+      title: "Embuscade !",
+      text: "Des bandits surgissent des buissons ! Pas le temps de réfléchir, il faut se battre !",
+      ambush: true // Combat instantané, sans phase d'introduction
+    },
+
+    enemies: [{ type: 'ombre', count: 2 }],
+    enemyPositions: [
+      { x: 3, y: 0 },
+      { x: 5, y: 1 }
+    ],
+
+    // Configuration de victoire pour l'embuscade
+    onVictory: {
+      next: "test_start",
+      text: "S'échapper rapidement",
+      consequences: {
+        experience: 50
+      }
+    },
+
+    choices: [
+      // Pas de choix pour une embuscade - combat automatique
+    ],
+
+    metadata: {
+      chapter: "test",
+      location: "Chemin forestier",
+      tags: ["combat", "embuscade", "test"],
+      ambush: true // Alternative: mettre ambush ici aussi
+    }
+  },
+
   // ========== SCENE INTERACTIVE ==========
   "test_interactive": {
     id: "test_interactive",
@@ -204,7 +304,7 @@ export const testScenes = {
         action: {
           type: "item",
           item: "club",
-          nextScene: "test_interactive",
+          next: "test_interactive",
           message: "Vous trouvez une épée !"
         }
       },
@@ -215,7 +315,7 @@ export const testScenes = {
         condition: "character.level >= 2",
         action: {
           type: "longRest",
-          nextScene: "test_start"
+          next: "test_start"
         }
       },
       {
@@ -224,7 +324,7 @@ export const testScenes = {
         text: "Sortie",
         action: {
           type: "scene_transition",
-          nextScene: "test_start"
+          next: "test_start"
         }
       }
     ],
@@ -403,8 +503,12 @@ export const testScenes = {
           flags: {
             test_flag: true,
             test_counter: 1
-          }
+          },factionReputation: { ravenscroft: -50, mercenaires: 10 } 
         }
+      }, {
+        text: "ravencroft",
+        next: "test_consequences",
+        condition: "gameFlags.factionReputation.ravenscroft >= 30",
       },
       {
         text: "Marquer lieu visité",
@@ -423,6 +527,15 @@ export const testScenes = {
           }
         }
       },
+     
+      {
+        text: "Changer la relation avec un PNJ",
+        next: "test_consequences",
+        consequences: {
+          npcRelations: { "pnj_test": 20 }
+        }
+      },
+
       {
         text: "Test skill check",
         next: "test_skill_check"

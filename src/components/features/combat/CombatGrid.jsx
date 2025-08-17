@@ -315,8 +315,6 @@ export const CombatGrid = ({
   return (
     <div className="combat-grid">
       {/* En-tête avec informations */}
-
-
       {/* Grille principale */}
       <div
         className="combat-grid__container"
@@ -330,23 +328,7 @@ export const CombatGrid = ({
         )}
       </div>
 
-      {/* Légende */}
-      <div className="combat-grid__legend">
-        <div className="combat-grid__legend-item">
-          <span className="combat-grid__legend-icon">🧙‍♂️</span>
-          <span>Joueur</span>
-        </div>
-        {activeCompanions.length > 0 && (
-          <div className="combat-grid__legend-item">
-            <span className="combat-grid__legend-icon">🐺</span>
-            <span>Compagnons</span>
-          </div>
-        )}
-        <div className="combat-grid__legend-item">
-          <span className="combat-grid__legend-icon">👹</span>
-          <span>Ennemis</span>
-        </div>
-      </div>
+
     </div>
   )
 }

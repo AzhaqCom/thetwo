@@ -15,7 +15,7 @@ export const useGameStore = create(
     (set, get) => ({
       // État initial
       gamePhase: 'game', // 'character-selection' en prod, 'game' en dev
-      currentScene: 'test_start', // Scène de test
+      currentScene: 'prologue_heritage',
       sceneHistory: [],
       combatLog: [],
       isShortResting: false,
@@ -100,10 +100,10 @@ export const useGameStore = create(
       // Gestion des tests de compétences (délègue vers CombatEngine)
       handleSkillCheck: (skill, dc, onSuccess, onPartialSuccess, onFailure, character) => {
         const { addCombatMessage, setCurrentScene } = get()
-        
+
         // Utiliser CombatEngine pour les calculs
         const result = CombatEngine.handleSkillCheck(skill, dc, character)
-        
+
         addCombatMessage(result.message, 'skill-check')
 
         let nextScene = onFailure
@@ -256,6 +256,19 @@ export const useGameStore = create(
         gameFlags: GameFlagsHelpers.updateReputation(state.gameFlags, change)
       })),
 
+
+      updateFactionReputation: (factionId, change) => {
+        set(state => ({
+          gameFlags: {
+            ...state.gameFlags,
+            factionReputation: {
+              ...state.gameFlags.factionReputation,
+              [factionId]: (state.gameFlags.factionReputation[factionId] || 0) + change
+            }
+          }
+        }))
+      },
+
       // Gestion des choix majeurs
       addMajorChoice: (choiceId, description, sceneId = null) => set((state) => {
         const currentSceneId = sceneId || state.currentScene
@@ -296,13 +309,17 @@ export const useGameStore = create(
       applyConsequences: (consequences) => {
         if (!consequences) return
 
-        const { setFlags, updateReputation, addToList, updateNpcRelation, addMajorChoice, visitLocation } = get()
+        const { setFlags, updateReputation, addToList, updateNpcRelation, addMajorChoice, visitLocation, updateFactionReputation } = get()
 
         // Appliquer les flags
         if (consequences.flags) {
           setFlags(consequences.flags)
         }
-
+        if (consequences.factionReputation) {
+          Object.entries(consequences.factionReputation).forEach(([factionId, change]) => {
+            updateFactionReputation(factionId, change)
+          })
+        }
         // Appliquer le changement de réputation
         if (typeof consequences.reputation === 'number') {
           updateReputation(consequences.reputation)
@@ -319,7 +336,7 @@ export const useGameStore = create(
             // Import statique maintenant que la dépendance circulaire est résolue
             const { addItemToInventory } = useCharacterStore.getState()
             const { addCombatMessage } = get()
-            
+
             // Utiliser DataService pour traiter les récompenses d'items
             DataService.processItemRewards(
               consequences.items,
@@ -420,6 +437,9 @@ export const gameSelectors = {
     GameFlagsHelpers.getFlag(state.gameFlags, flagName, defaultValue),
 
   getReputation: (state) => state.gameFlags.reputation || 0,
+
+  getFactionReputation: (factionId) =>
+    get().gameFlags.factionReputation?.[factionId] || 0,
 
   getCompanions: (state) => state.gameFlags.companions || [],
 

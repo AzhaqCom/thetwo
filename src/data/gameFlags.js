@@ -23,6 +23,7 @@ export const initialGameFlags = {
   
   // === VARIABLES NUMÉRIQUES ===
   reputation: 0,                       // Réputation générale (-100 à 100)
+  factionReputation:{},          // Réputation par faction (ex: [{ ravenscroft: 5 }])
   
   // === LISTES ET COLLECTIONS ===
   companions: [],                      // Liste des compagnons actuels
