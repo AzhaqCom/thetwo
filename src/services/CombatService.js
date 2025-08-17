@@ -1,4 +1,4 @@
-import { enemyTemplates } from '../data/enemies'
+import { EnemyFactory } from './EnemyFactory'
 import { spells } from '../data/spells'
 import { getModifier } from '../utils/calculations'
 import { CombatEngine } from './combatEngine'
@@ -13,15 +13,15 @@ export class CombatService {
   /**
    * Initialise un nouveau combat
    */
-  initializeCombat(playerCharacter, activeCompanions, encounterData) {
+  static initializeCombat(playerCharacter, activeCompanions, encounterData) {
     // Créer les ennemis
-    const enemies = this.createEnemiesFromEncounter(encounterData)
+    const enemies = EnemyFactory.createEnemiesFromEncounter(encounterData)
     
     // Créer l'ordre d'initiative
-    const turnOrder = this.rollInitiative(playerCharacter, activeCompanions, enemies)
+    const turnOrder = CombatService.rollInitiative(playerCharacter, activeCompanions, enemies)
     
     // Positions initiales
-    const positions = this.initializePositions(
+    const positions = CombatService.initializePositions(
       playerCharacter, 
       activeCompanions, 
       enemies, 
@@ -36,44 +36,11 @@ export class CombatService {
     }
   }
 
-  /**
-   * Crée les ennemis à partir des données de rencontre
-   */
-  createEnemiesFromEncounter(encounterData) {
-    if (!encounterData?.enemies?.length) {
-      throw new Error('Aucun ennemi défini dans la rencontre')
-    }
-
-    return encounterData.enemies.flatMap((encounter, encounterIndex) => {
-      const template = enemyTemplates[encounter.type]
-      
-      if (!template) {
-        console.error(`Template non trouvé pour: ${encounter.type}`)
-        return []
-      }
-
-      return Array(encounter.count)
-        .fill(null)
-        .map((_, index) => ({
-          ...template,
-          id: `${encounter.type}_${encounterIndex}_${index}`,
-          name: encounter.count > 1 ? `${template.name} ${index + 1}` : template.name,
-          type: 'enemy',
-          currentHP: template.currentHP ?? template.maxHP ?? 10,
-          maxHP: template.maxHP ?? 10,
-          ac: template.ac ?? 10,
-          stats: { ...template.stats },
-          attacks: [...(template.attacks || [])],
-          image: template.image || '',
-          isAlive: true
-        }))
-    })
-  }
 
   /**
    * Lance l'initiative pour tous les combattants
    */
-  rollInitiative(playerCharacter, activeCompanions, enemies) {
+  static rollInitiative(playerCharacter, activeCompanions, enemies) {
     const combatants = []
 
     // Vérification de sécurité
@@ -83,7 +50,7 @@ export class CombatService {
     }
 
     // Joueur
-    const playerInit = this.rollD20() + CombatEngine.getInitiativeBonus(playerCharacter)
+    const playerInit = CombatEngine.rollD20() + CombatEngine.getInitiativeBonus(playerCharacter)
     combatants.push({
       ...playerCharacter,
       id: 'player',
@@ -95,7 +62,7 @@ export class CombatService {
     // Compagnons actifs
     if (activeCompanions && activeCompanions.length > 0) {
       activeCompanions.forEach(companion => {
-        const companionInit = this.rollD20() + CombatEngine.getInitiativeBonus(companion)
+        const companionInit = CombatEngine.rollD20() + CombatEngine.getInitiativeBonus(companion)
         combatants.push({
           ...companion,
           id: companion.id || companion.name.toLowerCase(),
@@ -108,7 +75,7 @@ export class CombatService {
 
     // Ennemis
     enemies.forEach(enemy => {
-      const enemyInit = this.rollD20() + CombatEngine.getInitiativeBonus(enemy)
+      const enemyInit = CombatEngine.rollD20() + CombatEngine.getInitiativeBonus(enemy)
       combatants.push({
         ...enemy,
         initiative: enemyInit
@@ -132,7 +99,7 @@ export class CombatService {
   /**
    * Initialise les positions de combat
    */
-  initializePositions(playerCharacter, activeCompanions, enemies, customPositions = null) {
+  static initializePositions(playerCharacter, activeCompanions, enemies, customPositions = null) {
     const positions = {
       // Positions par défaut du joueur
       player: { x: 1, y: 2 },
@@ -159,13 +126,13 @@ export class CombatService {
           positions[enemy.id] = { x: customPos.x, y: customPos.y }
         } else {
           // Position par défaut si pas de position custom
-          positions[enemy.id] = this.getDefaultEnemyPosition(index, enemies.length)
+          positions[enemy.id] = CombatService.getDefaultEnemyPosition(index, enemies.length)
         }
       })
     } else {
       // Positions par défaut
       enemies.forEach((enemy, index) => {
-        positions[enemy.id] = this.getDefaultEnemyPosition(index, enemies.length)
+        positions[enemy.id] = CombatService.getDefaultEnemyPosition(index, enemies.length)
       })
     }
 
@@ -175,7 +142,7 @@ export class CombatService {
   /**
    * Calcule une position par défaut pour un ennemi
    */
-  getDefaultEnemyPosition(index, totalEnemies) {
+  static getDefaultEnemyPosition(index, totalEnemies) {
     const cols = 8
     const rows = 6
     
@@ -201,7 +168,7 @@ export class CombatService {
   /**
    * Exécute une action du joueur
    */
-  executePlayerAction(playerCharacter, action, targets, enemies, positions) {
+  static executePlayerAction(playerCharacter, action, targets, enemies, positions) {
     const messages = []
     const results = {
       damage: [],
@@ -216,10 +183,10 @@ export class CombatService {
 
     switch (action.type) {
       case 'attack':
-        return this.executeAttack(playerCharacter, action, targets, results)
+        return CombatService.executeAttack(playerCharacter, action, targets, results)
       
       case 'spell':
-        return this.executeSpell(playerCharacter, action, targets, results)
+        return CombatService.executeSpell(playerCharacter, action, targets, results)
       
       default:
         messages.push({ text: `Type d'action inconnu: ${action.type}`, type: 'error' })
@@ -230,11 +197,11 @@ export class CombatService {
   /**
    * Exécute une attaque
    */
-  executeAttack(attacker, weapon, targets, results) {
+  static executeAttack(attacker, weapon, targets, results) {
     targets.forEach(target => {
       // Jet d'attaque
-      const attackRoll = this.rollD20()
-      const attackBonus = this.getAttackBonus(attacker, weapon)
+      const attackRoll = CombatEngine.rollD20()
+      const attackBonus = CombatService.getAttackBonus(attacker, weapon)
       const totalAttack = attackRoll + attackBonus
       
       const criticalHit = attackRoll === 20
@@ -242,7 +209,7 @@ export class CombatService {
       
       if (hit) {
         // Dégâts
-        let damage = this.rollDamage(weapon.damage)
+        let damage = CombatService.rollDamage(weapon.damage)
         if (criticalHit) {
           damage *= 2
           results.messages.push({
@@ -271,7 +238,7 @@ export class CombatService {
   /**
    * Exécute un sort
    */
-  executeSpell(caster, spell, targets, results) {
+  static executeSpell(caster, spell, targets, results) {
     // Gestion spéciale pour les sorts de zone
     if (spell.isAreaEffect && targets.length > 1) {
       results.messages.push({
@@ -282,7 +249,7 @@ export class CombatService {
       // Pour les sorts de zone, calculer les dégâts une fois et les appliquer à tous
       let baseDamage = 0
       if (spell.damage) {
-        baseDamage = this.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
+        baseDamage = CombatService.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
       }
       
       targets.forEach(target => {
@@ -290,9 +257,9 @@ export class CombatService {
         
         // Jets de sauvegarde pour AoE (si applicable)
         if (spell.saveType) {
-          const saveRoll = this.rollD20()
-          const saveBonus = this.getSaveBonus(target, spell.saveType)
-          const saveDC = spell.saveDC || (8 + this.getSpellAttackBonus(caster))
+          const saveRoll = CombatEngine.rollD20()
+          const saveBonus = CombatService.getSaveBonus(target, spell.saveType)
+          const saveDC = spell.saveDC || (8 + CombatService.getSpellAttackBonus(caster))
           
           if (saveRoll + saveBonus >= saveDC) {
             finalDamage = Math.floor(finalDamage / 2) // Demi-dégâts en cas de réussite
@@ -345,8 +312,8 @@ export class CombatService {
       targets.forEach(target => {
         if (spell.requiresAttackRoll) {
           // Sorts nécessitant un jet d'attaque (comme Rayon de givre)
-          const attackRoll = this.rollD20()
-          const spellAttackBonus = this.getSpellAttackBonus(caster)
+          const attackRoll = CombatEngine.rollD20()
+          const spellAttackBonus = CombatService.getSpellAttackBonus(caster)
           const totalAttack = attackRoll + spellAttackBonus
           
           const criticalHit = attackRoll === 20
@@ -355,7 +322,7 @@ export class CombatService {
           if (hit) {
             let damage = 0
             if (spell.damage) {
-              damage = this.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
+              damage = CombatService.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
               if (criticalHit) damage *= 2
             }
             
@@ -375,7 +342,7 @@ export class CombatService {
           // Sorts à touche automatique (comme Projectile Magique)
           let damage = 0
           if (spell.damage) {
-            damage = this.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
+            damage = CombatService.rollDamage(spell.damage.dice) + (spell.damage.bonus || 0)
           }
           
           results.messages.push({
@@ -394,52 +361,46 @@ export class CombatService {
   /**
    * Calcule le bonus d'attaque (délègue au CombatEngine)
    */
-  getAttackBonus(character, weapon) {
+  static getAttackBonus(character, weapon) {
     return CombatEngine.calculateAttackBonus(character, weapon)
   }
 
   /**
    * Calcule le bonus d'attaque de sort (délègue au CombatEngine)
    */
-  getSpellAttackBonus(caster) {
+  static getSpellAttackBonus(caster) {
     return CombatEngine.calculateSpellAttackBonus(caster)
   }
 
   /**
    * Calcule le bonus de sauvegarde (délègue au CombatEngine)
    */
-  getSaveBonus(creature, saveType) {
+  static getSaveBonus(creature, saveType) {
     return CombatEngine.calculateSaveBonus(creature, saveType)
   }
 
   /**
    * Lance les dégâts d'une arme (délègue au CombatEngine)
    */
-  rollDamage(damageString) {
+  static rollDamage(damageString) {
     return CombatEngine.rollDamage(damageString)
   }
 
-  /**
-   * Lance un dé à 20 faces (délègue au CombatEngine)
-   */
-  rollD20() {
-    return CombatEngine.rollD20()
-  }
 
   /**
    * Vérifie si un combattant est vaincu (délègue au CombatEngine)
    */
-  isDefeated(character) {
+  static isDefeated(character) {
     return CombatEngine.isDefeated(character)
   }
 
   /**
    * Vérifie les conditions de victoire/défaite
    */
-  checkCombatEnd(playerCharacter, activeCompanions, enemies) {
-    const playerDefeated = this.isDefeated(playerCharacter)
-    const allCompanionsDefeated = activeCompanions.length === 0 || activeCompanions.every(companion => this.isDefeated(companion))
-    const allEnemiesDefeated = enemies.every(enemy => this.isDefeated(enemy))
+  static checkCombatEnd(playerCharacter, activeCompanions, enemies) {
+    const playerDefeated = CombatService.isDefeated(playerCharacter)
+    const allCompanionsDefeated = activeCompanions.length === 0 || activeCompanions.every(companion => CombatService.isDefeated(companion))
+    const allEnemiesDefeated = enemies.every(enemy => CombatService.isDefeated(enemy))
     
     if (playerDefeated && allCompanionsDefeated) {
       return 'defeat'
@@ -455,7 +416,7 @@ export class CombatService {
   /**
    * Exécute une attaque d'entité (ennemi ou compagnon)
    */
-  executeEntityAttack(attacker, attack, target, addCombatMessage) {
+  static executeEntityAttack(attacker, attack, target, addCombatMessage) {
     // Validation des paramètres
     if (!attacker || !attack || !target) {
       console.error('❌ Paramètres manquants pour executeEntityAttack')
@@ -470,8 +431,8 @@ export class CombatService {
     }
 
     // Jet d'attaque
-    const attackRoll = this.rollD20()
-    const attackBonus = this.getAttackBonus(attacker, attack)
+    const attackRoll = CombatEngine.rollD20()
+    const attackBonus = CombatService.getAttackBonus(attacker, attack)
     
     if (isNaN(attackBonus)) {
       console.error('❌ Attack bonus est NaN pour:', attacker, attack)
@@ -493,9 +454,9 @@ export class CombatService {
       // Calculer les dégâts
       let damage = 0
       if (attack.damageDice) {
-        damage = this.rollDamage(attack.damageDice) + (attack.damageBonus || 0)
+        damage = CombatService.rollDamage(attack.damageDice) + (attack.damageBonus || 0)
       } else if (attack.damage) {
-        damage = this.rollDamage(attack.damage)
+        damage = CombatService.rollDamage(attack.damage)
       } else {
         damage = 1 // Fallback
       }
@@ -526,7 +487,7 @@ export class CombatService {
   /**
    * Valide et exécute un mouvement d'entité
    */
-  executeEntityMovement(entity, currentPos, targetPos, combatState, addCombatMessage) {
+  static executeEntityMovement(entity, currentPos, targetPos, combatState, addCombatMessage) {
     // Valider le mouvement
     const isValid = CombatEngine.validateMovement(entity, currentPos, targetPos, combatState)
     
@@ -542,7 +503,7 @@ export class CombatService {
   /**
    * NOUVELLE MÉTHODE : Exécute le tour d'un compagnon avec la nouvelle IA
    */
-  executeCompanionAction(companionId, companion, gameState) {
+  static executeCompanionAction(companionId, companion, gameState) {
     const results = {
       messages: [],
       damage: [],
@@ -574,17 +535,17 @@ export class CombatService {
       // 3. Exécuter l'action selon son type
       switch (bestAction.type) {
         case 'attack':
-          return this.executeCompanionAttack(companion, bestAction, gameState, results)
+          return CombatService.executeCompanionAttack(companion, bestAction, gameState, results)
           
         case 'spell':
-          return this.executeCompanionSpell(companion, bestAction, gameState, results)
+          return CombatService.executeCompanionSpell(companion, bestAction, gameState, results)
           
         case 'heal_support':
-          return this.executeCompanionHeal(companion, bestAction, gameState, results)
+          return CombatService.executeCompanionHeal(companion, bestAction, gameState, results)
           
         case 'protect':
         case 'taunt':
-          return this.executeCompanionSupport(companion, bestAction, gameState, results)
+          return CombatService.executeCompanionSupport(companion, bestAction, gameState, results)
           
         default:
           results.messages.push({
@@ -606,7 +567,7 @@ export class CombatService {
   /**
    * Exécute une attaque de compagnon (physique ou ranged)
    */
-  executeCompanionAttack(companion, action, gameState, results) {
+  static executeCompanionAttack(companion, action, gameState, results) {
     const attack = action.attack || companion.attacks[0]
     const target = action.target
 
@@ -619,8 +580,8 @@ export class CombatService {
     }
 
     // Jet d'attaque
-    const attackRoll = this.rollD20()
-    const attackBonus = this.getAttackBonus(companion, attack)
+    const attackRoll = CombatEngine.rollD20()
+    const attackBonus = CombatService.getAttackBonus(companion, attack)
     const totalAttack = attackRoll + attackBonus
     
     const criticalHit = attackRoll === 20
@@ -658,7 +619,7 @@ export class CombatService {
   /**
    * Exécute un sort de compagnon
    */
-  executeCompanionSpell(companion, action, gameState, results) {
+  static executeCompanionSpell(companion, action, gameState, results) {
     const spellName = action.spell
     const target = action.target
     
@@ -675,7 +636,7 @@ export class CombatService {
     switch (spellName) {
       case 'Soins':
         if (target && target.id) {
-          const healAmount = this.rollD8() + 4 // Sort de soin de base
+          const healAmount = CombatService.rollD8() + 4 // Sort de soin de base
           results.healing.push({
             targetId: target.id,
             amount: healAmount,
@@ -690,7 +651,7 @@ export class CombatService {
         
       case 'Trait de feu':
         if (target) {
-          const damage = this.rollD10() + getModifier(companion.stats.charisme)
+          const damage = CombatService.rollD10() + getModifier(companion.stats.charisme)
           results.damage.push({
             targetId: target.name,
             damage,
@@ -708,7 +669,7 @@ export class CombatService {
         if (Array.isArray(target)) {
           // Sort de zone - appliquer à tous les ennemis du groupe
           target.forEach(enemy => {
-            const damage = this.rollD6() * 6 + getModifier(companion.stats.charisme) // 6d6
+            const damage = CombatService.rollD6() * 6 + getModifier(companion.stats.charisme) // 6d6
             results.damage.push({
               targetId: enemy.name,
               damage,
@@ -763,7 +724,7 @@ export class CombatService {
     }
     
     // Consommer le slot de sort
-    this.consumeSpellSlot(companion, spellName)
+    CombatService.consumeSpellSlot(companion, spellName)
     results.success = true
     return results
   }
@@ -771,7 +732,7 @@ export class CombatService {
   /**
    * Exécute une action de soin/support
    */
-  executeCompanionHeal(companion, action, gameState, results) {
+  static executeCompanionHeal(companion, action, gameState, results) {
     const target = action.target
     
     if (!target) {
@@ -783,7 +744,7 @@ export class CombatService {
     }
 
     // Soin via inventions (pour Finn)
-    const healAmount = this.rollD6() + 2
+    const healAmount = CombatService.rollD6() + 2
     results.healing.push({
       targetId: target.id,
       amount: healAmount,
@@ -802,7 +763,7 @@ export class CombatService {
   /**
    * Exécute une action de support tactique
    */
-  executeCompanionSupport(companion, action, gameState, results) {
+  static executeCompanionSupport(companion, action, gameState, results) {
     switch (action.type) {
       case 'protect':
         results.messages.push({
@@ -838,21 +799,21 @@ export class CombatService {
   /**
    * Utilitaires pour les dés (délègue au CombatEngine)
    */
-  rollD6() { return CombatEngine.rollD6() }
-  rollD8() { return CombatEngine.rollD8() }
-  rollD10() { return CombatEngine.rollD10() }
+  static rollD6() { return CombatEngine.rollD6() }
+  static rollD8() { return CombatEngine.rollD8() }
+  static rollD10() { return CombatEngine.rollD10() }
 
   /**
    * Trouve la meilleure cible pour une entité (logique d'orchestration)
    */
-  findBestTarget(attacker, attackerPos, combatState) {
+  static findBestTarget(attacker, attackerPos, combatState) {
     return CombatEngine.findBestTarget(attacker, attackerPos, combatState)
   }
 
   /**
    * Consomme un slot de sort
    */
-  consumeSpellSlot(companion, spellName) {
+  static consumeSpellSlot(companion, spellName) {
     // TODO: Implémenter la consommation de slots
     // Pour l'instant, on log juste
     console.log(`${companion.name} a utilisé un slot pour ${spellName}`)

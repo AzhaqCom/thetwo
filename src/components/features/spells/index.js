@@ -13,8 +13,6 @@ export { SpellSlotTracker, CompactSpellSlotTracker } from './SpellSlotTracker'
 // Filtres et recherche
 export { SpellFilters, CompactSpellFilters } from './SpellFilters'
 
-// Modals et détails
-export { SpellDetailModal } from './SpellDetailModal'
 
 // Utilitaires et constantes
 export const SPELL_SCHOOLS = {

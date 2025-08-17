@@ -1,10 +1,11 @@
-import React, { useEffect, useCallback } from 'react'
+import React, { useEffect, useCallback, useMemo } from 'react'
 import { useCombatStore } from '../../../stores/combatStore'
 import { useGameStore } from '../../../stores/gameStore'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { CombatService } from '../../../services/CombatService'
 import { CombatEngine } from '../../../services/combatEngine'
 import { calculateDistance } from '../../../utils/calculations'
+import { getEntityPositionKey, getManhattanDistance, formatMovementMessage } from '../../../utils/combatUtils'
 
 /**
  * Gestionnaire automatique des tours de combat - Version refactorisée
@@ -29,8 +30,7 @@ export const CombatTurnManager = ({
   const { addCombatMessage } = useGameStore()
   const { takeDamagePlayer, takeDamageCompanionById, playerCharacter, getActiveCompanions } = useCharacterStore()
   
-  // Services
-  const combatService = new CombatService()
+  // Note: CombatService is now static, no instance needed
 
   // Configuration des callbacks de dégâts
   useEffect(() => {
@@ -42,8 +42,8 @@ export const CombatTurnManager = ({
    * Calcule et exécute le mouvement optimal pour une entité
    */
   const handleMovement = useCallback((entity, gameState) => {
-    // Gérer les différentes clés de position selon le type d'entité
-    const positionKey = entity.type === 'companion' ? (entity.id || 'companion') : entity.name
+    // Utiliser l'utilitaire pour obtenir la clé de position
+    const positionKey = getEntityPositionKey(entity)
     const currentPos = gameState.combatPositions[positionKey]
     
     if (!currentPos) {
@@ -60,7 +60,7 @@ export const CombatTurnManager = ({
     }
 
     // Valider le mouvement avec le service
-    const isValidMove = combatService.executeEntityMovement(
+    const isValidMove = CombatService.executeEntityMovement(
       entity, 
       currentPos, 
       optimalPosition, 
@@ -72,8 +72,8 @@ export const CombatTurnManager = ({
       // Appliquer le mouvement (gérer les différents types)
       updateEnemyPosition(positionKey, optimalPosition)
       
-      const distance = Math.abs(optimalPosition.x - currentPos.x) + Math.abs(optimalPosition.y - currentPos.y)
-      addCombatMessage(`${entity.name} se déplace de ${distance} case(s).`)
+      const distance = getManhattanDistance(currentPos, optimalPosition)
+      addCombatMessage(formatMovementMessage(entity.name, distance))
       
    
       return { moved: true, newPosition: optimalPosition }
@@ -81,15 +81,15 @@ export const CombatTurnManager = ({
     
       return { moved: false, newPosition: currentPos }
     }
-  }, [combatService, updateEnemyPosition, addCombatMessage])
+  }, [updateEnemyPosition, addCombatMessage])
 
   /**
    * GESTION DU CIBLAGE
    * Trouve la meilleure cible pour une entité
    */
   const getTarget = useCallback((entity, gameState) => {
-    // Gérer les différentes clés de position selon le type d'entité
-    const positionKey = entity.type === 'companion' ? (entity.id || 'companion') : entity.name
+    // Utiliser l'utilitaire pour obtenir la clé de position
+    const positionKey = getEntityPositionKey(entity)
     const currentPos = gameState.combatPositions[positionKey]
     
     // Utiliser CombatEngine pour trouver la meilleure cible
@@ -194,14 +194,14 @@ export const CombatTurnManager = ({
     const attack = viableAttacks[Math.floor(Math.random() * viableAttacks.length)]
 
     // Exécuter l'attaque via le service
-    const result = combatService.executeEntityAttack(attacker, attack, target, addCombatMessage)
+    const result = CombatService.executeEntityAttack(attacker, attack, target, addCombatMessage)
 
     if (result.success) {
       applyDamageToTarget(target, result.damage)
     }
 
     return result.success
-  }, [combatService, addCombatMessage, applyDamageToTarget])
+  }, [addCombatMessage, applyDamageToTarget])
 
   /**
    * Exécute plusieurs attaques d'un attackSet
@@ -227,7 +227,7 @@ export const CombatTurnManager = ({
       }
 
       attackCount++
-      const result = combatService.executeEntityAttack(attacker, attack, target, addCombatMessage)
+      const result = CombatService.executeEntityAttack(attacker, attack, target, addCombatMessage)
 
       if (result.success) {
         overallSuccess = true
@@ -241,7 +241,7 @@ export const CombatTurnManager = ({
     }
 
     return overallSuccess
-  }, [combatService, addCombatMessage, selectAttackSet, applyDamageToTarget])
+  }, [addCombatMessage, selectAttackSet, applyDamageToTarget])
 
   /**
    * GESTION DES ATTAQUES
@@ -286,7 +286,6 @@ export const CombatTurnManager = ({
       }, 200)
       return
     }
-    console.log('enemyturn')
     // État du jeu actuel
     const activeCompanions = getActiveCompanions()
     const gameState = {
@@ -354,16 +353,12 @@ export const CombatTurnManager = ({
    * Logique identique aux ennemis mais ciblant les ennemis
    */
   const handleCompanionTurn = useCallback((companionTurn) => {
-    console.log('🤝 handleCompanionTurn called with:', companionTurn)
     const activeCompanions = getActiveCompanions()
-    console.log('🤝 Active companions available:', activeCompanions)
     
     // Récupérer le bon personnage compagnon depuis le turn order ou les compagnons actifs
     const actualCompanion = companionTurn.character || activeCompanions.find(c => c.id === companionTurn.id || c.name === companionTurn.name)
-    console.log('🤝 Actual companion to use:', actualCompanion)
     
     if (!actualCompanion || actualCompanion.currentHP <= 0) {
-      console.log('🤝 Companion cannot act - injured or missing')
       addCombatMessage(`${companionTurn.name} est trop blessé pour agir.`)
       setTimeout(() => {
         setIsExecuting(false)
@@ -431,7 +426,7 @@ export const CombatTurnManager = ({
       }, 500)
     }, movementResult.moved ? 1000 : 500)
 
-  }, [getActiveCompanions, enemies, combatService, updateEnemyPosition, addCombatMessage, executeAttack, onNextTurn, onPhaseChange])
+  }, [getActiveCompanions, enemies, updateEnemyPosition, addCombatMessage, executeAttack, onNextTurn, onPhaseChange])
 
   // Protection contre les re-exécutions multiples
   const [isExecuting, setIsExecuting] = React.useState(false)
@@ -442,7 +437,6 @@ export const CombatTurnManager = ({
    * Détermine quel type de tour exécuter
    */
   useEffect(() => {
-    console.log('🔄 TurnManager useEffect - phase:', phase, 'currentTurn:', currentTurn, 'isExecuting:', isExecuting)
     
     if (phase !== 'executing-turn' || !currentTurn || isExecuting) return
 
@@ -450,11 +444,9 @@ export const CombatTurnManager = ({
     // Utiliser le turnCounter et currentTurnIndex pour créer un identifiant unique de tour
     const { turnCounter, currentTurnIndex } = useCombatStore.getState()
     const currentTurnKey = `${currentTurn.name}-${currentTurn.type}-${turnCounter}-${currentTurnIndex}`
-    console.log('🔑 Turn key:', currentTurnKey, 'last executed:', lastExecutedTurn)
     
     if (lastExecutedTurn === currentTurnKey) {
       // Protection silencieuse - normal en mode dev React
-      console.log('⏭️ Skipping already executed turn')
       return
     }
 
@@ -480,7 +472,6 @@ export const CombatTurnManager = ({
     const isEntityDead = () => {
       if (currentTurn.type === 'player') {
         const isDead = !playerCharacter || playerCharacter.currentHP <= 0
-        console.log('🎮 Player death check:', isDead, 'HP:', playerCharacter?.currentHP)
         return isDead
       } else if (currentTurn.type === 'companion') {
         // Nouveau système : vérifier dans activeCompanions
@@ -491,19 +482,16 @@ export const CombatTurnManager = ({
         )
         
         const isDead = !companion || companion.currentHP <= 0
-        console.log('🤝 Companion death check:', currentTurn.name, 'isDead:', isDead, 'companion:', companion, 'HP:', companion?.currentHP)
         return isDead
       } else if (currentTurn.type === 'enemy') {
         const enemy = enemies.find(e => e.name === currentTurn.name)
         const isDead = !enemy || enemy.currentHP <= 0
-        console.log('👹 Enemy death check:', currentTurn.name, 'isDead:', isDead, 'HP:', enemy?.currentHP)
         return isDead
       }
       return false
     }
 
     if (isEntityDead()) {
-      console.log('💀 Entity is dead, skipping turn:', currentTurn.name)
       setIsExecuting(false)
       
       // Vérifier les conditions de fin de combat avant de passer au tour suivant
@@ -526,7 +514,6 @@ export const CombatTurnManager = ({
       try {
         executionFunction()
       } catch (error) {
-        console.error(`❌ Erreur pendant l'exécution du tour ${currentTurn.name}:`, error)
         setIsExecuting(false)
         onNextTurn()
       }
@@ -541,7 +528,6 @@ export const CombatTurnManager = ({
         break
         
       case 'companion':
-        console.log('🤝 Starting companion turn execution:', currentTurn.name)
         executeWithCleanup(() => {
           handleCompanionTurn(currentTurn)
           setTimeout(() => setIsExecuting(false), 800) // Safety timeout
@@ -567,7 +553,6 @@ export const CombatTurnManager = ({
         break
         
       default:
-        console.warn(`❓ Type de tour inconnu: ${currentTurn.type}`)
         setIsExecuting(false)
         onNextTurn()
     }

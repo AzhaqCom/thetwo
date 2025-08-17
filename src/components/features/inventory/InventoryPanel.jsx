@@ -4,7 +4,6 @@ import { useGameStore } from '../../../stores/gameStore'
 import { Card, CardHeader, CardBody, Button } from '../../ui'
 import { InventoryGrid } from './InventoryGrid'
 import { InventoryFilters } from './InventoryFilters'
-import { ItemDetailModal } from './ItemDetailModal'
 import { weapons } from '../../../data/weapons'
 
 /**
@@ -29,7 +28,6 @@ export const InventoryPanel = ({
   const { addCombatMessage } = useGameStore()
   
   // État local
-  const [selectedItem, setSelectedItem] = useState(null)
   const [filters, setFilters] = useState({
     category: 'all',
     rarity: 'all',
@@ -230,7 +228,7 @@ export const InventoryPanel = ({
         <InventoryGrid
           items={inventoryData.items}
           viewMode={viewMode}
-          onItemClick={setSelectedItem}
+          onItemClick={() => {}}
           onItemUse={handleUseItem}
           onItemEquip={handleEquipItem}
           onItemUnequip={handleUnequipItem}
@@ -249,17 +247,6 @@ export const InventoryPanel = ({
         )}
       </CardBody>
 
-      {/* Modal de détails d'objet */}
-      {selectedItem && (
-        <ItemDetailModal
-          item={selectedItem}
-          character={activeCharacter}
-          onClose={() => setSelectedItem(null)}
-          onUse={handleUseItem}
-          onEquip={handleEquipItem}
-          onUnequip={handleUnequipItem}
-        />
-      )}
     </Card>
   )
 }

@@ -44,16 +44,54 @@ export const CombatPanel = ({
     moveCharacter
   } = useCombatStore()
 
+  // Game store pour les messages
+  const { addCombatMessage, combatLog, clearCombatLog } = useGameStore()
+
   // Calcul du tour actuel
   const currentTurn = turnOrder[currentTurnIndex]
 
-  // Fonctions pour gérer les cibles
+  // Fonctions pour gérer les cibles (définies avant useCallback)
   const clearTargets = () => setActionTargets([])
   const selectTarget = (target) => {
     setActionTargets([...selectedTargets, target])
   }
 
-  const { addCombatMessage, combatLog, clearCombatLog } = useGameStore()
+  // Fonction utilitaire pour exécuter une action et traiter les résultats
+  const executeActionAndApplyResults = useCallback((action, targets) => {
+    const result = CombatService.executePlayerAction(
+      playerCharacter,
+      action,
+      targets,
+      enemies,
+      positions
+    )
+
+    // Appliquer les résultats
+    result.messages.forEach(message => addCombatMessage(message.text, message.type))
+
+    // Appliquer les dégâts
+    if (result.damage && result.damage.length > 0) {
+      result.damage.forEach(damageData => {
+        const target = enemies.find(e => e.name === damageData.targetId || e.id === damageData.targetId)
+        if (target) {
+          useCombatStore.getState().dealDamageToEnemy(target.name, damageData.damage)
+
+          // Message de mort si nécessaire  
+          setTimeout(() => {
+            const updatedEnemy = enemies.find(e => e.name === target.name)
+            if (updatedEnemy && updatedEnemy.currentHP <= 0 && target.currentHP > 0) {
+              addCombatMessage(`💀 ${target.name} tombe au combat !`, 'enemy-death')
+            }
+          }, 100)
+        }
+      })
+    }
+
+    // Nettoyer et passer au tour suivant
+    clearTargets()
+    selectAction(null)
+    nextTurn()
+  }, [playerCharacter, enemies, positions, addCombatMessage, clearTargets, selectAction, nextTurn])
 
   // Initialisation du combat
   useEffect(() => {
@@ -69,7 +107,7 @@ export const CombatPanel = ({
       // Initialiser avec tous les compagnons actifs
       initializeCombat(encounterData, playerCharacter, activeCompanions)
     }
-  }, [encounterData, combatKey, isInitialized, playerCharacter, activeCompanions, initializeCombat, startCombat, resetCombat, addCombatMessage, turnOrder])
+  }, [encounterData, combatKey, isInitialized, playerCharacter, activeCompanions, initializeCombat, resetCombat])
 
   useEffect(() => {
     // On se déclenche UNIQUEMENT quand la phase est la bonne.
@@ -135,67 +173,15 @@ export const CombatPanel = ({
     if (newTargets.length >= maxTargets) {
       // Exécuter immédiatement avec les nouvelles cibles
       setTimeout(() => {
-        const combatService = new CombatService()
-        const result = combatService.executePlayerAction(
-          playerCharacter,
-          selectedAction,
-          newTargets,
-          enemies,
-          positions
-        )
-
-        // Appliquer les résultats
-        result.messages.forEach(message => addCombatMessage(message.text, message.type))
-
-        // Appliquer les dégâts
-        if (result.damage && result.damage.length > 0) {
-          result.damage.forEach(damageData => {
-            // Trouver la cible et appliquer les dégâts
-            const target = enemies.find(e => e.name === damageData.targetId || e.id === damageData.targetId)
-            if (target) {
-              // Utiliser le store pour appliquer les dégâts
-              const { dealDamageToEnemy } = useCombatStore.getState()
-              dealDamageToEnemy(target.name, damageData.damage)
-
-              // Message de mort si nécessaire
-              setTimeout(() => {
-                const updatedEnemy = enemies.find(e => e.name === target.name)
-                if (updatedEnemy && updatedEnemy.currentHP <= 0 && target.currentHP > 0) {
-                  addCombatMessage(`💀 ${target.name} tombe au combat !`, 'enemy-death')
-                }
-              }, 100)
-            }
-          })
-        }
-
-        // Passer au tour suivant
-        clearTargets()
-        selectAction(null)
-        nextTurn()
+        executeActionAndApplyResults(selectedAction, newTargets)
       }, 500) // Petit délai pour que l'utilisateur voie la sélection
     }
-  }, [selectedAction, selectedTargets, setActionTargets, playerCharacter, enemies, positions, addCombatMessage, clearTargets, selectAction, nextTurn])
+  }, [selectedAction, selectedTargets, setActionTargets, executeActionAndApplyResults])
 
   const handleExecuteAction = useCallback(() => {
     if (!selectedAction || !selectedTargets.length) return
-
-    const combatService = new CombatService()
-    const result = combatService.executePlayerAction(
-      playerCharacter,
-      selectedAction,
-      selectedTargets,
-      enemies,
-      positions
-    )
-
-    // Appliquer les résultats
-    result.messages.forEach(message => addCombatMessage(message.text, message.type))
-
-    // Passer au tour suivant
-    clearTargets()
-    selectAction(null)
-    nextTurn()
-  }, [selectedAction, selectedTargets, playerCharacter, enemies, positions, addCombatMessage, clearTargets, selectAction, nextTurn])
+    executeActionAndApplyResults(selectedAction, selectedTargets)
+  }, [selectedAction, selectedTargets, executeActionAndApplyResults])
 
   const handlePassTurn = () => {
     addCombatMessage(`${playerCharacter.name} passe son tour.`)
@@ -292,7 +278,6 @@ export const CombatPanel = ({
         )
 
       case 'enemy-turn':
-        console.log('enemy')
       case 'companion-turn':
       case 'executing-turn':
         return (

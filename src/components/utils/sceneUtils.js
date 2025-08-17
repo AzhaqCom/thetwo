@@ -140,36 +140,18 @@ const processSkillCheckAction = (action, handlers) => {
         return null;
     }
     
-    // Pour les skill checks avec le nouveau format
-    if (action.onSuccess && typeof action.onSuccess === 'object' && action.onSuccess.consequences) {
-        // Utiliser une version étendue du handleSkillCheck qui peut gérer les conséquences
-        handlers.handleSkillCheckWithConsequences?.(
-            action.skill,
-            action.dc,
-            action.onSuccess,
-            action.onPartialSuccess,
-            action.onFailure,
-            playerCharacter
-        ) || handlers.handleSkillCheck(
-            action.skill,
-            action.dc,
-            action.onSuccess.next || action.onSuccess,
-            action.onPartialSuccess,
-            action.onFailure,
-            playerCharacter
-        );
-    } else {
-        // Fallback pour format simple
-        handlers.handleSkillCheck(
-            action.skill,
-            action.dc,
-            action.onSuccess,
-            action.onPartialSuccess,
-            action.onFailure,
-            playerCharacter
-        );
-    }
+    // Appeler directement handleSkillCheck avec les paramètres simples
+    // handleSkillCheck gère automatiquement la navigation vers success/failure
+    handlers.handleSkillCheck(
+        action.skill,
+        action.dc,
+        action.onSuccess,
+        action.onPartialSuccess || null,
+        action.onFailure,
+        playerCharacter
+    );
     
+    // Return null car handleSkillCheck s'occupe de la navigation
     return null;
 };
 
@@ -203,36 +185,47 @@ const processReputationAction = (action, handlers) => {
 };
 
 /**
- * Traite un choix avec le nouveau système
+ * Traite un choix avec le nouveau système unifié
  * @param {Object} choice - Le choix sélectionné
  * @param {Object} gameState - L'état actuel du jeu
  * @param {Object} handlers - Les handlers disponibles
- * @returns {Promise<string|Object>} La prochaine scène ou action
+ * @returns {Promise<string>} L'ID de la prochaine scène
  */
 export const processChoice = async (choice, gameState, handlers) => {
-    // Appliquer les conséquences du choix de manière asynchrone
+    // Appliquer les conséquences si présentes
     if (choice.consequences) {
         const gameStore = useGameStore.getState();
+        const characterStore = useCharacterStore.getState();
+        
+        // Appliquer les conséquences via gameStore (flags, reputation, items, companions, etc.)
         await gameStore.applyConsequences(choice.consequences);
+        
+        // === GESTION SPÉCIALE : EXPÉRIENCE ===
+        if (choice.consequences.experience && typeof choice.consequences.experience === 'number') {
+            const xpGained = choice.consequences.experience;
+            
+            // Ajouter XP au joueur
+            characterStore.addExperience(xpGained);
+            handlers.addCombatMessage(`Tu gagnes ${xpGained} points d'expérience !`, 'experience');
+            
+            // Ajouter XP aux compagnons actifs
+            const activeCompanions = characterStore.getActiveCompanions();
+            activeCompanions.forEach(companion => {
+                characterStore.addExperience(xpGained, companion.id);
+                handlers.addCombatMessage(`${companion.name} gagne aussi ${xpGained} points d'expérience !`, 'experience');
+            });
+        }
     }
     
-    // Traiter l'action si présente
+    // === GESTION DES ACTIONS ===
     if (choice.action) {
         const actionResult = processSceneAction(choice.action, handlers);
-        
-        // Si l'action retourne quelque chose, on l'utilise
         if (actionResult) {
             return actionResult;
         }
-        
-        // Si l'action retourne null (comme les repos), on s'arrête là
-        // L'action a été traitée (repos lancé) et on ne change pas de scène immédiatement
-        if (actionResult === null) {
-            return null;
-        }
     }
     
-    // Retourner la scène suivante seulement s'il n'y a pas d'action
+    // Retourner la scène suivante
     return choice.next;
 };
 

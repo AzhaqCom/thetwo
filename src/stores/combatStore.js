@@ -6,11 +6,10 @@ import { CharacterManager } from '../services/characterManager'
 import { GameUtils } from '../utils/GameUtils'
 import { EntityAI_Hybrid } from '../services/EntityAI_Hybrid'
 import { CombatEffects } from '../services/combatEffects'
-import { EntityAI } from '../services/EntityAI'
-import { rollD20WithModifier, getModifier, calculateDistance } from '../utils/calculations'
+import { calculateDistance } from '../utils/calculations'
 import { isValidGridPosition } from '../utils/validation'
 import { GRID_WIDTH, GRID_HEIGHT, COMBAT_PHASES } from '../utils/constants'
-import { enemyTemplates } from '../data/enemies'
+import { EnemyFactory } from '../services/EnemyFactory'
 
 // Store pour la gestion du système de combat
 export const useCombatStore = create(
@@ -25,7 +24,6 @@ export const useCombatStore = create(
 
       // === PARTICIPANTS ===
       combatEnemies: [],
-      // companionCharacter supprimé - utilise activeCompanions[] du characterStore
 
       // === GESTION DES TOURS ===
       turnOrder: [],
@@ -52,83 +50,11 @@ export const useCombatStore = create(
       // === ACTIONS D'INITIALISATION ===
 
       initializeCombat: (encounterData, playerCharacter, activeCompanions = []) => set((state) => {
-        // Créer les instances d'ennemis à partir des références
-        const enemyInstances = []
-        
-        encounterData.enemies.forEach((enemyRef, encounterIndex) => {
-          const template = enemyTemplates[enemyRef.type]
-          if (!template) {
-            console.error('❌ Template ennemi non trouvé:', enemyRef.type)
-            return
-          }
-          
-          // Créer le nombre d'instances demandé
-          for (let i = 0; i < enemyRef.count; i++) {
-            enemyInstances.push({
-              ...GameUtils.deepClone(template),
-              name: `${template.name} ${i + 1}`,
-              id: GameUtils.generateId('enemy'),
-              type: 'enemy'
-            })
-          }
-        })
+        // Utiliser EnemyFactory pour créer les instances d'ennemis (évite duplication de code)
+        const enemyInstances = EnemyFactory.createEnemiesFromEncounter(encounterData)
 
-        // Calculer l'ordre d'initiative
-        const initiativeOrder = []
-
-        // Initiative joueur
-        const playerInitiative = rollD20WithModifier(getModifier(playerCharacter.stats.dexterite))
-        initiativeOrder.push({
-          type: 'player',
-          name: playerCharacter.name,
-          initiative: playerInitiative,
-          character: playerCharacter
-        })
-
-        // Initiative des compagnons actifs
-        if (activeCompanions && activeCompanions.length > 0) {
-
-          activeCompanions.forEach((companion, index) => {
-            if (companion && companion.stats && companion.stats.dexterite) {
-              const companionInitiative = rollD20WithModifier(getModifier(companion.stats.dexterite))
-              initiativeOrder.push({
-                type: 'companion',
-                name: companion.name,
-                id: companion.id,
-                initiative: companionInitiative,
-                character: companion
-              })
-            } else {
-              console.error(`❌ COMBAT INIT: Compagnon invalide:`, companion)
-            }
-          })
-        } else {
-          console.log('⚠️ COMBAT INIT: Aucun compagnon actif');
-        }
-
-        // Initiative ennemis
-        enemyInstances.forEach(enemy => {
-          if (!enemy.stats || !enemy.stats.dexterite) {
-            console.error('❌ Enemy sans stats.dexterite:', enemy);
-            return; // Skip cet ennemi
-          }
-          
-          const enemyInitiative = rollD20WithModifier(getModifier(enemy.stats.dexterite))
-          initiativeOrder.push({
-            type: 'enemy',
-            name: enemy.name,
-            initiative: enemyInitiative,
-            character: enemy
-          })
-        })
-
-        // Trier par initiative (plus haut en premier, joueur gagne les égalités)
-        const sortedOrder = initiativeOrder.sort((a, b) => {
-          if (b.initiative === a.initiative) {
-            return a.type === 'player' ? -1 : (b.type === 'player' ? 1 : 0)
-          }
-          return b.initiative - a.initiative
-        })
+        // Utiliser CombatService pour calculer l'initiative (évite la duplication de code)
+        const sortedOrder = CombatService.rollInitiative(playerCharacter, activeCompanions, enemyInstances)
         
         // Initialiser les positions
         const positions = get().calculateInitialPositions(
@@ -160,7 +86,6 @@ export const useCombatStore = create(
           combatPhase: 'initiative-display',
           encounterData,
           combatEnemies: enemyInstances,
-          // companionCharacter supprimé - données dans characterStore.activeCompanions
           turnOrder: sortedOrder,
           currentTurnIndex: 0,
           turnCounter: 1,
@@ -203,8 +128,27 @@ export const useCombatStore = create(
 
         // Positions des ennemis
         enemies.forEach((enemy, index) => {
-          if (customEnemyPositions[enemy.name]) {
-            positions[enemy.name] = customEnemyPositions[enemy.name]
+          // Gérer les positions personnalisées (format objet ou tableau)
+          if (customEnemyPositions && typeof customEnemyPositions === 'object') {
+            if (Array.isArray(customEnemyPositions)) {
+              // Format tableau : [{ x: 4, y: 0 }, { x: 5, y: 0 }, ...]
+              if (customEnemyPositions[index]) {
+                positions[enemy.name] = customEnemyPositions[index]
+              } else {
+                // Position par défaut si pas assez de positions définies
+                const baseX = Math.min(6, GRID_WIDTH - 2)
+                const baseY = Math.min(index, GRID_HEIGHT - 1)
+                positions[enemy.name] = { x: baseX + (index % 2), y: baseY }
+              }
+            } else if (customEnemyPositions[enemy.name]) {
+              // Format objet : { "Ombre 1": { x: 4, y: 0 }, ... }
+              positions[enemy.name] = customEnemyPositions[enemy.name]
+            } else {
+              // Placement automatique côté droit de la grille
+              const baseX = Math.min(6, GRID_WIDTH - 2)
+              const baseY = Math.min(index, GRID_HEIGHT - 1)
+              positions[enemy.name] = { x: baseX + (index % 2), y: baseY }
+            }
           } else {
             // Placement automatique côté droit de la grille
             const baseX = Math.min(6, GRID_WIDTH - 2)
@@ -223,7 +167,6 @@ export const useCombatStore = create(
         combatPhase: 'idle',
         encounterData: null,
         combatEnemies: [],
-        // companionCharacter supprimé
         turnOrder: [],
         currentTurnIndex: 0,
         turnCounter: 0,
@@ -430,8 +373,7 @@ export const useCombatStore = create(
         const attackerPosition = combatPositions[currentTurn.name.toLowerCase()]
 
         // Exécuter l'action via le service de combat
-        const combatService = new CombatService()
-        const result = combatService.executePlayerAction(
+        const result = CombatService.executePlayerAction(
           currentTurn.character,
           playerAction,
           actionTargets,
@@ -723,14 +665,11 @@ export const useCombatStore = create(
         }
       },
 
-      // executeCompanionTurn supprimé - les compagnons sont gérés individuellement par executeCompanionTurnById
-      
       executeCompanionTurnById: (companionId, companion, activeCompanions, playerCharacter) => {
         const { combatPositions, combatEnemies } = get()
         if (!companion || companion.currentHP <= 0) return
 
         // Utiliser la nouvelle architecture séparée
-        const combatService = new CombatService()
         const gameState = {
           playerCharacter,
           activeCompanions,
@@ -739,7 +678,7 @@ export const useCombatStore = create(
         }
 
         // Exécuter l'action via le nouveau système d'IA
-        const result = combatService.executeCompanionAction(companionId, companion, gameState)
+        const result = CombatService.executeCompanionAction(companionId, companion, gameState)
 
         if (result && result.success) {
           // Appliquer les dégâts aux ennemis

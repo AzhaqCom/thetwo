@@ -6,7 +6,6 @@ import { Card, CardHeader, CardBody, Button } from '../../ui'
 import { SpellSlotTracker } from './SpellSlotTracker'
 import { SpellList } from './SpellList'
 import { SpellFilters } from './SpellFilters'
-import { SpellDetailModal } from './SpellDetailModal'
 
 /**
  * Panneau de gestion des sorts avec Zustand
@@ -34,7 +33,6 @@ export const SpellPanel = ({
   const spellService = useMemo(() => new SpellService(), [])
   
   // État local
-  const [selectedSpell, setSelectedSpell] = useState(null)
   const [activeTab, setActiveTab] = useState('prepared') // prepared, grimoire, cantrips
   const [filters, setFilters] = useState({
     school: 'all',
@@ -276,7 +274,7 @@ export const SpellPanel = ({
           activeTab={activeTab}
           spellSlots={spellData.spellSlots}
           isOutOfCombat={isOutOfCombat || !!onCastSpell}
-          onSpellClick={setSelectedSpell}
+          onSpellClick={() => {}}
           onCastSpell={handleCastSpell}
           onPrepareSpell={handlePrepareSpell}
           onUnprepareSpell={handleUnprepareSpell}
@@ -298,18 +296,6 @@ export const SpellPanel = ({
         )}
       </CardBody>
 
-      {/* Modal de détails de sort */}
-      {selectedSpell && (
-        <SpellDetailModal
-          spell={selectedSpell}
-          character={activeCharacter}
-          spellSlots={spellData.spellSlots}
-          onClose={() => setSelectedSpell(null)}
-          onCast={handleCastSpell}
-          onPrepare={handlePrepareSpell}
-          onUnprepare={handleUnprepareSpell}
-        />
-      )}
     </Card>
   )
 }

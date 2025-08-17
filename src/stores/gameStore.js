@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { spells } from '../data/spells'
 import { spellSlotsByLevel } from '../data/character'
-import { rollD20WithModifier, getModifier } from '../utils/calculations'
 import { DataService } from '../services/DataService'
 import { CombatEngine } from '../services/combatEngine'
 import { GameUtils } from '../utils/GameUtils'
@@ -15,8 +14,8 @@ export const useGameStore = create(
   devtools(
     (set, get) => ({
       // État initial
-      gamePhase: 'character-selection',
-      currentScene: 'introduction', // Scène d'introduction par défaut
+      gamePhase: 'game', // 'character-selection' en prod, 'game' en dev
+      currentScene: 'test_start', // Scène de test
       sceneHistory: [],
       combatLog: [],
       isShortResting: false,

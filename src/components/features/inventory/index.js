@@ -12,8 +12,6 @@ export { InventoryItem } from './InventoryItem'
 // Filtres et recherche
 export { InventoryFilters, CompactInventoryFilters } from './InventoryFilters'
 
-// Modals et détails
-export { ItemDetailModal } from './ItemDetailModal'
 
 // Utilitaires
 export { InventoryCleanup } from './InventoryCleanup'

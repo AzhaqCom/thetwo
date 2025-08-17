@@ -6,12 +6,12 @@
 export const SCENE_TYPES = {
   TEXT: 'text',
   DIALOGUE: 'dialogue', 
-  INTERACTIVE: 'interactive_scene',
+  INTERACTIVE: 'interactive',     
   MERCHANT: 'merchant',
   COMBAT: 'combat',
   REST_LONG: 'rest_long',
   REST_SHORT: 'rest_short',
-  REST_CHOICE: 'rest_choice'  // Nouveau : Choix entre repos court/long
+  REST_CHOICE: 'rest_choice'       // Choix entre repos court/long (D&D)
 };
 
 // Types d'actions possibles
@@ -30,144 +30,114 @@ export const ACTION_TYPES = {
 };
 
 /**
- * Structure d'une scène de base
+ * Structure d'une scène unifiée (nouveau système)
  */
-export const BaseSceneSchema = {
-  metadata: {
-    type: 'string', // SCENE_TYPES
-    chapter: 'string', 
-    tags: 'array',
-    title: 'string',
-    character: 'string', // Pour dialogues
-    location: 'string',
-    background: 'string', // Pour scènes interactives
-    shop_type: 'string' // Pour marchands
-  },
+export const UnifiedSceneSchema = {
+  // === IDENTIFICATION ===
+  id: 'string',                    // Identifiant unique (requis)
+  type: 'SCENE_TYPES',             // Type de la scène (requis)
+  
+  // === CONTENU ===
   content: {
-    text: 'string',
-    speaker: 'string', // Pour dialogues
-    portrait: 'string', // Pour dialogues
-    description: 'string', // Description additionelle
+    text: 'string',                // Texte principal (requis)
+    speaker: 'string',             // Pour dialogues uniquement
+    portrait: 'string',            // Pour dialogues uniquement  
+    mood: 'string',                // Pour dialogues (friendly, neutral, hostile)
+    background: 'string',          // Pour scènes interactives uniquement
+    title: 'string',               // Titre affiché (optionnel)
+    description: 'string',         // Description additionnelle (optionnel)
     variations: {
-      // key: condition_name, value: text_variant
+      // key: condition_name, value: text_variant (pour textes dynamiques)
     }
   },
-  conditions: {
-    show_if: 'string', // Condition pour afficher la scène
-    show_variation: {
-      // key: variation_name, value: condition_string
-    }
-  },
+  
+  // === NAVIGATION ===
   choices: [
     {
-      text: 'string',
-      next: 'string', // Scene ID
-      condition: 'string', // Condition pour afficher le choix
-      action: {
-        type: 'string', // ACTION_TYPES
-        // Propriétés spécifiques selon le type
-      },
-      consequences: {
-        flags: 'object', // Flags à modifier
-        reputation: 'number', // Changement de réputation
-        items: 'array', // Items à ajouter
-        companions: 'array' // Compagnons à ajouter
+      text: 'string',              // Texte du choix (requis)
+      next: 'string',              // ID de la scène suivante (requis)
+      condition: 'string',         // Condition pour afficher le choix (optionnel)
+      consequences: {              // Effets du choix (optionnel)
+        // === PROGRESSION PERSONNAGE ===
+        experience: 'number',      // XP à ajouter
+        items: 'array',            // Items à ajouter à l'inventaire
+        companions: 'array',       // Compagnons à recruter
+        
+        // === ÉTAT NARRATIF ===
+        flags: 'object',           // Flags de jeu à modifier
+        reputation: 'number',      // Changement de réputation
+        npcRelations: 'object',    // Relations avec PNJ
+        visitLocation: 'string',   // Marquer lieu comme visité
+        majorChoice: {             // Choix important pour l'histoire
+          id: 'string',
+          description: 'string'
+        }
       }
     }
   ],
-  effects: {
-    on_enter: 'function', // Fonction exécutée à l'entrée
-    on_exit: 'function' // Fonction exécutée à la sortie
-  }
-};
-
-/**
- * Structure pour scènes interactives
- */
-export const InteractiveSceneSchema = {
-  ...BaseSceneSchema,
-  metadata: {
-    ...BaseSceneSchema.metadata,
-    type: 'interactive_scene',
-    background: 'string', // Image de fond
-    hotspots: true
+  
+  // === CONDITIONS ===
+  conditions: {
+    show_if: 'string',             // Condition pour afficher la scène
+    show_variation: {              // Conditions pour variations de texte
+      // key: variation_name, value: condition_string
+    }
   },
+  
+  // === PROPRIÉTÉS SPÉCIFIQUES PAR TYPE ===
+  
+  // Pour MERCHANT uniquement
+  shop: {
+    currency: 'string',
+    inventory: 'array',
+    reputation_discount: 'object'
+  },
+  
+  // Pour INTERACTIVE uniquement  
   hotspots: [
     {
       id: 'string',
-      coordinates: {
-        x: 'number',
-        y: 'number', 
-        width: 'number',
-        height: 'number'
-      },
-      text: 'string', // Texte au survol
-      condition: 'string', // Condition pour afficher
-      action: {
-        type: 'string',
-        next: 'string',
-        message: 'string'
-      }
+      coordinates: { x: 'number', y: 'number', width: 'number', height: 'number' },
+      text: 'string',
+      condition: 'string',
+      action: { type: 'string', next: 'string', message: 'string' }
     }
-  ]
-};
-
-/**
- * Structure pour dialogues
- */
-export const DialogueSceneSchema = {
-  ...BaseSceneSchema,
+  ],
+  
+  // Pour COMBAT uniquement
+  enemies: 'array',
+  enemyPositions: 'array',
+  
+  // Pour REST_* uniquement
+  restType: 'string',              // 'short', 'long', ou 'choice'
+  
+  // === MÉTADONNÉES (optionnelles) ===
   metadata: {
-    ...BaseSceneSchema.metadata,
-    type: 'dialogue',
-    character: 'string' // ID du PNJ
-  },
-  content: {
-    ...BaseSceneSchema.content,
-    speaker: 'string', // Nom du PNJ
-    portrait: 'string', // Image du PNJ
-    mood: 'string' // humeur du PNJ (friendly, neutral, hostile)
+    chapter: 'string',             // Chapitre narratif
+    location: 'string',            // Lieu de la scène
+    tags: 'array',                 // Tags pour organisation
+    character: 'string'            // PNJ principal (pour dialogues)
   }
 };
 
+// === SCHEMAS LEGACY (à supprimer après migration complète) ===
+// Ces schemas restent pour compatibilité avec les composants existants
+// mais utilisent maintenant UnifiedSceneSchema comme base
+
 /**
- * Structure pour marchands
+ * @deprecated Utiliser UnifiedSceneSchema à la place
  */
-export const MerchantSceneSchema = {
-  ...DialogueSceneSchema,
-  metadata: {
-    ...DialogueSceneSchema.metadata,
-    type: 'merchant',
-    shop_type: 'string' // Type de boutique
-  },
-  shop: {
-    currency: 'string', // Type de monnaie
-    reputation_discount: {
-      threshold: 'number', // Seuil de réputation
-      discount: 'number' // Multiplicateur de prix (0.9 = -10%)
-    },
-    inventory: [
-      {
-        id: 'string', // ID de l'item
-        price: 'number',
-        stock: 'number', // -1 pour stock illimité
-        condition: 'string', // Condition pour être disponible
-        description: 'string' // Description spéciale
-      }
-    ],
-    special_offers: [
-      {
-        condition: 'string',
-        message: 'string',
-        reward: {
-          type: 'string', // 'item', 'gold', 'discount'
-          item: 'string',
-          amount: 'number'
-        }
-      }
-    ]
-  }
-};
+export const InteractiveSceneSchema = UnifiedSceneSchema;
+
+/**
+ * @deprecated Utiliser UnifiedSceneSchema à la place  
+ */
+export const DialogueSceneSchema = UnifiedSceneSchema;
+
+/**
+ * @deprecated Utiliser UnifiedSceneSchema à la place
+ */
+export const MerchantSceneSchema = UnifiedSceneSchema;
 
 /**
  * Structure des variables de jeu
@@ -256,9 +226,9 @@ export const SceneValidators = {
 export default {
   SCENE_TYPES,
   ACTION_TYPES,
-  BaseSceneSchema,
+  UnifiedSceneSchema,
   InteractiveSceneSchema,
-  DialogueSceneSchema,
+  DialogueSceneSchema, 
   MerchantSceneSchema,
   GameFlagsSchema,
   ConditionTypes,

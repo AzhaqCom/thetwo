@@ -6,6 +6,7 @@ import { CombatEngine } from '../services/combatEngine'
 import { GameUtils } from '../utils/GameUtils'
 import { items } from '../data/items'
 import { weapons } from '../data/weapons'
+import { characterTemplates } from '../data/characterTemplates'
 
 // Store pour la gestion des personnages (joueur et compagnon)
 // Helper pour synchroniser playerCharacter et selectedCharacter
@@ -21,7 +22,7 @@ export const useCharacterStore = create(
     devtools(
       (set, get) => ({
         // État des personnages
-        playerCharacter: null,
+        playerCharacter: characterTemplates.wizard, // null en prod, characterTemplates.wizard en dev
         playerCompanions: [], // Nouveau: Array de tous les compagnons (max 3)
         activeCompanions: [], // Compagnons actuellement déployés en mission/combat
         selectedCharacter: null, // OBSOLÈTE: Alias pour playerCharacter pour compatibilité avec les composants - utiliser playerCharacter directement

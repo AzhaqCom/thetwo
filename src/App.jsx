@@ -1,6 +1,5 @@
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { newScenes } from './data/scenes_examples';
 
 // Modern feature components
 import {
@@ -20,14 +19,16 @@ import {
 import {
     SpellPanel
 } from './components/features/spells';
-import {
-    RestPanel
-} from './components/features/rest';
+// RestPanel remplacé par RestScene
 
 // New scene components
 import DialogueScene from './components/game/DialogueScene';
 import InteractiveScene from './components/game/InteractiveScene';
 import MerchantScene from './components/game/MerchantScene';
+import RestScene from './components/game/RestScene';
+
+// Custom hooks for logic extraction
+import { useAppHandlers } from './components/hooks/useAppHandlers';
 
 
 // Zustand stores
@@ -39,16 +40,13 @@ import {
 } from './stores';
 
 // Utils
-import { processSceneAction, processChoice, getGameStateForStory } from './components/utils/sceneUtils';
 import { 
     createVirtualRestScene, 
- 
     getContainerClasses 
 } from './components/utils/sceneRendering';
 import { StoryService } from './services/StoryService';
+import SceneManager from './services/SceneManager';
 import { SCENE_TYPES } from './types/story';
-import { items } from './data/items';
-import { weapons } from './data/weapons';
 import './App.css';
 
 // Error fallback component
@@ -74,24 +72,13 @@ function App() {
         setGamePhase,
         setCurrentScene,
         addCombatMessage,
-        handleSkillCheck,
-        startShortRest,
-        startLongRest,
-        endShortRest,
-        endLongRest
+       
     } = useGameStore();
 
     const {
         playerCharacter,
         setPlayerCharacter,
-        addCompanion,
-        setActiveCompanions,
         getActiveCompanions,
-        addItemToInventory,
-        castSpellPlayer,
-        shortRestPlayer,
-        longRestAll,
-        addExperience
     } = useCharacterStore();
 
     const {
@@ -104,6 +91,19 @@ function App() {
         showError
     } = useUIStore();
 
+    // Use custom hooks for handlers
+    const {
+        handleCombatVictory,
+        handleItemGain,
+        handleShortRest,
+        handleLongRest,
+        handleCastSpellOutOfCombat,
+        getGameStateWithCharacter,
+        handleNewChoice,
+        handleHotspotClick,
+        handlePurchase,
+        handleSell
+    } = useAppHandlers();
 
     // Character selection handler
     const handleCharacterSelect = (selectedCharacter) => {
@@ -118,93 +118,7 @@ function App() {
         addCombatMessage('La fortune sourit aux audacieux')
     };
 
-    // Combat victory handler
-    const handleCombatVictory = () => {
-        // 1. Récupérer l'XP gagné depuis le combat
-        const { totalXpGained, combatEnemies } = useCombatStore.getState()
-        const xpGained = totalXpGained || combatEnemies.reduce((total, enemy) => total + (enemy.xp || 0), 0)
 
-        // 2. Donner l'expérience au joueur
-        if (xpGained > 0) {
-            addExperience(xpGained, 'player')
-            addCombatMessage(`Vous gagnez ${xpGained} points d'expérience !`, 'victory')
-
-            // Donner l'XP aux compagnons actifs
-            const activeCompanions = getActiveCompanions()
-            activeCompanions.forEach(companion => {
-                addCombatMessage(`${companion.name} gagne aussi ${xpGained} points d'expérience !`, 'victory')
-            })
-        }
-
-        // 3. Récupérer la scène suivante depuis la scène de combat actuelle
-        const currentSceneData = newScenes[currentScene];
-        const nextAction = currentSceneData?.metadata?.next || currentSceneData?.next;
-
-        // 4. Réinitialiser l'état du combat
-        resetCombat();
-        addCombatMessage('Combat terminé ! Victoire !', 'victory');
-
-        // 5. Naviguer vers la scène suivante après victoire
-        if (nextAction) {
-            setCurrentScene(nextAction);
-        } else {
-            // S'il n'y a pas de scène suivante définie, on peut aller à une scène par défaut ou terminer le jeu.
-            console.warn("Aucune scène suivante n'est définie après le combat.");
-            setCurrentScene('fin_du_jeu'); // ou une autre scène par défaut
-        }
-    };
-
-    // Item gain handler
-    const handleItemGain = (itemIdOrArray) => {
-        const itemIds = Array.isArray(itemIdOrArray) ? itemIdOrArray : [itemIdOrArray];
-
-        itemIds.forEach(itemId => {
-            // Chercher d'abord dans items.js (consommables)
-            let itemData = items[itemId];
-
-            // Si pas trouvé dans items.js, chercher dans weapons.js
-            if (!itemData) {
-                itemData = weapons[itemId];
-            }
-
-            if (itemData) {
-                const itemToAdd = {
-                    ...itemData,
-                    id: itemId
-                };
-                addItemToInventory(itemToAdd);
-                console.log(`Objet obtenu : ${itemData.name}`, 'item');
-                addCombatMessage(`Objet obtenu : ${itemData.name}`, 'item');
-            } else {
-                console.error(`❌ Item non trouvé dans items.js ou weapons.js : ${itemId}`);
-            }
-        });
-    };
-
-    // Rest handlers
-    const handleShortRest = () => {
-        shortRestPlayer();
-        endShortRest();
-
-    };
-
-    const handleLongRest = () => {
-        longRestAll();
-        endLongRest();
-        addCombatMessage('Repos long terminé - PV et sorts restaurés', 'rest');
-    };
-
-    // Spell casting out of combat
-    const handleCastSpellOutOfCombat = (spell, level = null) => {
-        try {
-            const options = level ? { spellLevel: level } : {};
-            castSpellPlayer(spell, options);
-            addCombatMessage(`Sort lancé : ${spell.name}`, 'spell');
-        } catch (error) {
-            console.error('Erreur lors du lancement du sort:', error);
-            showError(`Impossible de lancer le sort : ${error.message}`);
-        }
-    };
 
     // Error boundary wrapper
     if (gamePhase === 'character-selection') {
@@ -230,117 +144,7 @@ function App() {
     const { container: containerClass, mainContent: mainContentClass, sidebar: sidebarClass } = getContainerClasses(currentScene);
 
     // ===== SYSTÈME DE RENDU UNIFIÉ DES SCÈNES =====
-    // Toutes les scènes utilisent désormais renderNewSceneFormat exclusivement
-    // Fini les doubles systèmes de rendu - un seul pipeline pour tous les types
 
-    /**
-     * Obtient l'état du jeu avec le personnage actuel
-     * Utilisé par le StoryService pour évaluer les conditions et variations
-     */
-    const getGameStateWithCharacter = () => {
-        const gameState = getGameStateForStory();
-        gameState.character = playerCharacter;
-        return gameState;
-    };
-
-    /**
-     * Gestionnaire de choix unifié pour toutes les scènes
-     * Traite les choix via le StoryService et processChoice
-     */
-    const handleNewChoice = async (choice) => {
-        const gameState = getGameStateWithCharacter();
-        const result = await processChoice(choice, gameState, {
-            startLongRest,
-            startShortRest,
-            handleItemGain,
-            addCompanion,
-            setActiveCompanions,
-            addCombatMessage,
-            handleSkillCheck
-        });
-
-        if (result) {
-            setCurrentScene(result);
-        }
-    };
-
-    /**
-     * Gestionnaire pour les hotspots des scènes interactives
-     * Permet l'interaction avec les éléments cliquables dans les scènes
-     */
-    const handleHotspotClick = (hotspot) => {
-        if (hotspot.action) {
-            const result = processSceneAction(hotspot.action, {
-                startLongRest,
-                startShortRest,
-                handleItemGain,
-                addCompanion,
-                setActiveCompanions,
-                addCombatMessage,
-                handleSkillCheck
-            });
-
-            if (result) {
-                setCurrentScene(result);
-            }
-        }
-    };
-
-    /**
-     * Gestionnaire pour les achats dans les scènes de marchand
-     * Met à jour l'or et l'inventaire du joueur
-     */
-    const handlePurchase = (purchaseResult) => {
-        if (purchaseResult.success) {
-            // Déduire l'or
-            const newCharacter = {
-                ...playerCharacter,
-                gold: (playerCharacter.gold || 0) + purchaseResult.effects.gold
-            };
-            setPlayerCharacter(newCharacter);
-
-            // Ajouter les items
-            if (purchaseResult.effects.items) {
-                handleItemGain(purchaseResult.effects.items);
-            }
-
-            addCombatMessage(purchaseResult.message, 'success');
-        } else {
-            addCombatMessage(purchaseResult.message, 'error');
-        }
-    };
-
-    /**
-     * Gestionnaire pour les ventes dans les scènes de marchand
-     * Met à jour l'or et retire les items vendus
-     */
-    const handleSell = (sellResult) => {
-        if (sellResult.success) {
-            // Ajouter l'or
-            const newCharacter = {
-                ...playerCharacter,
-                gold: (playerCharacter.gold || 0) + sellResult.effects.gold
-            };
-            setPlayerCharacter(newCharacter);
-
-            // Retirer les items (logique à implémenter dans characterStore)
-            if (sellResult.effects.removeItems) {
-                // TODO: Implémenter removeItemFromInventory
-                console.log('Items to remove:', sellResult.effects.removeItems);
-            }
-
-            addCombatMessage(sellResult.message, 'success');
-        } else {
-            addCombatMessage(sellResult.message, 'error');
-        }
-    };
-
-    /**
-     * ===== MOTEUR DE RENDU UNIFIÉ =====
-     * Cette fonction gère TOUS les types de scènes du jeu
-     * - Dialogue, Combat, Repos, Interactif, Marchand, Texte
-     * - Un seul pipeline de rendu pour toute l'application
-     */
     const renderNewSceneFormat = (scene) => {
         const gameState = getGameStateWithCharacter();
 
@@ -350,7 +154,7 @@ function App() {
         }
 
         // === DISPATCH SELON LE TYPE DE SCÈNE ===
-        switch (scene.metadata.type) {
+        switch (scene.type) {
             case SCENE_TYPES.DIALOGUE:
                 return (
                     <div className='scene-dialogue'>
@@ -393,17 +197,10 @@ function App() {
             case SCENE_TYPES.REST_LONG:
                 return (
                     <div className='scene-rest-long'>
-                        <RestPanel
-                            type="long"
-                            character={playerCharacter}
-                            onRestComplete={() => {
-                                handleLongRest();
-                                if (scene.next) {
-                                    setCurrentScene(scene.next);
-                                } else {
-                                    console.warn('Pas de scène suivante définie après le repos long');
-                                }
-                            }}
+                        <RestScene
+                            scene={scene}
+                            gameState={gameState}
+                            onChoice={handleNewChoice}
                         />
                         <CombatLog title="Journal" compact={true} />
                     </div>
@@ -412,86 +209,30 @@ function App() {
             case SCENE_TYPES.REST_SHORT:
                 return (
                     <div className='scene-rest-short'>
-                        <RestPanel
-                            type="short"
-                            character={playerCharacter}
-                            onRestComplete={() => {
-                                handleShortRest();
-                                if (scene.next) {
-                                    setCurrentScene(scene.next);
-                                } else {
-                                    console.warn('Pas de scène suivante définie après le repos court');
-                                }
-                            }}
+                        <RestScene
+                            scene={scene}
+                            gameState={gameState}
+                            onChoice={handleNewChoice}
                         />
                         <CombatLog title="Journal" compact={true} />
                     </div>
                 );
 
             case SCENE_TYPES.REST_CHOICE:
-                // Permet au joueur de choisir entre repos court et long + bouton retour
                 return (
                     <div className='scene-rest-choice'>
-                        <RestPanel
-                            // Pas de type = affiche le sélecteur avec choix
-                            character={playerCharacter}
-                            onRestComplete={(restType) => {
-                                if (restType === 'long') {
-                                    handleLongRest();
-                                } else {
-                                    handleShortRest();
-                                }
-                                
-                                // Navigation simple - même scène après tous les repos
-                                if (scene.next) {
-                                    setCurrentScene(scene.next);
-                                } else {
-                                    console.warn('Pas de scène suivante définie après le repos');
-                                }
-                            }}
-                            // Bouton retour pour REST_CHOICE uniquement
-                            onCancel={() => {
-                                if (scene.back) {
-                                    setCurrentScene(scene.back);
-                                } else {
-                                    console.warn('Pas de scène de retour définie');
-                                }
-                            }}
+                        <RestScene
+                            scene={scene}
+                            gameState={gameState}
+                            onChoice={handleNewChoice}
                         />
                         <CombatLog title="Journal" compact={true} />
                     </div>
                 );
 
             case SCENE_TYPES.COMBAT: {
-                // Convertir les positions d'ennemis du format tableau vers le format objet attendu
-                const enemyPositions = {};
-                if (scene.enemyPositions && Array.isArray(scene.enemyPositions)) {
-                    scene.enemyPositions.forEach((pos, index) => {
-                        // Pour chaque type d'ennemi, créer les noms correspondants
-                        if (scene.enemies && scene.enemies[0]) {
-                            const enemyType = scene.enemies[0].type;
-                            const template = { name: enemyType.charAt(0).toUpperCase() + enemyType.slice(1) };
-                            const enemyName = `${template.name} ${index + 1}`;
-                            enemyPositions[enemyName] = pos;
-                        }
-                    });
-                }
-
-                // Préparer les données de combat dans le bon format
-                const combatData = {
-                    type: 'combat',
-                    enemies: scene.enemies || [],
-                    enemyPositions: enemyPositions,
-                    // Nouvelles propriétés pour positions personnalisées
-                    playerPosition: scene.playerPosition || null,
-                    companionPositions: scene.companionPositions || null,
-                    next: scene.metadata.nextScene || scene.next
-                };
-
-                console.log('🎯 Combat scene data:', scene);
-                console.log('🎯 Combat data for CombatPanel:', combatData);
-                console.log('🎯 Enemy positions converted:', enemyPositions);
-
+                // Utiliser SceneManager pour préparer les données de combat
+                const combatData = SceneManager.prepareCombatData(scene);
                 return (
 
                     <CombatPanel
@@ -506,7 +247,7 @@ function App() {
                             }
                         }}
                         onReplayCombat={() => {
-                            // Restaurer les PV du joueur et du compagnon pour le rejeu
+                            // Restaurer les PV du joueur et du compagnon pour replay
                             if (playerCharacter) {
                                 setPlayerCharacter({
                                     ...playerCharacter,
@@ -558,9 +299,9 @@ function App() {
                 return (
                     <div className='scene-textuel-new'>
                         <div className="scene-content">
-                            <h3>{scene.metadata.title}</h3>
+                            <h3>{scene.content?.title || scene.metadata?.title}</h3>
                             <div className="scene-text">
-                                {StoryService.getSceneText(scene, gameState).split('\n').map((line, index) => (
+                                {SceneManager.getSceneText(scene, gameState).split('\n').map((line, index) => (
                                     line.trim() === '' ?
                                         <br key={index} /> :
                                         <p key={index}>{line}</p>
@@ -568,7 +309,7 @@ function App() {
                             </div>
                         </div>
                         <div className="scene-choices">
-                            {StoryService.getAvailableChoices(scene, gameState).map((choice, index) => (
+                            {SceneManager.getAvailableChoices(scene, gameState).map((choice, index) => (
                                 <button
                                     key={index}
                                     className="choice-button"
@@ -599,20 +340,14 @@ function App() {
         }
 
 
-        // === SYSTÈME UNIFIÉ ===
-        const sceneData = newScenes[currentScene];
+        // === NOUVEAU SYSTÈME UNIFIÉ ===
+        const sceneData = SceneManager.getScene(currentScene);
         if (sceneData) {
             return sceneData;
         }
 
-        // === SCÈNE NON TROUVÉE ===
-        return {
-            metadata: { type: 'error', title: 'Erreur' },
-            content: { 
-                text: `La scène "${currentScene}" n'existe pas dans newScenes.`,
-                error: true
-            }
-        };
+        // === SCÈNE NON TROUVÉE (ne devrait plus arriver avec le SceneManager) ===
+        return SceneManager.ERROR_SCENE;
     };
     // Determine which panels to show based on character class and abilities
     const shouldShowSpellcasting = playerCharacter?.spellcasting;

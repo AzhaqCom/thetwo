@@ -2,13 +2,8 @@
  * Export centralisé des composants Rest refactorisés
  */
 
-// Composant principal
-export { RestPanel } from './RestPanel'
-
-// Gestionnaires de repos
-export { ShortRestManager } from './ShortRestManager'
-export { LongRestManager } from './LongRestManager'
-export { RestTypeSelector } from './RestTypeSelector'
+// Anciens composants Rest supprimés - remplacés par RestScene dans components/game/
+// RestPanel, ShortRestManager, LongRestManager, RestTypeSelector ne sont plus nécessaires
 
 // Utilitaires et constantes
 export const REST_TYPES = {

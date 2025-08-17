@@ -74,7 +74,7 @@ const ShopInterface = ({
               : Math.floor((itemData.value || 0) * 0.5);
 
             const canAfford = mode === 'buy' ? playerGold >= price : true;
-            const inStock = mode === 'buy' ? (item.stock === -1 || item.stock > 0) : true;
+            const inStock = mode === 'buy' ? (item.quantity === -1 || item.quantity > 0) : true;
 
             return (
               <div 
@@ -105,9 +105,9 @@ const ShopInterface = ({
                     {price} {shopCurrency}
                   </div>
                   
-                  {mode === 'buy' && item.stock !== -1 && (
+                  {mode === 'buy' && item.quantity !== -1 && (
                     <div className="stock">
-                      Stock: {item.stock}
+                      Stock: {item.quantity}
                     </div>
                   )}
                   
@@ -147,22 +147,22 @@ const ShopInterface = ({
               <label>Quantité:</label>
               <div className="quantity-controls">
                 <button 
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  onClick={() => setQuantity(Math.max(1, (quantity || 1) - 1))}
                   disabled={quantity <= 1}
                 >
                   -
                 </button>
-                <span className="quantity-value">{quantity}</span>
+                <span className="quantity-value">{quantity || 1}</span>
                 <button 
                   onClick={() => {
                     const maxQuantity = mode === 'buy' 
-                      ? (selectedItem.stock === -1 ? 10 : selectedItem.stock)
+                      ? (selectedItem.quantity === -1 ? 10 : selectedItem.quantity)
                       : (selectedItem.quantity || 1);
-                    setQuantity(Math.min(maxQuantity, quantity + 1));
+                    setQuantity(Math.min(maxQuantity, (quantity || 1) + 1));
                   }}
                   disabled={
                     mode === 'buy' 
-                      ? (selectedItem.stock !== -1 && quantity >= selectedItem.stock)
+                      ? (selectedItem.quantity !== -1 && quantity >= selectedItem.quantity)
                       : (selectedItem.quantity && quantity >= selectedItem.quantity)
                   }
                 >
@@ -176,8 +176,8 @@ const ShopInterface = ({
               <strong>
                 Total: {
                   mode === 'buy' 
-                    ? getItemPrice(selectedItem) * quantity
-                    : Math.floor((getItemData(selectedItem.id)?.value || 0) * 0.5) * quantity
+                    ? (getItemPrice(selectedItem) || 0) * (quantity || 1)
+                    : Math.floor((getItemData(selectedItem.id)?.value || 0) * 0.5) * (quantity || 1)
                 } {shopCurrency}
               </strong>
             </div>
@@ -190,7 +190,7 @@ const ShopInterface = ({
                   onClick={() => handlePurchase(selectedItem)}
                   disabled={
                     playerGold < getItemPrice(selectedItem) * quantity ||
-                    (selectedItem.stock !== -1 && selectedItem.stock < quantity)
+                    (selectedItem.quantity !== -1 && selectedItem.quantity < quantity)
                   }
                 >
                   🛒 Acheter
