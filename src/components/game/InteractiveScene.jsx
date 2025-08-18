@@ -45,6 +45,51 @@ const InteractiveScene = ({
     };
   };
 
+  /**
+   * Calcule la position optimale du tooltip pour éviter qu'il sorte de l'écran
+   */
+  const getTooltipPosition = (hotspot) => {
+    if (!imageRef.current) return '';
+
+    const imageRect = imageRef.current.getBoundingClientRect();
+    const hotspotX = hotspot.coordinates.x;
+    const hotspotY = hotspot.coordinates.y;
+    const hotspotWidth = hotspot.coordinates.width;
+    const hotspotHeight = hotspot.coordinates.height;
+
+    // Calculer la position du centre du hotspot
+    const hotspotCenterX = hotspotX + hotspotWidth / 2;
+    const hotspotCenterY = hotspotY + hotspotHeight / 2;
+
+    // Marges de sécurité
+    const margin = 20;
+    const tooltipHeight = 40; // Estimation de la hauteur du tooltip
+    const tooltipWidth = 120; // Estimation de la largeur du tooltip
+
+    // Vérifier si on peut placer le tooltip au-dessus (position par défaut)
+    if (hotspotY > tooltipHeight + margin) {
+      return ''; // Position par défaut (au-dessus)
+    }
+
+    // Vérifier si on peut placer le tooltip en dessous
+    if (hotspotY + hotspotHeight + tooltipHeight + margin < imageRect.height) {
+      return 'position-bottom';
+    }
+
+    // Vérifier si on peut placer le tooltip à droite
+    if (hotspotX + hotspotWidth + tooltipWidth + margin < imageRect.width) {
+      return 'position-right';
+    }
+
+    // Vérifier si on peut placer le tooltip à gauche
+    if (hotspotX > tooltipWidth + margin) {
+      return 'position-left';
+    }
+
+    // En dernier recours, utiliser la position en dessous
+    return 'position-bottom';
+  };
+
   return (
     <div className="interactive-scene">
       <h3 className='title-scene'>{scene.content.title}</h3>
@@ -72,7 +117,7 @@ const InteractiveScene = ({
             >
               <div className="hotspot-highlight"></div>
               {hoveredHotspot === hotspot.id && (
-                <div className="hotspot-tooltip">
+                <div className={`hotspot-tooltip ${getTooltipPosition(hotspot)}`}>
                   {hotspot.text}
                 </div>
               )}

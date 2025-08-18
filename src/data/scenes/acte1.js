@@ -163,14 +163,19 @@ export const acte1Scenes = {
       text: `Vous vous lancez dans un assaut direct contre les structures pulsantes. Les nids réagissent violemment, libérant des nuées de créatures pour vous arrêter !`
     },
     enemies: [
-      { type: 'ombre_gardien', count: 2 },
+      { type: 'molosse_ombre', count: 2 },
       { type: 'ombre', count: 4 }
     ],
     enemyPositions: [
       { x: 2, y: 2 }, { x: 6, y: 2 },
       { x: 1, y: 4 }, { x: 3, y: 4 }, { x: 5, y: 4 }, { x: 7, y: 4 }
     ],
-    playerPosition: { x: 4, y: 6 },
+     choices: [
+        {
+        text: 'Attaquer les créatures',
+      },
+    ],
+    playerPosition: { x: 4, y: 5 },
     onVictory: {
       text: 'Poursuivre l\'offensive',
       next: 'acte1_convergence_action',

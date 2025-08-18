@@ -7,6 +7,7 @@ import { SCENE_TYPES } from '../../types/story';
 import village from '../../assets/village-ravenscroft.jpg';
 import tavernier from '../../assets/tom-aubergiste.jpg';
 import tunnel from '../../assets/tunnels.jpg';
+import carte from '../../assets/map-raven.jpg';
 export const prologueScenes = {
 
   // ================================
@@ -337,6 +338,11 @@ export const prologueScenes = {
       { x: 4, y: 2 },
       { x: 1, y: 4 }
     ],
+    choices: [
+        {
+        text: 'Se défendre contre les ombres',
+      },
+    ],
     playerPosition: { x: 6, y: 3 },
     onVictory: {
       text: 'Continuer après le combat',
@@ -561,7 +567,7 @@ export const prologueScenes = {
         alliance_complete: `La carte révèle l'étendue de la corruption qui ronge la région. Des zones marquées en rouge indiquent les manifestations d'ombres les plus importantes. Plusieurs lieux d'intérêt émergent de votre analyse. Kael pointe du doigt les emplacements stratégiques : "Nous devons établir des priorités. Chaque lieu exploré nous rapprochera de la vérité."`,
         solo: `Sans les connaissances approfondies de Kael, vous devez vous fier à votre intuition et aux informations limitées dont vous disposez. La carte montre plusieurs lieux, mais vous ne pouvez pas tous les explorer immédiatement. Votre approche solitaire vous impose de choisir plus prudemment vos objectifs.`
       },
-      background: '/images/backgrounds/region_map.jpg'
+      background: carte
     },
     conditions: {
       show_variation: {
@@ -572,7 +578,7 @@ export const prologueScenes = {
     hotspots: [
       {
         id: 'sanctuaire_familial',
-        coordinates: { x: 45, y: 35, width: 20, height: 15 },
+        coordinates: { x: 63, y: 212, width: 119, height: 116 },
         text: 'Sanctuaire Familial',
         action: {
           type: 'scene_transition',
@@ -583,7 +589,7 @@ export const prologueScenes = {
       },
       {
         id: 'nids_ombres',
-        coordinates: { x: 25, y: 65, width: 18, height: 12 },
+        coordinates: { x: 300, y: 20, width: 250, height: 145 },
         text: 'Nids d\'Ombres',
         condition: "!gameFlags.refus_alliance",
         action: {
@@ -595,7 +601,7 @@ export const prologueScenes = {
       },
       {
         id: 'camp_refugies',
-        coordinates: { x: 70, y: 50, width: 22, height: 14 },
+        coordinates: { x:633, y: 167, width: 205, height: 129 },
         text: 'Camp de Réfugiés',
         condition: "!gameFlags.refus_alliance",
         action: {
@@ -607,7 +613,7 @@ export const prologueScenes = {
       },
       {
         id: 'tour_mage',
-        coordinates: { x: 60, y: 20, width: 15, height: 20 },
+        coordinates: { x: 100, y: 30, width: 80, height: 160 },
         text: 'Tour du Mage Érudit',
         condition: "!gameFlags.refus_alliance",
         action: {
@@ -619,7 +625,7 @@ export const prologueScenes = {
       },
       {
         id: 'pont_dragon',
-        coordinates: { x: 35, y: 80, width: 25, height: 8 },
+        coordinates: { x: 265, y: 200, width: 85, height: 60 },
         text: 'Pont du Dragon Endormi',
         condition: "!gameFlags.refus_alliance",
         action: {
@@ -631,7 +637,7 @@ export const prologueScenes = {
       },
       {
         id: 'village_proche',
-        coordinates: { x: 30, y: 50, width: 18, height: 12 },
+        coordinates: { x: 633, y: 297, width:205, height: 130 },
         text: 'Village Voisin',
         condition: "gameFlags.refus_alliance === true",
         action: {
@@ -643,7 +649,7 @@ export const prologueScenes = {
       },
       {
         id: 'ruines_visibles',
-        coordinates: { x: 65, y: 60, width: 20, height: 15 },
+        coordinates: { x: 285, y: 300, width: 324, height: 160 },
         text: 'Ruines Visibles',
         condition: "gameFlags.refus_alliance === true",
         action: {

@@ -1,5 +1,5 @@
 export const enemyTemplates = {
-      ombre: {
+    ombre: {
         name: "Ombre",
         maxHP: 16,
         currentHP: 16,
@@ -45,6 +45,51 @@ export const enemyTemplates = {
         ],
         image: "https://www.aidedd.org/dnd/images/shadow.jpg"
     },
+    molosse_ombre: {
+        name: "Molosse d'Ombre",
+        maxHP: 33,
+        currentHP: 33,
+        ac: 12,
+        xp: 450,
+        role: "brute", // Ombres = escarmoucheurs furtifs
+        challengeRating: "2",
+        stats: {
+            force: 16,
+            dexterite: 14,
+            constitution: 13,
+            intelligence: 5,
+            sagesse: 12,
+            charisme: 5,
+        },
+        attacks: [
+            {
+                name: "Morsure",
+                type: "melee",
+                attackBonus: 5,
+                range: 1,
+                targets: 1,
+                damageDice: "2d6",
+                damageBonus: 3,
+                damageType: "perforant",
+                description: "Une morsure puissante qui lacère la chair.",
+                aiWeight: 90,
+                effects: [
+                    {
+                        type: "status",
+                        condition: "prone",
+                        saveDC: 12,
+                        description: "La cible doit réussir un jet de Force DD 12 ou être jetée à terre."
+                    }
+                ],
+                targetPreference: "isolated", // Préfère attaquer les cibles seules
+                situational: {
+                    flanking: +40, // Bonus si allié en avantage positionnel
+                    lowLight: +30, // Préférence d’attaque en pénombre/obscurité
+                }
+            }
+        ],
+        image: "https://www.aidedd.org/dnd/images/shadow-mastiff.jpg"
+    },
     gobelin: {
         name: "Gobelin",
         maxHP: 7,
@@ -57,17 +102,17 @@ export const enemyTemplates = {
         aiPriority: ["hit_and_run", "ranged_attack", "melee_attack"],
         // Modificateurs intelligents pour affiner les décisions
         aiModifiers: {
-            "hit_and_run": { 
+            "hit_and_run": {
                 isolatedTargetBonus: +40,
                 lowHPBonus: +30,
                 multipleEnemiesBonus: +20
             },
-            "ranged_attack": { 
+            "ranged_attack": {
                 distanceBonus: +25,
                 coverBonus: +35,
                 meleeDisadvantageBonus: +50
             },
-            "melee_attack": { 
+            "melee_attack": {
                 corneredBonus: +40,
                 flankedTargetBonus: +30
             }
@@ -125,7 +170,7 @@ export const enemyTemplates = {
         maxHP: 27,
         currentHP: 27,
         ac: 11,
-        xp:50,
+        xp: 50,
         stats: {
             force: 8,
             dexterite: 12,

@@ -23,6 +23,8 @@ import CombatScene from './components/game/CombatScene';
 
 // Custom hooks for logic extraction
 import { useAppHandlers } from './components/hooks/useAppHandlers';
+import { useAutoSave } from './hooks/useAutoSave';
+import { useAutoLoad } from './hooks/useAutoLoad';
 
 
 // Zustand stores
@@ -42,6 +44,7 @@ import { StoryService } from './services/StoryService';
 import SceneManager from './services/SceneManager';
 import { SCENE_TYPES } from './types/story';
 import './App.css';
+import './responsive.css'; // CSS responsive non-invasif
 
 // Error fallback component
 function ErrorFallback({ error, resetErrorBoundary }) {
@@ -87,10 +90,28 @@ function App() {
 
     // State pour la gestion du CombatLog dans les scènes de combat
     const [combatActive, setCombatActive] = React.useState(false);
+    
+    // State pour la sidebar mobile (responsive)
+    const [isMobileSidebarVisible, setIsMobileSidebarVisible] = React.useState(false);
+    
+    // Hook pour l'auto-save
+    const { manualSave, getAutoSaveStatus } = useAutoSave({
+        enabled: false, // 🚫 DÉSACTIVÉ pour développement
+        showNotification: true,
+        saveOnSceneChange: true,
+        saveOnFlagChange: true
+    });
+
+    // Hook pour l'auto-load au démarrage
+    useAutoLoad({
+        enabled: false, // 🚫 DÉSACTIVÉ pour développement
+        skipIfCharacterExists: false // Permettre le chargement même avec un personnage
+    });
 
     // Réinitialiser le state du combat quand on change de scène
     React.useEffect(() => {
         setCombatActive(false);
+        setIsMobileSidebarVisible(false); // Fermer sidebar mobile lors du changement de scène
     }, [currentScene]);
 
     // Use custom hooks for handlers
@@ -361,7 +382,7 @@ function App() {
                 <div className={mainContentClass}>
                     {renderNewSceneFormat(getCurrentSceneToRender())}
                 </div>
-                <div className={`${sidebarClass} right-sidebar`}>
+                <div className={`${sidebarClass} right-sidebar ${isMobileSidebarVisible ? 'mobile-visible' : ''}`}>
                     <CharacterSheet
                         character={playerCharacter}
                         variant="interactive"
@@ -388,6 +409,24 @@ function App() {
                         <SpecialAbilitiesPanel character={playerCharacter} />
                     )}
                 </div>
+                
+                {/* Bouton toggle pour sidebar mobile */}
+                <button 
+                    className="mobile-sidebar-toggle"
+                    onClick={() => setIsMobileSidebarVisible(!isMobileSidebarVisible)}
+                    aria-label="Ouvrir/Fermer les informations du personnage"
+                >
+                    {isMobileSidebarVisible ? '✕' : '☰'}
+                </button>
+                
+                {/* Overlay pour fermer sidebar mobile */}
+                {isMobileSidebarVisible && (
+                    <div 
+                        className="mobile-sidebar-overlay visible"
+                        onClick={() => setIsMobileSidebarVisible(false)}
+                        aria-hidden="true"
+                    />
+                )}
             </div>
         </ErrorBoundary>
     );
