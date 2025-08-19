@@ -1,6 +1,6 @@
 import React from 'react'
-import { Card, CardHeader, CardBody, CardFooter, Button } from '../../ui'
-import { getModifier } from '../../../utils/calculations'
+import { Card, CardHeader, CardBody } from '../../ui'
+
 
 /**
  * Carte de sélection de personnage avec preview

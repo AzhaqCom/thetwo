@@ -8,8 +8,8 @@ import {
   CardFooter,
   Button,
   Modal,
-  useModal,
-  LoadingIndicator
+  useModal
+
 } from '../../ui'
 import { CharacterSelectionCard } from './CharacterSelectionCard'
 import { CompactCharacterSheet } from './CharacterSheet'

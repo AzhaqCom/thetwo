@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Card, Button, ButtonGroup } from '../../ui'
-import { SpellService } from '../../../services/SpellService'
+import { SpellServiceUnified } from '../../../services/SpellServiceUnified'
 
 /**
  * Composant d'affichage d'un sort individuel
@@ -64,7 +64,7 @@ export const SpellItem = ({
 
     // Vérifier si le sort est déjà actif (pour les sorts avec durée)
     if (isOutOfCombat && spell.castableOutOfCombat === true) {
-      const spellService = new SpellService()
+      const spellService = new SpellServiceUnified ()
       if (spellService.isSpellActive(spell.id, character)) {
         return false // Sort déjà actif, ne pas permettre de le lancer à nouveau
       }

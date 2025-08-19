@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { useGameStore } from '../../../stores/gameStore'
-import { SpellService } from '../../../services/SpellService'
+import { SpellServiceUnified } from '../../../services/SpellServiceUnified'
 import { Card, CardHeader, CardBody, Button } from '../../ui'
 import { SpellSlotTracker } from './SpellSlotTracker'
 import { SpellList } from './SpellList'

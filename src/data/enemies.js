@@ -20,7 +20,7 @@ export const enemyTemplates = {
                 name: "absorption de force",
                 type: "melee",
                 attackBonus: 4,
-                range: 1,
+                range: 3,
                 targets: 1,
                 damageDice: "2d6",
                 damageBonus: 2,
@@ -392,5 +392,87 @@ export const enemyTemplates = {
             }
         ],
         image: "https://www.aidedd.org/dnd/images/spined-devil.jpg"
+    },
+
+    // === ENNEMI LANCEUR DE SORTS POUR TESTER LE SYSTÈME UNIFIÉ ===
+    mageNoir: {
+        name: "Mage Noir",
+        maxHP: 24,
+        currentHP: 24,
+        ac: 12,
+        xp: 450,
+        level: 3,
+        challengeRating: "2",
+        role: "caster", // Rôle IA
+        type: "enemy",
+        stats: {
+            force: 9,
+            dexterite: 14,
+            constitution: 12,
+            intelligence: 16,
+            sagesse: 12,
+            charisme: 10
+        },
+        attacks: [
+            {
+                name: "Dague",
+                type: "melee",
+                attackBonus: 4,
+                range: 1,
+                targets: 1,
+                damageDice: "1d4",
+                damageBonus: 2,
+                damageType: "perforant",
+                description: "Attaque de corps à corps basique"
+            }
+        ],
+        // === NOUVEAU : SPELLCASTING UNIFIÉ ===
+        spellcasting: {
+            // === CONFIGURATION DE BASE ===
+            ability: "intelligence",
+            type: "prepared",
+            ritual: false,
+            
+            // === EMPLACEMENTS DE SORTS ===
+            spellSlots: {
+                1: { max: 4, used: 0, available: 4 },  // Mage niveau 3
+                2: { max: 2, used: 0, available: 2 }
+            },
+            
+            // === SORTS CONNUS/PRÉPARÉS ===
+            cantrips: [ "Rayon de givre"],
+            knownSpells: [],
+            preparedSpells: ["Trait de Feu", "Bouclier", "Toile d'araignée", "Boule de Feu"],
+            
+            // === MÉTADONNÉES OPTIONNELLES ===
+            spellcastingClass: null,
+            startLevel: 1,
+            maxKnown: null,
+            maxPrepared: 6, // INT 16 (3) + niveau 3 = 6
+            
+            // === RESTRICTIONS ===
+            schoolRestrictions: [],
+            ritualCasting: false,
+            
+            // === SORTS INNÉS ===
+            innateSpells: {}
+        },
+        aiPriority: ["ranged_spell", "area_damage", "debuff", "retreat"],
+        aiModifiers: {
+            "ranged_spell": {
+                multipleTargetsBonus: +50,
+                safeDistanceBonus: +40,
+                lowHPTargetBonus: +30
+            },
+            "area_damage": {
+                groupedEnemiesBonus: +60,
+                multipleEnemiesBonus: +45
+            },
+            "debuff": {
+                strongEnemyBonus: +35,
+                tankTargetBonus: +25
+            }
+        },
+        image: "https://www.aidedd.org/dnd/images/archmage.jpg"
     }
 };

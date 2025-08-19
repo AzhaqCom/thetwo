@@ -1,6 +1,6 @@
 import React from 'react'
 import { useUIStore } from '../../stores'
-import { SpellService } from '../../services/SpellService'
+import { SpellServiceUnified } from '../../services/SpellServiceUnified'
 
 /**
  * Barre de santé réutilisable avec animations et états
@@ -106,7 +106,7 @@ export const CharacterHealthBar = ({ character, size = 'medium', showLabel = tru
 const SpellSlotsBar = ({ character }) => {
   if (!character?.spellcasting) return null
   
-  const spellService = new SpellService()
+  const spellService = new SpellServiceUnified()
   const spellSlots = spellService.getSpellSlots(character)
   
   if (!spellSlots || Object.keys(spellSlots).length === 0) return null

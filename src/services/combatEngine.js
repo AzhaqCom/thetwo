@@ -229,6 +229,44 @@ export class CombatEngine {
   static rollD6() { return Math.floor(Math.random() * 6) + 1 }
   static rollD8() { return Math.floor(Math.random() * 8) + 1 }
   static rollD10() { return Math.floor(Math.random() * 10) + 1 }
+
+  /**
+   * Processes an opportunity attack
+   * @param {Object} attacker - The entity making the opportunity attack
+   * @param {Object} target - The target of the opportunity attack
+   * @param {Object} attack - The attack being used (usually melee)
+   * @returns {Object} Attack result with damage and hit status
+   */
+  static processOpportunityAttack(attacker, target, attack) {
+    // Calculer le bonus d'attaque
+    const attackBonus = this.calculateAttackBonus(attacker, attack)
+    
+    // Jet d'attaque
+    const attackRoll = this.rollD20() + attackBonus
+    const targetAC = target.ac || 10
+    
+    const hit = this.doesAttackHit(attackRoll, targetAC)
+    
+    let result = {
+      attacker: attacker.name,
+      target: target.name || target.id,
+      attackRoll,
+      targetAC,
+      hit,
+      damage: 0,
+      message: ""
+    }
+    
+    if (hit) {
+      const damageResult = this.calculateDamage(attack)
+      result.damage = damageResult.damage
+      result.message = `⚔️ ${attacker.name} profite d'une ouverture et frappe ${target.name || target.id} ! (${attackRoll} vs CA ${targetAC}) → ${damageResult.damage} ${damageResult.message}`
+    } else {
+      result.message = `🛡️ ${attacker.name} tente une attaque d'opportunité sur ${target.name || target.id} mais rate sa cible (${attackRoll} vs CA ${targetAC})`
+    }
+    
+    return result
+  }
   /**
    * Calculates damage from an attack
    * @param {Object} attack - Attack object with damage dice and bonuses
@@ -342,7 +380,7 @@ export class CombatEngine {
     const idealDistance = this.getIdealDistance(entity)
 
     // Nouveau : Pour les compagnons à distance, vérifier s'ils sont en corps à corps
-    const isRangedRole = entity.role === 'dps' || entity.role === 'support' || entity.role === 'healer'
+    const isRangedRole = entity.role === 'caster' || entity.role === 'dps' || entity.role === 'support' || entity.role === 'healer'
     const isAdjacentToEnemy = this.isAdjacentToAnyEnemy(entity, currentPos, combatState)
     
     // Si compagnon à distance est adjacent à un ennemi, priorité = s'éloigner prudemment
@@ -809,6 +847,52 @@ export class CombatEngine {
       statName,
       message: `Test de ${skill} (${statName}): ${roll - skillBonus} (+${skillBonus} de bonus) = ${roll}. DD: ${dc}`
     }
+  }
+
+  /**
+   * Résout une attaque complète (jet + dégâts)
+   * @param {Object} attacker - L'attaquant
+   * @param {Object} target - La cible
+   * @param {Object} attackData - Données de l'attaque
+   * @returns {Object} Résultat de l'attaque
+   */
+  static resolveAttack(attacker, target, attackData) {
+    // Jet d'attaque
+    const attackRoll = this.rollD20();
+    const attackBonus = this.calculateAttackBonus(attacker, attackData);
+    const totalAttackRoll = attackRoll + attackBonus;
+    
+    const targetAC = target.ac || 10;
+    const criticalHit = attackRoll === 20;
+    const success = totalAttackRoll >= targetAC || criticalHit;
+    
+    let damage = 0;
+    let message = "";
+    
+    if (success) {
+      // Calculer les dégâts
+      const damageResult = this.calculateDamage(attackData);
+      damage = damageResult.damage;
+      
+      if (criticalHit) {
+        damage *= 2; // Double dégâts en critique
+        message = `💥 CRITIQUE ! ${attacker.name} utilise ${attackData.name} sur ${target.name} (${totalAttackRoll} vs CA ${targetAC}) → ${damage} dégâts !`;
+      } else {
+        message = `⚔️ ${attacker.name} utilise ${attackData.name} sur ${target.name} (${totalAttackRoll} vs CA ${targetAC}) → ${damage} dégâts`;
+      }
+    } else {
+      message = `💨 ${attacker.name} manque ${target.name} avec ${attackData.name} (${totalAttackRoll} vs CA ${targetAC})`;
+    }
+    
+    return {
+      success,
+      damage,
+      critical: criticalHit,
+      message,
+      attackRoll,
+      totalAttackRoll,
+      targetAC
+    };
   }
 
   /**

@@ -25,7 +25,8 @@ export const prologueScenes = {
     choices: [
       {
         text: 'Explorer le village',
-        next: 'prologue_arrivee_village'
+        next: 'prologue_arrivee_village',
+        consequences: { items: ["arccheat"] }
       }
     ]
   },
@@ -244,19 +245,20 @@ export const prologueScenes = {
     type: SCENE_TYPES.MERCHANT,
     content: {
       title: 'Équipement de Durgan',
-      text: `Le forgeron examine votre matériel avec attention. Son atelier regorge d'armes et d'armures de qualité.`
+      text: "Le forgeron examine votre matériel avec attention. Son atelier regorge d'armes et d'armures de qualité."
     },
-    merchant: {
-      name: 'Maître Durgan',
-      attitude: 'professionnel',
-      items: [
+    shop: {
+      currency: 'gold',
+      reputation_discount: {}, // tu peux mettre par exemple { blacksmith: 10 } si tu veux un bonus de réputation
+      inventory: [
         {
           id: 'epee_renforcee',
           name: 'Épée Renforcée',
           description: 'Une lame bien équilibrée, forgée avec soin',
           price: 200,
+          stock:1,
           type: 'weapon',
-          stats: { attack: 15, durability: 100 }
+          damage:{ dice: '1d8', bonus: 2 }
         },
         {
           id: 'armure_cuir_cloute',
@@ -268,7 +270,7 @@ export const prologueScenes = {
         },
         {
           id: 'reparation_equipement',
-          name: 'Réparation d\'équipement',
+          name: "Réparation d'équipement",
           description: 'Durgan remet en état votre matériel',
           price: 30,
           type: 'service',
@@ -286,6 +288,14 @@ export const prologueScenes = {
     },
     choices: [
       {
+        text: 'Acheter de l\'équipement',
+        action: {
+          type: 'openShop',
+        }
+
+      },
+
+      {
         text: 'Lui parler des tunnels',
         next: 'prologue_forge_tunnels'
       },
@@ -293,8 +303,15 @@ export const prologueScenes = {
         text: 'Quitter la forge',
         next: 'prologue_arrivee_village'
       }
-    ]
-  },
+    ],
+    metadata: {
+      chapter: 'Prologue',
+      location: 'Forge de Durgan',
+      tags: ['shop', 'equipment'],
+      character: 'Maître Durgan'
+    }
+  }
+  ,
 
   // BRANCHE FERMES
   prologue_fermes_attaque: {
@@ -308,7 +325,7 @@ export const prologueScenes = {
       {
         text: 'Approcher le fermier pour l\'aider',
         next: 'prologue_combat_ombres',
-        consequences: { factionReputation: { fermiers: 10 } }
+        consequences: { factionReputation: { fermiers: 10 }, companions: ["rhingann"] }
       },
       {
         text: 'Examiner les traces d\'attaque',
@@ -331,15 +348,15 @@ export const prologueScenes = {
       ambush: false
     },
     enemies: [
-      { type: 'ombre', count: 3 }
+      { type: 'gobelin', count: 2 }
     ],
     enemyPositions: [
       { x: 2, y: 1 },
       { x: 4, y: 2 },
-      { x: 1, y: 4 }
+      // { x: 1, y: 4 }
     ],
     choices: [
-        {
+      {
         text: 'Se défendre contre les ombres',
       },
     ],
@@ -404,7 +421,7 @@ export const prologueScenes = {
       },
       {
         id: 'cryptes_anciennes',
-        coordinates: { x: 127, y:200, width: 96, height: 151 },
+        coordinates: { x: 127, y: 200, width: 96, height: 151 },
         text: 'Cryptes Familiales',
         action: {
           type: 'scene_transition',
@@ -601,7 +618,7 @@ export const prologueScenes = {
       },
       {
         id: 'camp_refugies',
-        coordinates: { x:633, y: 167, width: 205, height: 129 },
+        coordinates: { x: 633, y: 167, width: 205, height: 129 },
         text: 'Camp de Réfugiés',
         condition: "!gameFlags.refus_alliance",
         action: {
@@ -637,7 +654,7 @@ export const prologueScenes = {
       },
       {
         id: 'village_proche',
-        coordinates: { x: 633, y: 297, width:205, height: 130 },
+        coordinates: { x: 633, y: 297, width: 205, height: 130 },
         text: 'Village Voisin',
         condition: "gameFlags.refus_alliance === true",
         action: {

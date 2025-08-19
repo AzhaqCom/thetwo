@@ -1,7 +1,6 @@
 import React from 'react'
 import { Card, CardHeader, CardBody, HealthBar } from '../../ui'
 import { HeartIcon } from '../../ui/Icons'
-import { CharacterManager } from '../../../services/characterManager'
 
 /**
  * Affichage compact d'un compagnon avec ses statistiques essentielles
@@ -104,7 +103,7 @@ export const CompanionDisplay = ({
             {variant === 'detailed' && (
               <div className="companion-details">
                 <div className="companion-stats">
-                  <span>Initiative: +{CharacterManager.getInitiativeModifier(companion)}</span>
+                  
                   <span>Vitesse: {companion.speed || 30} ft</span>
                 </div>
                 

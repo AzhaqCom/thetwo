@@ -3,14 +3,229 @@ import { spells } from '../data/spells'
 import { getModifier } from '../utils/calculations'
 import { CombatEngine } from './combatEngine'
 import { EntityAI_Hybrid } from './EntityAI_Hybrid'
-import { SpellService } from './SpellService'
+import { SpellServiceUnified } from './SpellServiceUnified'
 import { CombatEffects } from './combatEffects'
 
+
 /**
- * Service gérant toute la logique métier du combat
+ * Service gérant toute la logique métier du combat.
+ * C'est l'orchestrateur principal pour les actions de combat.
  */
 export class CombatService {
+  // ... (méthodes d'initialisation existantes : initializeCombat, rollInitiative, etc.)
+
   /**
+   * POINT D'ENTRÉE PRINCIPAL POUR LE TOUR D'UNE ENTITÉ (PNJ ou Compagnon)
+   * Orchestre la décision de l'IA et l'exécution de l'action.
+   */
+  static executeTurn(entity, gameState) {
+    console.log(`🎬 === Début du tour pour ${entity.name} (${entity.type}) === 🎬`);
+    const results = {
+      messages: [],
+      damage: [],
+      healing: [],
+      effects: [],
+      movement: null,
+      success: false,
+    };
+
+    try {
+      // 1. Décision de l'IA : Que faire ?
+      const bestAction = EntityAI_Hybrid.getBestAction(entity, gameState);
+
+      if (!bestAction) {
+        results.messages.push({
+          text: `${entity.name} ne sait pas quoi faire et passe son tour.`, 
+          type: 'info',
+        });
+        console.log(`🎬 === Fin du tour pour ${entity.name} (aucune action) ===`);
+        return results;
+      }
+      
+      console.log(`🤖 Action choisie par l'IA pour ${entity.name}:`, bestAction);
+
+      // 2. Exécution de l'action choisie
+      const actionResult = CombatService.executeAction(entity, bestAction, gameState);
+
+      // 3. Fusionner les résultats
+      return { ...results, ...actionResult, success: true };
+
+    } catch (error) {
+      console.error(`💥 Erreur critique durant le tour de ${entity.name}:`, error);
+      results.messages.push({
+        text: `Une erreur est survenue durant le tour de ${entity.name}.`, 
+        type: 'error',
+      });
+      return results;
+    }
+  }
+
+  /**
+   * EXÉCUTEUR D'ACTION UNIFIÉ
+   * Prend une action (décidée par l'IA ou le joueur) et la délègue au bon sous-système.
+   */
+  static executeAction(entity, action, gameState) {
+    console.log(`⚡ Exécution de l'action "${action.type}" pour ${entity.name}`);
+    switch (action.type) {
+      case 'attack':
+      case 'melee':
+      case 'ranged':
+        return CombatService.executeAttackAction(entity, action, gameState);
+
+      case 'spell':
+        return CombatService.executeSpellAction(entity, action, gameState);
+      
+      case 'heal_support':
+        return CombatService.executeHealAction(entity, action, gameState);
+
+      case 'protect':
+      case 'taunt':
+        return CombatService.executeSupportAction(entity, action, gameState);
+
+      default:
+        console.warn(`Action de type "${action.type}" non reconnue.`);
+        return {
+          messages: [{ text: `Action inconnue: ${action.type}`, type: 'error' }],
+          success: false,
+        };
+    }
+  }
+
+  /**
+   * Gère les actions d'attaque (mêlée ou à distance).
+   */
+  static executeAttackAction(attacker, action, gameState) {
+    const results = { damage: [], messages: [] };
+    const attackData = action.attack || action;
+    const target = action.target;
+
+    if (!target) {
+      results.messages.push({ text: `${attacker.name} n'a pas de cible valide.`, type: 'error' });
+      return results;
+    }
+
+    const { success, damage, critical, message } = CombatEngine.resolveAttack(attacker, target, attackData);
+    
+    results.messages.push({ text: message, type: success ? (critical ? 'critical' : 'hit') : 'miss' });
+
+    if (success) {
+      results.damage.push({
+        targetId: target.id || target.name,
+        damage,
+        source: attacker.name,
+      });
+    }
+    return results;
+  }
+
+  /**
+   * Gère les actions de sort en utilisant le service unifié.
+   */
+  static executeSpellAction(caster, action, gameState) {
+    const spell = action.spell;
+    const targets = action.targets || [action.target].filter(Boolean);
+
+    if (!spell || targets.length === 0) {
+      return {
+        messages: [{ text: `Le sort ${spell?.name || ''} ne peut être lancé sans cible.`, type: 'error' }],
+        success: false,
+      };
+    }
+
+    console.log(`🔮 ${caster.name} lance le sort "${spell.name}" sur ${targets.map(t => t.name).join(', ')}`);
+
+    // Appel au service de sorts unifié
+    const spellService = new SpellServiceUnified();
+    const result = spellService.castSpell(caster, spell, targets, {
+        context: 'combat',
+        combatState: gameState,
+        // Callbacks pour les messages peuvent être ajoutés ici si nécessaire
+    });
+
+    // Mapper le résultat de SpellServiceUnified au format attendu par le combatStore
+    const mappedResult = {
+        damage: (result.damageResults || result.damage || []).map(d => ({ 
+          targetId: d.targetId, 
+          damage: d.damage || d.amount, 
+          source: caster.name 
+        })),
+        healing: (result.healingResults || result.healing || []).map(h => ({ 
+          targetId: h.targetId, 
+          amount: h.amount, 
+          source: caster.name 
+        })),
+        effects: result.effects || [],
+        messages: (result.messages || []).map(msg => ({ 
+          text: typeof msg === 'string' ? msg : msg.text, 
+          type: 'spell' 
+        })),
+        success: result.success,
+    };
+
+    console.log("Résultat du sort mappé:", mappedResult);
+    return mappedResult;
+  }
+  
+    /**
+   * Exécute une action de soin/support
+   */
+  static executeHealAction(healer, action, gameState) {
+    const results = { healing: [], messages: [] };
+    const target = action.target;
+    
+    if (!target) {
+      results.messages.push({ text: `${healer.name} ne trouve personne à soigner`, type: 'info' });
+      return results;
+    }
+
+    // Logique de soin spécifique (ex: inventions de Finn)
+    const healAmount = CombatEngine.rollD6() + 2;
+    results.healing.push({
+      targetId: target.id,
+      amount: healAmount,
+      source: healer.name
+    });
+    
+    results.messages.push({
+      text: `🔧 ${healer.name} soigne ${target.name} (+${healAmount} PV)`,
+      type: 'healing'
+    });
+    
+    return results;
+  }
+
+  /**
+   * Exécute une action de support tactique
+   */
+  static executeSupportAction(supporter, action, gameState) {
+    const results = { effects: [], messages: [] };
+    switch (action.type) {
+      case 'protect':
+        results.messages.push({ text: `🛡️ ${supporter.name} protège ${action.target.name}`, type: 'support' });
+        results.effects.push({
+          type: 'protection',
+          targetId: action.target.id,
+          source: supporter.name,
+          duration: 1
+        });
+        break;
+        
+      case 'taunt':
+        results.messages.push({ text: `💢 ${supporter.name} attire l'attention des ennemis`, type: 'support' });
+        results.effects.push({
+          type: 'taunt',
+          source: supporter.name,
+          targets: action.targets.map(t => t.name),
+          duration: 1
+        });
+        break;
+    }
+    return results;
+  }
+
+  // ... (garder les autres méthodes utilitaires : rollInitiative, checkCombatEnd, etc.)
+  
+    /**
    * Initialise un nouveau combat
    */
   static initializeCombat(playerCharacter, activeCompanions, encounterData) {
@@ -82,8 +297,11 @@ export class CombatService {
       })
     })
 
+    // DEBUG: Afficher les initiatives avant tri
+
+
     // Trier par initiative (plus haute en premier, joueur gagne les égalités)
-    return combatants.sort((a, b) => {
+    const sorted = combatants.sort((a, b) => {
       if (b.initiative === a.initiative) {
         // Priorité: player > companion > enemy
         if (a.type === 'player') return -1
@@ -94,6 +312,9 @@ export class CombatService {
       }
       return b.initiative - a.initiative
     })
+    
+
+    return sorted
   }
 
   /**
@@ -213,12 +434,12 @@ export class CombatService {
         if (criticalHit) {
           damage *= 2
           results.messages.push({
-            text: `💥 Coup critique ! ${attacker.name} inflige ${damage} dégâts à ${target.name} !`,
+            text: `💥 Coup critique ! ${attacker.name} inflige ${damage} dégâts à ${target.name} !`, 
             type: 'critical'
           })
         } else {
           results.messages.push({
-            text: `⚔️ ${attacker.name} touche ${target.name} et inflige ${damage} dégâts`,
+            text: `⚔️ ${attacker.name} touche ${target.name} et inflige ${damage} dégâts`, 
             type: 'hit'
           })
         }
@@ -226,7 +447,7 @@ export class CombatService {
         results.damage.push({ targetId: target.id, damage })
       } else {
         results.messages.push({
-          text: `❌ ${attacker.name} manque ${target.name} (${totalAttack} vs CA ${target.ac})`,
+          text: `❌ ${attacker.name} manque ${target.name} (${totalAttack} vs CA ${target.ac})`, 
           type: 'miss'
         })
       }
@@ -242,7 +463,7 @@ export class CombatService {
     // Gestion spéciale pour les sorts de zone
     if (spell.isAreaEffect && targets.length > 1) {
       results.messages.push({
-        text: `🔮💥 ${caster.name} lance ${spell.name} (zone d'effet sur ${targets.length} cibles)`,
+        text: `🔮💥 ${caster.name} lance ${spell.name} (zone d'effet sur ${targets.length} cibles)`, 
         type: 'spell'
       })
       
@@ -264,12 +485,12 @@ export class CombatService {
           if (saveRoll + saveBonus >= saveDC) {
             finalDamage = Math.floor(finalDamage / 2) // Demi-dégâts en cas de réussite
             results.messages.push({
-              text: `🛡️ ${target.name} résiste partiellement (${finalDamage} dégâts)`,
+              text: `🛡️ ${target.name} résiste partiellement (${finalDamage} dégâts)`, 
               type: 'save-success'
             })
           } else {
             results.messages.push({
-              text: `💥 ${target.name} subit les pleins effets (${finalDamage} dégâts)`,
+              text: `💥 ${target.name} subit les pleins effets (${finalDamage} dégâts)`, 
               type: 'save-fail'
             })
             
@@ -304,7 +525,7 @@ export class CombatService {
     } else {
       // Gestion normale pour sorts à cible unique ou multiple sans AoE
       results.messages.push({
-        text: `🔮 ${caster.name} lance ${spell.name}`,
+        text: `🔮 ${caster.name} lance ${spell.name}`, 
         type: 'spell'
       })
       
@@ -327,14 +548,14 @@ export class CombatService {
             }
             
             results.messages.push({
-              text: `⚔️ ${spell.name} touche ${target.name} et inflige ${damage} dégâts`,
+              text: `⚔️ ${spell.name} touche ${target.name} et inflige ${damage} dégâts`, 
               type: criticalHit ? 'critical' : 'hit'
             })
             
             results.damage.push({ targetId: target.id || target.name, damage })
           } else {
             results.messages.push({
-              text: `❌ ${spell.name} manque ${target.name} (${totalAttack} vs CA ${target.ac})`,
+              text: `❌ ${spell.name} manque ${target.name} (${totalAttack} vs CA ${target.ac})`, 
               type: 'miss'
             })
           }
@@ -346,7 +567,7 @@ export class CombatService {
           }
           
           results.messages.push({
-            text: `💥 ${spell.name} touche automatiquement ${target.name} et inflige ${damage} dégâts`,
+            text: `💥 ${spell.name} touche automatiquement ${target.name} et inflige ${damage} dégâts`, 
             type: 'spell-hit'
           })
           
@@ -464,12 +685,12 @@ export class CombatService {
       if (criticalHit) {
         damage *= 2
         addCombatMessage(
-          `💥 Coup critique ! ${attacker.name} utilise ${attack.name} et inflige ${damage} dégâts à ${target.name} !`,
+          `💥 Coup critique ! ${attacker.name} utilise ${attack.name} et inflige ${damage} dégâts à ${target.name} !`, 
           'critical'
         )
       } else {
         addCombatMessage(
-          `⚔️ ${attacker.name} utilise ${attack.name} et inflige ${damage} dégâts à ${target.name}`,
+          `⚔️ ${attacker.name} utilise ${attack.name} et inflige ${damage} dégâts à ${target.name}`, 
           attacker.type === 'enemy' ? 'enemy-hit' : 'companion-hit'
         )
       }
@@ -477,7 +698,7 @@ export class CombatService {
       return { success: true, damage, critical: criticalHit }
     } else {
       addCombatMessage(
-        `❌ ${attacker.name} manque ${target.name} avec ${attack.name} (${totalAttack} vs CA ${targetAC})`,
+        `❌ ${attacker.name} manque ${target.name} avec ${attack.name} (${totalAttack} vs CA ${targetAC})`, 
         'miss'
       )
       return { success: false, damage: 0 }
@@ -504,6 +725,9 @@ export class CombatService {
    * NOUVELLE MÉTHODE : Exécute le tour d'un compagnon avec la nouvelle IA
    */
   static executeCompanionAction(companionId, companion, gameState) {
+    console.log(`⚔️ EXECUTE COMPANION ACTION: ${companion.name} (${companionId})`)
+    console.log(`⚔️ Companion:`, { name: companion.name, role: companion.role, type: companion.type, currentHP: companion.currentHP, maxHP: companion.maxHP })
+    
     const results = {
       messages: [],
       damage: [],
@@ -514,11 +738,13 @@ export class CombatService {
 
     try {
       // 1. Obtenir la meilleure action via l'IA unifiée
+      console.log(`⚔️ Appel EntityAI_Hybrid.getBestAction...`)
       const bestAction = EntityAI_Hybrid.getBestAction(companion, gameState)
+      console.log(`⚔️ Action choisie:`, bestAction)
       
       if (!bestAction) {
         results.messages.push({
-          text: `${companion.name} ne trouve aucune action à effectuer`,
+          text: `${companion.name} ne trouve aucune action à effectuer`, 
           type: 'info'
         })
         return results
@@ -549,7 +775,7 @@ export class CombatService {
           
         default:
           results.messages.push({
-            text: `Action inconnue: ${bestAction.type}`,
+            text: `Action inconnue: ${bestAction.type}`, 
             type: 'error'
           })
           return results
@@ -557,7 +783,7 @@ export class CombatService {
     } catch (error) {
       console.error('Erreur lors de l\'exécution de l\'action du compagnon:', error)
       results.messages.push({
-        text: `Erreur lors de l'action de ${companion.name}`,
+        text: `Erreur lors de l'action de ${companion.name}`, 
         type: 'error'
       })
       return results
@@ -573,7 +799,7 @@ export class CombatService {
 
     if (!attack || !target) {
       results.messages.push({
-        text: `${companion.name} ne peut pas attaquer`,
+        text: `${companion.name} ne peut pas attaquer`, 
         type: 'error'
       })
       return results
@@ -595,11 +821,11 @@ export class CombatService {
       const criticalText = criticalHit ? ' (CRITIQUE!)' : ''
       
       results.messages.push({
-        text: `${attackTypeIcon} ${companion.name} utilise ${attack.name} sur ${target.name} (${damage} dégâts)${criticalText}`,
+        text: `${attackTypeIcon} ${companion.name} utilise ${attack.name} sur ${target.name} (${damage} dégâts)${criticalText}`, 
         type: criticalHit ? 'critical' : 'success'
       })
       
-      results.damage.push({ 
+      results.damage.push({
         targetId: target.name, 
         damage,
         source: companion.name,
@@ -608,7 +834,7 @@ export class CombatService {
       results.success = true
     } else {
       results.messages.push({
-        text: `💨 ${companion.name} rate son attaque sur ${target.name}`,
+        text: `💨 ${companion.name} rate son attaque sur ${target.name}`, 
         type: 'miss'
       })
     }
@@ -617,114 +843,95 @@ export class CombatService {
   }
 
   /**
-   * Exécute un sort de compagnon
+   * Exécute un sort de compagnon - NOUVELLE VERSION UNIFIÉE
    */
   static executeCompanionSpell(companion, action, gameState, results) {
-    const spellName = action.spell
-    const target = action.target
+    const spell = action.spell
+    const spellName = spell.name || spell.id // Obtenir le nom du sort
+    const targets = Array.isArray(action.target) ? action.target : [action.target].filter(Boolean)
     
-    // Vérifier si le sort peut être lancé
-    if (!SpellService.canCastSpell(companion, spells[spellName])) {
+    console.log(`🔮 ExecuteCompanionSpell - Sort:`, spell, `Nom: ${spellName}`)
+    
+    // Utiliser directement SpellServiceUnified
+    const spellService = new SpellServiceUnified({
+      combatStore: { combatPositions: gameState.combatPositions }
+    })
+    
+    const spellResult = spellService.castSpell(companion, spell, targets, {
+      context: 'combat',
+      gameState: gameState
+    })
+    
+    // Convertir le résultat au format attendu
+    if (!spellResult.success) {
       results.messages.push({
-        text: `${companion.name} ne peut pas lancer ${spellName}`,
+        text: spellResult.messages[0] || `Échec du sort ${spellName}`, 
         type: 'error'
       })
       return results
     }
-
-    // Exécuter selon le type de sort
-    switch (spellName) {
-      case 'Soins':
-        if (target && target.id) {
-          const healAmount = CombatService.rollD8() + 4 // Sort de soin de base
-          results.healing.push({
-            targetId: target.id,
-            amount: healAmount,
-            source: companion.name
-          })
-          results.messages.push({
-            text: `✨ ${companion.name} soigne ${target.name} (+${healAmount} PV)`,
-            type: 'healing'
-          })
-        }
-        break
+    
+    // Traiter les messages
+    spellResult.messages.forEach(msg => {
+      results.messages.push({
+        text: msg,
+        type: 'spell'
+      })
+    })
+    
+    // Traiter les dégâts
+    if (spellResult.damageResults) {
+      spellResult.damageResults.forEach(dmg => {
+        results.damage.push({
+          targetId: dmg.targetId,
+          damage: dmg.damage,
+          source: dmg.source,
+          damageType: dmg.damageType
+        })
         
-      case 'Trait de feu':
-        if (target) {
-          const damage = CombatService.rollD10() + getModifier(companion.stats.charisme)
-          results.damage.push({
-            targetId: target.name,
-            damage,
-            source: companion.name,
-            damageType: 'feu'
-          })
-          results.messages.push({
-            text: `🔥 ${companion.name} lance un trait de feu sur ${target.name} (${damage} dégâts de feu)`,
-            type: 'spell'
-          })
-        }
-        break
-        
-      case 'Boule de Feu':
-        if (Array.isArray(target)) {
-          // Sort de zone - appliquer à tous les ennemis du groupe
-          target.forEach(enemy => {
-            const damage = CombatService.rollD6() * 6 + getModifier(companion.stats.charisme) // 6d6
-            results.damage.push({
-              targetId: enemy.name,
-              damage,
-              source: companion.name,
-              damageType: 'feu'
-            })
-          })
-          results.messages.push({
-            text: `🔥💥 ${companion.name} lance une boule de feu sur ${target.length} ennemis`,
-            type: 'spell'
-          })
-        }
-        break
-        
-      case 'Toile d\'araignée':
-        if (Array.isArray(target)) {
-          // Sort de contrôle de zone - appliquer l'effet "restrained"
-          target.forEach(enemy => {
-            const effect = CombatEffects.applyEffect(enemy, 'restrained', 3, companion.name)
-            results.effects.push({
-              type: 'restrained',
-              targetId: enemy.name,
-              source: companion.name,
-              duration: 3,
-              effectId: effect?.id
-            })
-          })
-          results.messages.push({
-            text: `🕸️ ${companion.name} entoile ${target.length} ennemis (entravés pour 3 tours)`,
-            type: 'spell'
-          })
-        }
-        break
-        
-      case 'Détection de la magie':
         results.messages.push({
-          text: `🔍 ${companion.name} détecte les auras magiques environnantes`,
+          text: `🔥 ${dmg.source} inflige ${dmg.damage} dégâts de ${dmg.damageType} à ${dmg.targetName}`, 
           type: 'spell'
         })
-        results.effects.push({
-          type: 'detection',
-          source: companion.name,
-          duration: 10
-        })
-        break
-        
-      default:
-        results.messages.push({
-          text: `✨ ${companion.name} lance ${spellName}`,
-          type: 'spell'
-        })
+      })
     }
     
-    // Consommer le slot de sort
-    CombatService.consumeSpellSlot(companion, spellName)
+    // Traiter les soins
+    if (spellResult.healingResults) {
+      spellResult.healingResults.forEach(heal => {
+        results.healing.push({
+          targetId: heal.targetId,
+          amount: heal.amount,
+          source: heal.source
+        })
+        
+        results.messages.push({
+          text: `✨ ${heal.source} soigne ${heal.targetName} (+${heal.amount} PV)`, 
+          type: 'healing'
+        })
+      })
+    }
+    
+    // Traiter les effets
+    if (spellResult.effects) {
+      spellResult.effects.forEach(effect => {
+        results.effects.push({
+          type: effect.type,
+          targetId: effect.targetId,
+          source: effect.source,
+          duration: effect.duration,
+          effectId: effect.effectId
+        })
+        
+        if (effect.type === 'restrained') {
+          results.messages.push({
+            text: `🕸️ ${effect.targetName} est entravé pour ${Math.ceil(effect.duration / 60)} tours`, 
+            type: 'spell'
+          })
+        }
+      })
+    }
+    
     results.success = true
     return results
   }
@@ -737,7 +944,7 @@ export class CombatService {
     
     if (!target) {
       results.messages.push({
-        text: `${companion.name} ne trouve personne à soigner`,
+        text: `${companion.name} ne trouve personne à soigner`, 
         type: 'info'
       })
       return results
@@ -752,7 +959,7 @@ export class CombatService {
     })
     
     results.messages.push({
-      text: `🔧 ${companion.name} soigne ${target.name} avec ses inventions (+${healAmount} PV)`,
+      text: `🔧 ${companion.name} soigne ${target.name} avec ses inventions (+${healAmount} PV)`, 
       type: 'healing'
     })
     
@@ -767,7 +974,7 @@ export class CombatService {
     switch (action.type) {
       case 'protect':
         results.messages.push({
-          text: `🛡️ ${companion.name} protège ${action.target.name}`,
+          text: `🛡️ ${companion.name} protège ${action.target.name}`, 
           type: 'support'
         })
         results.effects.push({
@@ -780,7 +987,7 @@ export class CombatService {
         
       case 'taunt':
         results.messages.push({
-          text: `💢 ${companion.name} attire l'attention des ennemis`,
+          text: `💢 ${companion.name} attire l'attention des ennemis`, 
           type: 'support'
         })
         results.effects.push({

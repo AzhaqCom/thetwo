@@ -13,6 +13,11 @@ import { CombatLog } from './components/ui/CombatLog';
 import {InventoryPanel} from './components/features/inventory';
 import {SpellPanel} from './components/features/spells';
 
+// New UI Components
+import StatusCorner from './components/ui/StatusCorner';
+import GameHotbar from './components/ui/GameHotbar';
+import FloatingPanel, { FloatingPanelManager } from './components/ui/FloatingPanel';
+
 
 // New scene components
 import DialogueScene from './components/game/DialogueScene';
@@ -45,6 +50,7 @@ import SceneManager from './services/SceneManager';
 import { SCENE_TYPES } from './types/story';
 import './App.css';
 import './responsive.css'; // CSS responsive non-invasif
+import './styles/new-layout.css'; // Nouveau layout full-width
 
 // Error fallback component
 function ErrorFallback({ error, resetErrorBoundary }) {
@@ -93,6 +99,10 @@ function App() {
     
     // State pour la sidebar mobile (responsive)
     const [isMobileSidebarVisible, setIsMobileSidebarVisible] = React.useState(false);
+
+    // State pour la nouvelle UI (floating panels)
+    const [floatingPanels, setFloatingPanels] = React.useState([]);
+    const [useNewUI, setUseNewUI] = React.useState(true); // Toggle pour tester la nouvelle UI
     
     // Hook pour l'auto-save
     const { manualSave, getAutoSaveStatus } = useAutoSave({
@@ -136,6 +146,114 @@ function App() {
         setPlayerCharacter(characterWithGold);
         setGamePhase('game');
         addCombatMessage('La fortune sourit aux audacieux')
+    };
+
+    // Floating panel handlers
+    const openFloatingPanel = (panelType, size = 'medium', position = { x: 'center', y: 'center' }) => {
+        // Vérifier si un panel de ce type existe déjà
+        const existingPanel = floatingPanels.find(panel => panel.type === panelType);
+        
+        if (existingPanel) {
+            // Si existe, le fermer (toggle behavior)
+            closeFloatingPanel(existingPanel.id);
+            return;
+        }
+        
+        // Sinon, créer un nouveau panel
+        const panelId = `${panelType}-${Date.now()}`;
+        
+        const newPanel = {
+            id: panelId,
+            type: panelType,
+            title: getPanelTitle(panelType),
+            isOpen: true,
+            size,
+            position,
+            children: getPanelContent(panelType),
+            zIndex: 200 + floatingPanels.length, // Z-index incrémental
+            isFocused: true // Nouveau panel est focusé par défaut
+        };
+
+        // Défocuser les autres panels et ajouter le nouveau
+        setFloatingPanels(prev => [
+            ...prev.map(panel => ({ ...panel, isFocused: false })),
+            newPanel
+        ]);
+    };
+
+    const closeFloatingPanel = (panelId) => {
+        setFloatingPanels(prev => prev.filter(panel => panel.id !== panelId));
+    };
+
+    const closeAllPanels = () => {
+        setFloatingPanels([]);
+    };
+
+    // Fonction pour mettre un panel au premier plan (focus)
+    const focusPanel = (panelId) => {
+        setFloatingPanels(prev => {
+            const maxZ = Math.max(...prev.map(p => p.zIndex || 200), 200);
+            return prev.map(panel => 
+                panel.id === panelId 
+                    ? { ...panel, zIndex: maxZ + 1, isFocused: true }
+                    : { ...panel, isFocused: false }
+            );
+        });
+    };
+
+    // Helper functions for panels
+    const getPanelTitle = (type) => {
+        const titles = {
+            character: 'Fiche de Personnage',
+            inventory: 'Inventaire',
+            spells: 'Sorts et Magie',
+            companions: 'Compagnons',
+            journal: 'Journal d\'Aventure',
+            rest: 'Options de Repos'
+        };
+        return titles[type] || 'Panel';
+    };
+
+    const getPanelContent = (type) => {
+        switch(type) {
+            case 'character':
+                return <CharacterSheet character={playerCharacter} variant="interactive" />;
+            case 'inventory':
+                return <InventoryPanel />;
+            case 'spells':
+                return playerCharacter?.spellcasting ? (
+                    <SpellPanel 
+                        character={playerCharacter} 
+                        onCastSpell={handleCastSpellOutOfCombat}
+                        isOutOfCombat={true}
+                    />
+                ) : <p>Ce personnage ne peut pas utiliser la magie.</p>;
+            case 'companions':
+                return <CompanionParty companions={getActiveCompanions()} variant="detailed" showRoles={true} />;
+            case 'journal':
+                return <CombatLog title="Journal d'Aventure" compact={false} />;
+            case 'rest':
+                return (
+                    <div className="rest-panel-content">
+                        <h4>Options de Repos</h4>
+                        <p>Choisissez votre type de repos :</p>
+                        <button onClick={() => console.log('Repos court')}>
+                            💤 Repos Court (1h) - Récupère stamina
+                        </button>
+                        <button onClick={() => console.log('Repos long')}>
+                            🛌 Repos Long (8h) - Récupère tout
+                        </button>
+                    </div>
+                );
+            default:
+                return <div>Contenu du panel {type}</div>;
+        }
+    };
+
+    const handleRestAction = () => {
+        // Pour l'instant, ouvrir le panel de repos
+        // Plus tard, on pourra implémenter la logique de repos direct
+        openFloatingPanel('rest', 'small');
     };
 
 
@@ -378,56 +496,136 @@ function App() {
 
     return (
         <ErrorBoundary FallbackComponent={ErrorFallback}>
-            <div className={containerClass}>
-                <div className={mainContentClass}>
-                    {renderNewSceneFormat(getCurrentSceneToRender())}
-                </div>
-                <div className={`${sidebarClass} right-sidebar ${isMobileSidebarVisible ? 'mobile-visible' : ''}`}>
-                    <CharacterSheet
+            {useNewUI ? (
+                // NOUVELLE UI - Full width avec hotbar et floating panels
+                <div className={`game-container-fullwidth ${currentScene?.type === SCENE_TYPES.COMBAT ? 'combat-mode' : ''}`}>
+                    {/* Status Corner - Stats vitales toujours visibles */}
+                    <StatusCorner 
                         character={playerCharacter}
-                        variant="interactive"
+                        gameTime={null} // TODO: Ajouter gameTime quand implémenté
+                        gameFlags={{}} // TODO: Ajouter gameFlags
                     />
 
-                    {/* Affichage des compagnons - nouveau système */}
-                    <CompanionParty
+                    {/* Hotbar - Actions rapides */}
+                    <GameHotbar
+                        character={playerCharacter}
+                        gameTime={null} // TODO: Ajouter gameTime quand implémenté
+                        onPanelOpen={openFloatingPanel}
+                        onRestAction={handleRestAction}
+                        gameFlags={{}} // TODO: Ajouter gameFlags
+                        inventory={{ items: playerCharacter?.inventory || [], count: playerCharacter?.inventory?.length || 0 }}
                         companions={getActiveCompanions()}
-                        variant="default"
-                        showRoles={true}
                     />
 
-                    {/* Fallback pour compatibilité */}
-                    <InventoryPanel />
-                    {shouldShowSpellcasting && (
-                        <SpellPanel
+                    {/* Contenu principal full width */}
+                    <div className="main-content-fullwidth">
+                        {renderNewSceneFormat(getCurrentSceneToRender())}
+                    </div>
+
+                    {/* Floating Panels System */}
+                    <FloatingPanelManager 
+                        panels={floatingPanels}
+                        onClosePanel={closeFloatingPanel}
+                        onFocusPanel={focusPanel}
+                    />
+
+                    {/* Toggle pour revenir à l'ancienne UI (temporaire) */}
+                    <button 
+                        className="ui-toggle"
+                        onClick={() => setUseNewUI(false)}
+                        style={{
+                            position: 'fixed',
+                            bottom: '20px',
+                            left: '20px',
+                            background: 'rgba(139, 69, 19, 0.8)',
+                            color: '#f0e6d3',
+                            border: '1px solid rgba(139, 69, 19, 0.6)',
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            zIndex: 300
+                        }}
+                        title="Revenir à l'ancienne UI"
+                    >
+                        Ancienne UI
+                    </button>
+                </div>
+            ) : (
+                // ANCIENNE UI - Pour comparaison/fallback
+                <div className={containerClass}>
+                    <div className={mainContentClass}>
+                        {renderNewSceneFormat(getCurrentSceneToRender())}
+                    </div>
+                    <div className={`${sidebarClass} right-sidebar ${isMobileSidebarVisible ? 'mobile-visible' : ''}`}>
+                        <CharacterSheet
                             character={playerCharacter}
-                            onCastSpell={handleCastSpellOutOfCombat}
-                            isOutOfCombat={true}
+                            variant="interactive"
+                        />
+
+                        {/* Affichage des compagnons - nouveau système */}
+                        <CompanionParty
+                            companions={getActiveCompanions()}
+                            variant="default"
+                            showRoles={true}
+                        />
+
+                        {/* Fallback pour compatibilité */}
+                        <InventoryPanel />
+                        {shouldShowSpellcasting && (
+                            <SpellPanel
+                                character={playerCharacter}
+                                onCastSpell={handleCastSpellOutOfCombat}
+                                isOutOfCombat={true}
+                            />
+                        )}
+
+                        {shouldShowSpecialAbilities && (
+                            <SpecialAbilitiesPanel character={playerCharacter} />
+                        )}
+                    </div>
+                    
+                    {/* Bouton toggle pour sidebar mobile */}
+                    <button 
+                        className="mobile-sidebar-toggle"
+                        onClick={() => setIsMobileSidebarVisible(!isMobileSidebarVisible)}
+                        aria-label="Ouvrir/Fermer les informations du personnage"
+                    >
+                        {isMobileSidebarVisible ? '✕' : '☰'}
+                    </button>
+                    
+                    {/* Overlay pour fermer sidebar mobile */}
+                    {isMobileSidebarVisible && (
+                        <div 
+                            className="mobile-sidebar-overlay visible"
+                            onClick={() => setIsMobileSidebarVisible(false)}
+                            aria-hidden="true"
                         />
                     )}
 
-                    {shouldShowSpecialAbilities && (
-                        <SpecialAbilitiesPanel character={playerCharacter} />
-                    )}
+                    {/* Toggle pour la nouvelle UI (temporaire) */}
+                    <button 
+                        className="ui-toggle"
+                        onClick={() => setUseNewUI(true)}
+                        style={{
+                            position: 'fixed',
+                            bottom: '20px',
+                            left: '20px',
+                            background: 'rgba(52, 152, 219, 0.8)',
+                            color: '#f0e6d3',
+                            border: '1px solid rgba(52, 152, 219, 0.6)',
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            zIndex: 300
+                        }}
+                        title="Tester la nouvelle UI"
+                    >
+                        Nouvelle UI
+                    </button>
                 </div>
-                
-                {/* Bouton toggle pour sidebar mobile */}
-                <button 
-                    className="mobile-sidebar-toggle"
-                    onClick={() => setIsMobileSidebarVisible(!isMobileSidebarVisible)}
-                    aria-label="Ouvrir/Fermer les informations du personnage"
-                >
-                    {isMobileSidebarVisible ? '✕' : '☰'}
-                </button>
-                
-                {/* Overlay pour fermer sidebar mobile */}
-                {isMobileSidebarVisible && (
-                    <div 
-                        className="mobile-sidebar-overlay visible"
-                        onClick={() => setIsMobileSidebarVisible(false)}
-                        aria-hidden="true"
-                    />
-                )}
-            </div>
+            )}
         </ErrorBoundary>
     );
 }

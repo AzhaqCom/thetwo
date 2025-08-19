@@ -24,7 +24,8 @@ export const CombatTurnManager = ({
     combatPositions: positions, 
     dealDamageToEnemy, 
     updateEnemyPosition,
-    setDamageCallbacks 
+    setDamageCallbacks,
+    setCombatMessageCallback 
   } = useCombatStore()
   
   const { addCombatMessage } = useGameStore()
@@ -32,10 +33,11 @@ export const CombatTurnManager = ({
   
   // Note: CombatService is now static, no instance needed
 
-  // Configuration des callbacks de dégâts
+  // Configuration des callbacks de dégâts et messages
   useEffect(() => {
     setDamageCallbacks(takeDamagePlayer, takeDamageCompanionById)
-  }, [setDamageCallbacks, takeDamagePlayer, takeDamageCompanionById])
+    setCombatMessageCallback(addCombatMessage)
+  }, [setDamageCallbacks, takeDamagePlayer, takeDamageCompanionById, setCombatMessageCallback, addCombatMessage])
 
   /**
    * GESTION DES MOUVEMENTS
@@ -273,11 +275,12 @@ export const CombatTurnManager = ({
 
   /**
    * EXECUTION DU TOUR D'ENNEMI
-   * Logique complète pour un tour d'ennemi
+   * NOUVEAU: Utilise le système unifié avec EntityAI_Hybrid
    */
   const handleEnemyTurn = useCallback((enemy) => {
+    console.log(`🔴 SimpleTurn: ${enemy.name}`)
     
-    // Vérifier que l'ennemi est vivant AU DÉBUT du tour
+    // Vérifier que l'ennemi est vivant
     const enemyCharacter = enemies.find(e => e.name === enemy.name)
     if (!enemyCharacter || enemyCharacter.currentHP <= 0) {
       setTimeout(() => {
@@ -286,76 +289,36 @@ export const CombatTurnManager = ({
       }, 200)
       return
     }
-    // État du jeu actuel
+    
+    // NOUVEAU SYSTÈME SIMPLE
     const activeCompanions = getActiveCompanions()
     const gameState = {
-      combatPositions: useCombatStore.getState().combatPositions,
-      combatEnemies: enemies,
       playerCharacter,
-      activeCompanions: activeCompanions
-    }
-
-    // 1. MOUVEMENT
-    const movementResult = handleMovement(enemyCharacter, gameState)
-    
-    // VÉRIFICATION après mouvement : est-il toujours vivant ?
-    const enemyAfterMovement = enemies.find(e => e.name === enemy.name)
-    if (!enemyAfterMovement || enemyAfterMovement.currentHP <= 0) {
-      setTimeout(() => {
-        setIsExecuting(false)
-        onNextTurn()
-      }, 200)
-      return
+      activeCompanions,
+      combatEnemies: enemies,
+      combatPositions: positions
     }
     
-    // Mettre à jour l'état du jeu après mouvement
-    const updatedGameState = {
-      ...gameState,
-      combatPositions: useCombatStore.getState().combatPositions,
-      activeCompanions: activeCompanions
-    }
-
-    // 2. CIBLAGE
-    const target = getTarget(enemyAfterMovement, updatedGameState)
+    const { executeUnifiedEntityTurn } = useCombatStore.getState()
     
-    if (!target) {
-      // Pas de cible, fin de tour
-      setTimeout(() => {
-        setIsExecuting(false)
-        onNextTurn()
-      }, 200)
-      return
-    }
+    // Le système unifié gère tout : IA sophistiquée + exécution robuste + nextTurn
+    executeUnifiedEntityTurn(enemyCharacter, gameState, () => {
+      setIsExecuting(false)
+      onNextTurn()
+    })
 
-    // 3. ATTAQUE (vérification finale avant attaque)
-    setTimeout(() => {
-      // VÉRIFICATION FINALE : ennemi toujours vivant avant attaque ?
-      const enemyBeforeAttack = enemies.find(e => e.name === enemy.name)
-      if (!enemyBeforeAttack || enemyBeforeAttack.currentHP <= 0) {
-        setIsExecuting(false)
-        onNextTurn()
-        return
-      }
-
-      const attackSuccess = executeAttack(enemyBeforeAttack, target, updatedGameState)
-
-      // Fin de tour avec délai réduit
-      setTimeout(() => {
-        setIsExecuting(false)
-        onNextTurn()
-      }, 300)
-    }, movementResult.moved ? 800 : 400)
-
-  }, [enemies, playerCharacter, handleMovement, getTarget, executeAttack, onNextTurn, onPhaseChange])
+  }, [enemies, getActiveCompanions, playerCharacter, onNextTurn, positions])
 
   /**
    * EXECUTION DU TOUR DE COMPAGNON  
-   * Logique identique aux ennemis mais ciblant les ennemis
+   * NOUVEAU: Utilise le système unifié avec EntityAI_Hybrid
    */
   const handleCompanionTurn = useCallback((companionTurn) => {
+    console.log(`🟢 SimpleTurn: ${companionTurn.name}`)
+    
     const activeCompanions = getActiveCompanions()
     
-    // Récupérer le bon personnage compagnon depuis le turn order ou les compagnons actifs
+    // Récupérer le bon personnage compagnon
     const actualCompanion = companionTurn.character || activeCompanions.find(c => c.id === companionTurn.id || c.name === companionTurn.name)
     
     if (!actualCompanion || actualCompanion.currentHP <= 0) {
@@ -367,66 +330,23 @@ export const CombatTurnManager = ({
       return
     }
     
-    // Détails du compagnon configurés
-
-    // État du jeu pour le compagnon (cible les ennemis vivants)
+    // NOUVEAU SYSTÈME SIMPLE
     const gameState = {
-      combatPositions: useCombatStore.getState().combatPositions,
-      combatEnemies: enemies.filter(e => e.currentHP > 0), // Ennemis vivants uniquement
-      playerCharacter: null, // Le compagnon ne cible pas le joueur
-      activeCompanions: [] // Le compagnon ne se cible pas
+      playerCharacter,
+      activeCompanions,
+      combatEnemies: enemies,
+      combatPositions: positions
     }
-
-    // Adapter l'entité compagnon pour utiliser la même logique que les ennemis
-    const companionAsEntity = {
-      ...actualCompanion,
-      name: companionTurn.name,
-      id: companionTurn.id || companionTurn.name.toLowerCase(),
-      type: 'companion',
-      attacks: actualCompanion.attacks || [{
-        name: "Attaque de base",
-        damageDice: "1d6", 
-        damageBonus: 0,
-        range: 1
-      }]
-    }
-
-    // 1. MOUVEMENT vers les ennemis (utilise la même logique que les ennemis)
-    const movementResult = handleMovement(companionAsEntity, gameState)
     
-    // Mettre à jour l'état du jeu après mouvement
-    const updatedGameState = {
-      ...gameState,
-      combatPositions: useCombatStore.getState().combatPositions,
-      activeCompanions: activeCompanions
-    }
+    const { executeUnifiedEntityTurn } = useCombatStore.getState()
+    
+    // Le système unifié gère tout : IA sophistiquée + exécution robuste + nextTurn
+    executeUnifiedEntityTurn(actualCompanion, gameState, () => {
+      setIsExecuting(false)
+      onNextTurn()
+    })
 
-    // 2. CIBLAGE ET ATTAQUE (utilise la même logique que les ennemis)
-    setTimeout(() => {
-      // Recherche de cible
-      
-      const target = getTarget(companionAsEntity, updatedGameState)
-      
-      if (!target) {
-        addCombatMessage(`${companionTurn.name} ne trouve aucune cible.`)
-        setTimeout(() => {
-          setIsExecuting(false)
-          onNextTurn()
-        }, 500)
-        return
-      }
-
-      // 3. ATTAQUE
-      const attackSuccess = executeAttack(companionAsEntity, target, updatedGameState)
-
-      // Fin de tour
-      setTimeout(() => {
-        setIsExecuting(false)
-        onNextTurn()
-      }, 500)
-    }, movementResult.moved ? 1000 : 500)
-
-  }, [getActiveCompanions, enemies, updateEnemyPosition, addCombatMessage, executeAttack, onNextTurn, onPhaseChange])
+  }, [getActiveCompanions, playerCharacter, onNextTurn, addCombatMessage, enemies, positions])
 
   // Protection contre les re-exécutions multiples
   const [isExecuting, setIsExecuting] = React.useState(false)

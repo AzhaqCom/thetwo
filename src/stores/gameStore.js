@@ -15,7 +15,7 @@ export const useGameStore = create(
     (set, get) => ({
       // État initial
       gamePhase: 'game', // 'character-selection' en prod, 'game' en dev
-      currentScene: 'prologue_heritage',
+      currentScene: 'prologue_fermes_attaque',
       sceneHistory: [],
       combatLog: [],
       isShortResting: false,

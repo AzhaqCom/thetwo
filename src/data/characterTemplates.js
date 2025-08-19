@@ -31,12 +31,33 @@ export const characterTemplates = {
         },
         weaponProficiencies: ["simple"],
         spellcasting: {
+            // === CONFIGURATION DE BASE ===
             ability: "intelligence",
-            spellSlots: {},
-            knownSpells: [], 
+            type: "prepared",
+            ritual: true,
+            
+            // === EMPLACEMENTS DE SORTS ===
+            spellSlots: {
+                1: { max: 2, used: 0, available: 2 }  // Magicien niveau 1
+            },
+            
+            // === SORTS CONNUS/PRÉPARÉS ===
             cantrips: ["Projectile Magique", "Rayon de givre"],
+            knownSpells: [],
             preparedSpells: ["Armure du Mage"],
-            activeSpells: {}
+            
+            // === MÉTADONNÉES OPTIONNELLES ===
+            spellcastingClass: null,
+            startLevel: 1,
+            maxKnown: null,
+            maxPrepared: null,
+            
+            // === RESTRICTIONS ===
+            schoolRestrictions: [],
+            ritualCasting: true,
+            
+            // === SORTS INNÉS ===
+            innateSpells: {}
         },
         weapons: ["dagger"],
         inventory: []

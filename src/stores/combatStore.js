@@ -1,74 +1,230 @@
-import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
-import { CombatEngine } from '../services/combatEngine'
-import { CombatService } from '../services/CombatService'
-import { CharacterManager } from '../services/characterManager'
-import { GameUtils } from '../utils/GameUtils'
-import { EntityAI_Hybrid } from '../services/EntityAI_Hybrid'
-import { CombatEffects } from '../services/combatEffects'
-import { calculateDistance } from '../utils/calculations'
-import { isValidGridPosition } from '../utils/validation'
-import { GRID_WIDTH, GRID_HEIGHT, COMBAT_PHASES } from '../utils/constants'
-import { EnemyFactory } from '../services/EnemyFactory'
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import { CombatEngine } from '../services/combatEngine';
+import { CombatService } from '../services/CombatService';
+import { CombatEffects } from '../services/combatEffects';
+import { calculateDistance } from '../utils/calculations';
+import { isValidGridPosition } from '../utils/validation';
+import { GRID_WIDTH, GRID_HEIGHT } from '../utils/constants';
+import { EnemyFactory } from '../services/EnemyFactory';
+import { CombatAI } from '../services/CombatAI';
 
-// Store pour la gestion du système de combat
+// Store pour la gestion de l'état du combat
 export const useCombatStore = create(
   devtools(
     (set, get) => ({
-      // === ÉTAT DU COMBAT ===
+      // ... (état existant : isActive, combatEnemies, turnOrder, etc.)
       isActive: false,
       isInitialized: false,
-      combatPhase: 'idle', // 'idle', 'initializing', 'initiative-display', 'turn', 'player-movement', 'executing-turn', 'end'
+      combatPhase: 'idle', 
       combatKey: 0,
       encounterData: null,
-
-      // === PARTICIPANTS ===
       combatEnemies: [],
-
-      // === GESTION DES TOURS ===
       turnOrder: [],
       currentTurnIndex: 0,
       turnCounter: 0,
-
-      // === POSITIONS ET MOUVEMENT ===
-      combatPositions: {}, // { player: {x,y}, companion: {x,y}, "Enemy 1": {x,y} }
+      combatPositions: {}, 
       showMovementFor: null,
       showTargetingFor: null,
       hasMovedThisTurn: false,
-
-      // === ACTIONS ET CIBLAGE ===
       playerAction: null,
       actionTargets: [],
       selectedAoESquares: [],
       aoeCenter: null,
-
-      // === RÉSULTATS ===
       defeated: false,
       victory: false,
       totalXpGained: 0,
 
-      // === ACTIONS D'INITIALISATION ===
+      // === NOUVEAU SYSTÈME SIMPLE ===
 
+      /**
+       * SYSTÈME UNIFIÉ : Utilise CombatAI qui fusionne IA sophistiquée + exécution robuste
+       * - IA: EntityAI_Hybrid (priorités, rôles, scoring intelligent)
+       * - Exécution: Logique robuste + SpellServiceUnified  
+       * - Architecture: Propre et maintenable
+       */
+      executeUnifiedEntityTurn: (entity, gameState, onNextTurn) => {
+        console.log(`🎯 CombatStore: Tour unifié pour ${entity?.name} (${entity?.type})`);
+        
+        const onMessage = (message, type) => {
+          get().addCombatMessageToGameStore(message, type);
+        };
+
+        const onDamage = (targetId, damage) => {
+          console.log(`🩸 onDamage: ${targetId} prend ${damage} dégâts`);
+          
+          // Le joueur peut être identifié par 'player' ou son nom
+          const playerCharacter = gameState.playerCharacter;
+          const isPlayer = targetId === 'player' || (playerCharacter && targetId === playerCharacter.name);
+          
+          if (isPlayer) {
+            if (damage > 0) {
+              console.log(`🩸 Application des ${damage} dégâts au joueur`);
+              get().dealDamageToPlayer(damage);
+              // Message géré par CombatAI.applyResults avec format unifié
+            } else {
+              const healing = Math.abs(damage);
+              const currentHP = playerCharacter.currentHP;
+              const maxHP = playerCharacter.maxHP;
+              const actualHealing = Math.min(healing, maxHP - currentHP);
+              
+              console.log(`💚 Tentative de soins: ${healing}, HP actuels: ${currentHP}/${maxHP}, soins réels: ${actualHealing}`);
+              
+              if (actualHealing > 0) {
+                get().dealDamageToPlayer(-actualHealing); // Soins = dégâts négatifs
+                // Message géré par CombatAI.applyResults avec format unifié
+              }
+              // Pas de message si pas de soins effectifs
+            }
+          } else {
+            // Vérifier si c'est un compagnon
+            const companion = gameState.activeCompanions?.find(c => c.name === targetId || c.id === targetId);
+            
+            if (companion) {
+              if (damage > 0) {
+                console.log(`🩸 Application des ${damage} dégâts au compagnon ${targetId}`);
+                get().dealDamageToCompanionById(companion.id, damage);
+                get().addCombatMessageToGameStore(`💔 ${targetId} subit ${damage} dégâts !`, 'damage');
+              } else {
+                const healing = Math.abs(damage);
+                const currentHP = companion.currentHP;
+                const maxHP = companion.maxHP;
+                const actualHealing = Math.min(healing, maxHP - currentHP);
+                
+                console.log(`💚 Soins compagnon: ${healing}, HP actuels: ${currentHP}/${maxHP}, soins réels: ${actualHealing}`);
+                
+                if (actualHealing > 0) {
+                  get().healCompanionById(companion.id, actualHealing);
+                  get().addCombatMessageToGameStore(`💚 ${targetId} récupère ${actualHealing} HP !`, 'healing');
+                } else {
+                  get().addCombatMessageToGameStore(`💚 ${targetId} est déjà en pleine forme.`, 'info');
+                }
+              }
+            } else {
+              // C'est un ennemi
+              if (damage > 0) {
+                console.log(`🩸 Application des ${damage} dégâts à l'ennemi ${targetId}`);
+                get().dealDamageToEnemy(targetId, damage);
+                get().addCombatMessageToGameStore(`🗡️ ${targetId} subit ${damage} dégâts !`, 'damage');
+              } else {
+                // Soins sur ennemi (rare mais possible)
+                get().dealDamageToEnemy(targetId, damage);
+                get().addCombatMessageToGameStore(`💚 ${targetId} récupère ${Math.abs(damage)} HP.`, 'healing');
+              }
+            }
+          }
+        };
+
+        // CombatAI unifié : IA sophistiquée + exécution robuste + nextTurn
+        CombatAI.executeEntityTurn(entity, gameState, onMessage, onDamage, onNextTurn);
+      },
+
+      /**
+       * Applique les résultats d'une action (dégâts, soins, etc.) à l'état.
+       * Centralise la modification de l'état de combat.
+       */
+      applyActionResults: (result) => {
+        console.log('🔄 Applying action results:', result);
+
+        // Appliquer les dégâts
+        if (result.damage && result.damage.length > 0) {
+          result.damage.forEach(dmg => {
+            console.log(`💥 Applying damage: ${dmg.damage} to ${dmg.targetId}`);
+            if (dmg.targetId === 'player') {
+              get().dealDamageToPlayer(dmg.damage);
+            } else {
+              // Pour les ennemis et compagnons
+              get().dealDamageToEnemy(dmg.targetId, dmg.damage);
+            }
+          });
+        }
+
+        // Appliquer les soins
+        if (result.healing && result.healing.length > 0) {
+          result.healing.forEach(heal => {
+            console.log(`💚 Applying healing: ${heal.amount} to ${heal.targetId}`);
+            if (heal.targetId === 'player') {
+              // Pour le joueur, les soins sont des dégâts négatifs
+              get().dealDamageToPlayer(-heal.amount);
+            } else {
+              // Pour les compagnons, utiliser la fonction dédiée avec des dégâts négatifs
+              get().dealDamageToCompanionById(heal.targetId, -heal.amount);
+            }
+          });
+        }
+
+        // Ajouter les messages de combat
+        if (result.messages && result.messages.length > 0) {
+          result.messages.forEach(msg => {
+            const messageText = typeof msg === 'string' ? msg : msg.text;
+            const messageType = typeof msg === 'string' ? 'default' : (msg.type || 'default');
+            get().addCombatMessageToGameStore(messageText, messageType);
+          });
+        }
+
+        // Appliquer les effets (buffs, debuffs)
+        if (result.effects && result.effects.length > 0) {
+          result.effects.forEach(effect => {
+            console.log(`✨ Applying effect: ${effect.type} to ${effect.targetId}`);
+            // TODO: Implémenter l'application d'effets si nécessaire
+          });
+        }
+
+        // Vérifier la fin du combat après l'action
+        get().checkCombatEnd();
+      },
+
+      // ... (autres actions existantes : initializeCombat, nextTurn, dealDamageTo..., etc.)
+      
+      // === MÉTHODES HÉRITÉES (MAINTENUES POUR COMPATIBILITÉ SI BESOIN) ===
+
+      /**
+       * @deprecated Utiliser executeUnifiedEntityTurn à la place
+       */
+      executeEnemyTurn: (enemyName, playerCharacter, activeCompanions = []) => {
+        console.warn('⚠️ executeEnemyTurn is deprecated, use executeUnifiedEntityTurn');
+        const { combatEnemies, combatPositions } = get();
+        const enemy = combatEnemies.find(e => e.name === enemyName);
+        if (!enemy || enemy.currentHP <= 0) {
+          return;
+        }
+
+        const gameState = { playerCharacter, activeCompanions, combatEnemies, combatPositions };
+        // Redirection vers le nouveau système
+        get().executeUnifiedEntityTurn(enemy, gameState, () => get().nextTurn());
+      },
+
+      /**
+       * @deprecated Utiliser executeUnifiedEntityTurn à la place
+       */
+      executeCompanionTurnById: (companionId, companion, activeCompanions, playerCharacter) => {
+        console.warn('⚠️ executeCompanionTurnById is deprecated, use executeUnifiedEntityTurn');
+        if (!companion || companion.currentHP <= 0) {
+          return;
+        }
+
+        const { combatPositions, combatEnemies } = get();
+        const gameState = { playerCharacter, activeCompanions, combatEnemies, combatPositions };
+        // Redirection vers le nouveau système
+        get().executeUnifiedEntityTurn(companion, gameState, () => get().nextTurn());
+      },
+
+      // Le reste du store reste identique...
       initializeCombat: (encounterData, playerCharacter, activeCompanions = []) => set((state) => {
-        // Utiliser EnemyFactory pour créer les instances d'ennemis (évite duplication de code)
         const enemyInstances = EnemyFactory.createEnemiesFromEncounter(encounterData)
-
-        // Utiliser CombatService pour calculer l'initiative (évite la duplication de code)
         const sortedOrder = CombatService.rollInitiative(playerCharacter, activeCompanions, enemyInstances)
-        
-        // Initialiser les positions
+        console.log('🎲 Initiative calculée:')
+        sortedOrder.forEach((combatant, index) => {
+          console.log(`${index + 1}. ${combatant.name || combatant.type} (${combatant.type}) : ${combatant.initiative}`)
+        })
         const positions = get().calculateInitialPositions(
-          enemyInstances, 
+          enemyInstances,
           activeCompanions,
-          encounterData.enemyPositions, 
-          encounterData.playerPosition,    // Position personnalisée du joueur
-          encounterData.companionPositions // Positions personnalisées des compagnons
+          encounterData.enemyPositions,
+          encounterData.playerPosition,    
+          encounterData.companionPositions 
         )
-        
-        // Sauvegarder les positions initiales comme positions de début de tour
         positions.playerStartPos = { ...positions.player }
-        
-        // Sauvegarder les positions de tous les compagnons
         if (activeCompanions && activeCompanions.length > 0) {
           activeCompanions.forEach(companion => {
             const companionId = companion.id || companion.name.toLowerCase()
@@ -77,8 +233,6 @@ export const useCombatStore = create(
             }
           })
         }
-        
-
         return {
           ...state,
           isActive: true,
@@ -99,65 +253,47 @@ export const useCombatStore = create(
 
       calculateInitialPositions: (enemies, activeCompanions = [], customEnemyPositions = {}, customPlayerPosition = null, customCompanionPositions = null) => {
         const positions = {
-          player: customPlayerPosition || { x: 0, y: 5 } // Position personnalisée ou coin bas-gauche par défaut
+          player: customPlayerPosition || { x: 0, y: 5 } 
         }
-
-        // Positions des compagnons actifs
         if (activeCompanions && activeCompanions.length > 0) {
           activeCompanions.forEach((companion, index) => {
             const companionId = companion.id || companion.name.toLowerCase()
-            
-            // Vérifier s'il y a des positions personnalisées pour ce compagnon
             if (customCompanionPositions && customCompanionPositions[companionId]) {
               positions[companionId] = customCompanionPositions[companionId]
             } else if (customCompanionPositions && Array.isArray(customCompanionPositions) && customCompanionPositions[index]) {
-              // Format tableau : [{ x: 2, y: 5 }, { x: 3, y: 5 }]
               positions[companionId] = customCompanionPositions[index]
             } else {
-              // Position par défaut : à côté du joueur
               const playerPos = positions.player
-              positions[companionId] = { 
-                x: playerPos.x + 1 + index, 
-                y: playerPos.y - Math.floor(index / 2) // Décaler sur Y si plus de 2 compagnons
+              positions[companionId] = {
+                x: playerPos.x + 1 + index,
+                y: playerPos.y - Math.floor(index / 2) 
               }
             }
           })
-          
-          // Plus besoin de positions.companion avec le nouveau système
         }
-
-        // Positions des ennemis
         enemies.forEach((enemy, index) => {
-          // Gérer les positions personnalisées (format objet ou tableau)
           if (customEnemyPositions && typeof customEnemyPositions === 'object') {
             if (Array.isArray(customEnemyPositions)) {
-              // Format tableau : [{ x: 4, y: 0 }, { x: 5, y: 0 }, ...]
               if (customEnemyPositions[index]) {
                 positions[enemy.name] = customEnemyPositions[index]
               } else {
-                // Position par défaut si pas assez de positions définies
                 const baseX = Math.min(6, GRID_WIDTH - 2)
                 const baseY = Math.min(index, GRID_HEIGHT - 1)
                 positions[enemy.name] = { x: baseX + (index % 2), y: baseY }
               }
             } else if (customEnemyPositions[enemy.name]) {
-              // Format objet : { "Ombre 1": { x: 4, y: 0 }, ... }
               positions[enemy.name] = customEnemyPositions[enemy.name]
             } else {
-              // Placement automatique côté droit de la grille
               const baseX = Math.min(6, GRID_WIDTH - 2)
               const baseY = Math.min(index, GRID_HEIGHT - 1)
               positions[enemy.name] = { x: baseX + (index % 2), y: baseY }
             }
           } else {
-            // Placement automatique côté droit de la grille
             const baseX = Math.min(6, GRID_WIDTH - 2)
             const baseY = Math.min(index, GRID_HEIGHT - 1)
             positions[enemy.name] = { x: baseX + (index % 2), y: baseY }
           }
         })
-
-        // Positions finales configurées
         return positions
       },
 
@@ -182,39 +318,27 @@ export const useCombatStore = create(
         victory: false,
         totalXpGained: 0
       }),
-
-      // === GESTION DES TOURS ===
-
       startCombat: () => set({ combatPhase: 'turn' }),
 
       nextTurn: () => set((state) => {
         let nextIndex = state.currentTurnIndex + 1
-
-        // Revenir au début si on a dépassé
         if (nextIndex >= state.turnOrder.length) {
           nextIndex = 0
           state.turnCounter++
         }
-
-        // Skip les personnages morts
-        const maxLoops = state.turnOrder.length // Sécurité pour éviter les boucles infinies
+        const maxLoops = state.turnOrder.length
         let loopCount = 0
-        
         while (nextIndex !== state.currentTurnIndex && loopCount < maxLoops) {
           const currentTurnData = state.turnOrder[nextIndex]
           let shouldSkip = false
-          
           if (currentTurnData.type === 'enemy') {
             const enemy = state.combatEnemies.find(e => e.name === currentTurnData.name)
             if (!enemy || enemy.currentHP <= 0) {
               shouldSkip = true
             }
           } else if (currentTurnData.type === 'companion') {
-            // Vérifier si le compagnon est mort via useCharacterStore
-            // Pour l'instant, on assume qu'il faut le gérer différemment
-            // Le CombatTurnManager gérera cette logique
           }
-          
+
           if (shouldSkip) {
             nextIndex++
             loopCount++
@@ -226,34 +350,26 @@ export const useCombatStore = create(
           }
           break
         }
-
-        // Traiter les effets de début de tour pour le nouveau combattant
         const newCombatant = state.turnOrder[nextIndex]
         let effectMessages = []
-        
+
         if (newCombatant?.type === 'enemy') {
           const enemy = state.combatEnemies.find(e => e.name === newCombatant.name)
           if (enemy) {
             effectMessages = CombatEffects.processStartOfTurnEffects(enemy)
           }
         }
-        // TODO: Gérer les effets pour joueur et compagnons
-
-        // Sauvegarder la position de début de tour pour le joueur
         const newPositions = { ...state.combatPositions }
-        
+
         if (newCombatant?.type === 'player') {
           newPositions.playerStartPos = { ...state.combatPositions.player }
         } else if (newCombatant?.type === 'companion') {
-          // Sauvegarder la position de début de tour du compagnon par ID
           const companionId = newCombatant.id || newCombatant.name.toLowerCase()
           const companionPos = state.combatPositions[companionId]
           if (companionPos) {
             newPositions[`${companionId}StartPos`] = { ...companionPos }
           }
         }
-
-        // Log des messages d'effets pour debug
         if (effectMessages.length > 0) {
           console.log('Effets de début de tour:', effectMessages)
         }
@@ -277,28 +393,23 @@ export const useCombatStore = create(
         const { turnOrder, currentTurnIndex } = get()
         return turnOrder[currentTurnIndex]
       },
-
-      // === MOUVEMENT ET POSITIONNEMENT ===
-
       moveCharacter: (characterId, newPosition) => set((state) => {
         if (!isValidGridPosition(newPosition.x, newPosition.y)) return state
 
         const isOccupied = CombatEngine.isPositionOccupied(
-          newPosition.x, 
-          newPosition.y, 
-          state.combatPositions, 
+          newPosition.x,
+          newPosition.y,
+          state.combatPositions,
           state.combatEnemies,
           characterId
         )
 
         if (isOccupied) return state
-
-        // Vérifier les attaques d'opportunité
         const oldPosition = state.combatPositions[characterId]
         const opportunityAttacks = get().checkOpportunityAttacks(characterId, oldPosition, newPosition)
-
-        // Exécuter les attaques d'opportunité (pour plus tard)
-        // TODO: Implémenter l'exécution des attaques d'opportunité
+        if (opportunityAttacks.length > 0) {
+          get().executeOpportunityAttacks(opportunityAttacks)
+        }
 
         return {
           combatPositions: {
@@ -309,26 +420,46 @@ export const useCombatStore = create(
         }
       }),
 
-      checkOpportunityAttacks: (movingCharacter, fromPosition, toPosition) => {
-        const { combatPositions, combatEnemies } = get()
+      checkOpportunityAttacks: (movingCharacterId, fromPosition, toPosition) => {
+        const state = get()
+        const { combatPositions, combatEnemies } = state
         const attacks = []
 
-        // Vérifier chaque ennemi pour des attaques d'opportunité
-        combatEnemies.forEach(enemy => {
-          if (enemy.currentHP <= 0) return
+        if (!fromPosition || !toPosition) return attacks
+        const movingEntityType = get().getEntityType(movingCharacterId)
+        const movingEntity = get().getEntityById(movingCharacterId)
 
-          const enemyPosition = combatPositions[enemy.name]
-          if (!enemyPosition) return
+        if (!movingEntity) return attacks
+        const potentialAttackers = get().getAllPotentialAttackers(movingCharacterId, movingEntityType)
 
-          const wasInRange = calculateDistance(fromPosition, enemyPosition) <= 1
-          const stillInRange = calculateDistance(toPosition, enemyPosition) <= 1
+        potentialAttackers.forEach(attacker => {
+          if (attacker.entity.currentHP <= 0) return
+          const attackerPosition = combatPositions[attacker.positionKey]
+          if (!attackerPosition) return
 
-          // Attaque d'opportunité si on était à portée et qu'on n'y est plus
+          const wasInRange = calculateDistance(fromPosition, attackerPosition) <= 1
+          const stillInRange = calculateDistance(toPosition, attackerPosition) <= 1
           if (wasInRange && !stillInRange) {
+            const meleeAttack = attacker.entity.attacks?.find(attack =>
+              attack.type === 'melee' || attack.range <= 1
+            ) || {
+              name: "Attaque de base",
+              type: "melee",
+              range: 1,
+              damageDice: "1d4",
+              damageBonus: 0,
+              damageType: "contondant"
+            }
+
             attacks.push({
-              attacker: enemy,
-              target: movingCharacter,
-              position: enemyPosition
+              attacker: attacker.entity,
+              attackerType: attacker.type,
+              attackerPositionKey: attacker.positionKey,
+              target: movingEntity,
+              targetType: movingEntityType,
+              targetId: movingCharacterId,
+              attack: meleeAttack,
+              position: attackerPosition
             })
           }
         })
@@ -342,9 +473,103 @@ export const useCombatStore = create(
           [enemyName]: position
         }
       })),
+      getEntityType: (entityId) => {
+        if (entityId === 'player') return 'player'
 
-      // === ACTIONS DE COMBAT ===
+        const { combatEnemies } = get()
+        const isEnemy = combatEnemies.some(enemy => enemy.name === entityId)
+        if (isEnemy) return 'enemy'
+        return 'companion'
+      },
 
+      getEntityById: (entityId) => {
+        const state = get()
+
+        if (entityId === 'player') {
+          return { name: 'Joueur', currentHP: 1 }
+        }
+        const enemy = state.combatEnemies.find(e => e.name === entityId)
+        if (enemy) return enemy
+        return { id: entityId, name: entityId, currentHP: 1 }
+      },
+
+      getAllPotentialAttackers: (movingEntityId, movingEntityType) => {
+        const state = get()
+        const attackers = []
+
+        if (movingEntityType === 'enemy') {
+          attackers.push({
+            entity: { name: 'Joueur', currentHP: 1 }, 
+            type: 'player',
+            positionKey: 'player'
+          })
+          Object.keys(state.combatPositions).forEach(key => {
+            if (key !== 'player' && key !== movingEntityId &&
+              !key.endsWith('StartPos') &&
+              !state.combatEnemies.some(e => e.name === key)) {
+              attackers.push({
+                entity: { id: key, name: key, currentHP: 1 }, 
+                type: 'companion',
+                positionKey: key
+              })
+            }
+          })
+
+        } else {
+          state.combatEnemies.forEach(enemy => {
+            if (enemy.name !== movingEntityId) {
+              attackers.push({
+                entity: enemy,
+                type: 'enemy',
+                positionKey: enemy.name
+              })
+            }
+          })
+        }
+
+        return attackers
+      },
+
+      executeOpportunityAttacks: (opportunityAttacks) => {
+        console.log(`🗡️ Exécution de ${opportunityAttacks.length} attaque(s) d'opportunité`)
+
+        opportunityAttacks.forEach((oa, index) => {
+          console.log(`⚔️ AO ${index + 1}: ${oa.attacker.name} attaque ${oa.target.name || oa.targetId}`)
+          const attackResult = CombatEngine.processOpportunityAttack(oa.attacker, oa.target, oa.attack)
+          console.log(attackResult.message)
+          const messageType = attackResult.hit ? 'opportunity-hit' : 'opportunity-miss'
+          get().addCombatMessageToGameStore(attackResult.message, messageType)
+          if (attackResult.hit && attackResult.damage > 0) {
+            if (oa.targetType === 'player') {
+              get().dealDamageToPlayer(attackResult.damage)
+
+            } else if (oa.targetType === 'companion') {
+              get().dealDamageToCompanionById(oa.targetId, attackResult.damage)
+
+            } else if (oa.targetType === 'enemy') {
+              get().dealDamageToEnemy(oa.targetId, attackResult.damage)
+            }
+          }
+        })
+        if (opportunityAttacks.length > 0) {
+          get().checkCombatEnd()
+        }
+      },
+      processSpellEffects: () => {
+        const state = get();
+        state.spellEffects.forEach(effect => {
+          if (effect.duration > 0) {
+            effect.onTick?.(state);
+            set(state => ({
+              spellEffects: state.spellEffects.map(e =>
+                e.id === effect.id ? { ...e, duration: e.duration - 1 } : e
+              )
+            }));
+          } else {
+            state.removeSpellEffect(effect.targetId, effect.id);
+          }
+        });
+      },
       setPlayerAction: (action) => set({ playerAction: action }),
 
       setActionTargets: (targets) => set({ actionTargets: targets }),
@@ -358,21 +583,19 @@ export const useCombatStore = create(
       setAoECenter: (center) => set({ aoeCenter: center }),
 
       executeAction: () => {
-        const { 
-          playerAction, 
-          actionTargets, 
-          turnOrder, 
+        const {
+          playerAction,
+          actionTargets,
+          turnOrder,
           currentTurnIndex,
           combatPositions,
-          combatEnemies 
+          combatEnemies
         } = get()
 
         if (!playerAction || actionTargets.length === 0) return
 
         const currentTurn = turnOrder[currentTurnIndex]
         const attackerPosition = combatPositions[currentTurn.name.toLowerCase()]
-
-        // Exécuter l'action via le service de combat
         const result = CombatService.executePlayerAction(
           currentTurn.character,
           playerAction,
@@ -380,40 +603,10 @@ export const useCombatStore = create(
           combatEnemies,
           combatPositions
         )
-
-        // Appliquer les résultats
         get().applyActionResults(result)
       },
-
-      applyActionResults: (results) => set((state) => {
-        const newState = { ...state }
-
-        // Appliquer les dégâts
-        results.damages?.forEach(damage => {
-          if (damage.target.type === 'enemy') {
-            const enemyIndex = newState.combatEnemies.findIndex(e => e.name === damage.target.name)
-            if (enemyIndex !== -1) {
-              newState.combatEnemies[enemyIndex] = {
-                ...newState.combatEnemies[enemyIndex],
-                currentHP: Math.max(0, newState.combatEnemies[enemyIndex].currentHP - damage.amount)
-              }
-            }
-          }
-        })
-
-        // Vérifier les conditions de victoire/défaite
-        get().checkCombatEnd()
-
-        return newState
-      }),
-
-      // === GESTION DES DÉGÂTS ===
-
-      // Fonctions de callback pour les dégâts - seront assignées depuis l'extérieur
       _onPlayerDamage: null,
-      _onCompanionDamageById: null, // Nouveau: callback par ID de compagnon
-
-      // Setter pour les callbacks
+      _onCompanionDamageById: null, 
       setDamageCallbacks: (onPlayerDamage, onCompanionDamageById) => set({
         _onPlayerDamage: onPlayerDamage,
         _onCompanionDamageById: onCompanionDamageById
@@ -427,8 +620,6 @@ export const useCombatStore = create(
           console.warn('Player damage callback not set')
         }
       },
-
-      // Méthode dépréciée - utiliser dealDamageToCompanionById
       dealDamageToCompanion: (damage) => {
         console.warn('dealDamageToCompanion is deprecated, use dealDamageToCompanionById')
       },
@@ -454,27 +645,17 @@ export const useCombatStore = create(
 
         return { combatEnemies: newEnemies }
       }),
-
-      // === FIN DE COMBAT ===
-
       checkCombatEnd: () => {
         const { combatEnemies } = get()
-        
-        // Vérifier victoire (tous les ennemis morts)
         const aliveEnemies = combatEnemies.filter(enemy => enemy.currentHP > 0)
         if (aliveEnemies.length === 0) {
           get().handleVictory()
           return
         }
-
-        // Vérifier défaite (joueur mort) - sera géré en coordination avec characterStore
-        // TODO: Coordination avec characterStore pour vérifier l'état du joueur
       },
 
       handleVictory: () => {
         const { combatEnemies } = get()
-        
-        // Calculer l'XP total des ennemis vaincus
         const totalXP = combatEnemies.reduce((total, enemy) => {
           return total + (enemy.xp || 0)
         }, 0)
@@ -483,7 +664,7 @@ export const useCombatStore = create(
           victory: true,
           combatPhase: 'end',
           isActive: false,
-          totalXpGained: totalXP // Store l'XP pour que d'autres composants puissent l'utiliser
+          totalXpGained: totalXP
         }))
       },
 
@@ -498,210 +679,27 @@ export const useCombatStore = create(
         combatPhase: 'end',
         isActive: false
       }),
-
-      // === IA ET AUTOMATISATION ===
-
-      executeEnemyTurn: (enemyName, playerCharacter, activeCompanions = []) => {
-        const { combatEnemies, combatPositions } = get()
-        const enemy = combatEnemies.find(e => e.name === enemyName)
-        if (!enemy || enemy.currentHP <= 0) return
-
-        const enemyPosition = combatPositions[enemyName]
-        if (!enemyPosition) return
-
-        // 1. Vérifier les effets qui limitent les actions
-        const effectModifiers = CombatEffects.calculateEffectModifiers(enemy)
-        
-        if (effectModifiers.incapacitated) {
-          console.log(`${enemyName} est incapacité par des effets et ne peut pas agir`)
-          return
-        }
-
-        // 2. Utiliser la nouvelle IA unifiée si l'ennemi a un rôle défini
-        const combatState = {
-          playerCharacter,
-          activeCompanions,
-          combatEnemies,
-          combatPositions
-        }
-
-        if (enemy.role && enemy.aiPriority) {
-          // Nouveau système d'IA par rôle
-          const bestAction = EntityAI_Hybrid.getBestAction(enemy, combatState)
-          
-          if (bestAction) {
-            // Exécuter l'action intelligente
-            get().executeEnemyAction(enemy, bestAction, combatState)
-          } else {
-            console.log(`${enemyName} (${enemy.role}) ne trouve aucune action`)
-          }
+      _onCombatMessage: null,
+      setCombatMessageCallback: (callback) => set({
+        _onCombatMessage: callback
+      }),
+      addCombatMessageToGameStore: (message, type = 'default') => {
+        const { _onCombatMessage } = get()
+        if (_onCombatMessage) {
+          _onCombatMessage(message, type)
         } else {
-          // Logique pour ennemis sans rôle défini
-          let finalPosition = enemyPosition
-          
-          if (effectModifiers.canMove && !CombatEffects.hasEffect(enemy, 'restrained')) {
-            const optimalPosition = CombatEngine.calculateOptimalMovement(
-              { ...enemy, type: 'enemy' },
-              enemyPosition,
-              combatState
-            )
-
-            if (optimalPosition) {
-              get().moveCharacter(enemyName, optimalPosition)
-              finalPosition = optimalPosition
-            }
-          } else {
-            console.log(`${enemyName} ne peut pas bouger à cause d'effets (${enemy.activeEffects?.map(e => e.name).join(', ') || 'aucun effet visible'})`)
-          }
-
-          // Logique d'attaque basique
-          if (!effectModifiers.canAct) {
-            console.log(`${enemyName} ne peut pas attaquer à cause d'effets`)
-            return
-          }
-
-          const enemyAttack = enemy.attacks?.[0] || {
-            name: "Attaque de base",
-            type: "melee",
-            range: 1,
-            damageDice: "1d6",
-            damageBonus: 0
-          }
-
-          const targets = CombatEngine.getTargetsInRange(
-            { ...enemy, type: 'enemy' },
-            finalPosition,
-            enemyAttack,
-            combatState
-          )
-
-          if (targets.length > 0) {
-            let target = targets.find(t => combatPositions.player && 
-              t.position.x === combatPositions.player.x && 
-              t.position.y === combatPositions.player.y)
-            
-            if (!target) {
-              target = targets[0]
-            }
-            
-            let damageResult = CombatEngine.calculateDamage(enemyAttack)
-            
-            if (effectModifiers.attackDisadvantage) {
-              console.log(`${enemyName} attaque avec désavantage à cause d'effets`)
-              damageResult.damage = Math.floor(damageResult.damage * 0.75)
-            }
-
-            const targetPos = combatPositions.player
-            
-            if (targetPos && target.position.x === targetPos.x && target.position.y === targetPos.y) {
-              get().dealDamageToPlayer(damageResult.damage)
-            } else {
-              const targetCompanion = activeCompanions.find(companion => {
-                const companionPos = combatPositions[companion.id]
-                return companionPos && companionPos.x === target.position.x && companionPos.y === target.position.y
-              })
-              
-              if (targetCompanion) {
-                get().dealDamageToCompanionById(targetCompanion.id, damageResult.damage)
-              }
-            }
-          } else {
-            console.log(`${enemyName} n'a aucune cible à portée`)
-          }
+          console.warn('⚠️ Combat message callback non configuré:', message)
         }
       },
+      addSpellEffect: (targetId, effect) => set(state => ({
+        spellEffects: [...state.spellEffects, { targetId, ...effect }]
+      })),
 
-      /**
-       * Exécute une action d'ennemi selon la nouvelle IA
-       */
-      executeEnemyAction: (enemy, action, combatState) => {
-        console.log(`Executing ${action.type} for ${enemy.name}:`, action.description)
-        
-        switch (action.type) {
-          case 'attack':
-            // Attaque normale
-            if (action.attack && action.target) {
-              const damageResult = CombatEngine.calculateDamage(action.attack)
-              
-              // Identifier le type de cible et appliquer les dégâts
-              if (action.target.id === 'player') {
-                get().dealDamageToPlayer(damageResult.damage)
-              } else if (action.target.id) {
-                get().dealDamageToCompanionById(action.target.id, damageResult.damage)
-              }
-            }
-            break
-            
-          case 'hit_and_run':
-            // Tactique spéciale : retraite puis attaque à distance
-            // TODO: Implémenter la logique de retraite
-            console.log(`${enemy.name} utilise une tactique de harcèlement`)
-            if (action.attack && action.targets.length > 0) {
-              const target = action.targets[0]
-              const damageResult = CombatEngine.calculateDamage(action.attack)
-              
-              if (target.id === 'player') {
-                get().dealDamageToPlayer(damageResult.damage)
-              } else if (target.id) {
-                get().dealDamageToCompanionById(target.id, damageResult.damage)
-              }
-            }
-            break
-            
-          case 'charge':
-            // Charge vers la cible
-            console.log(`${enemy.name} charge ${action.target.name}`)
-            // TODO: Implémenter le mouvement de charge
-            break
-            
-          case 'retreat':
-            // Retraite tactique
-            console.log(`${enemy.name} se replie tactiquement`)
-            // TODO: Implémenter la logique de retraite
-            break
-            
-          default:
-            console.warn(`Type d'action ennemi inconnu: ${action.type}`)
-        }
-      },
-
-      executeCompanionTurnById: (companionId, companion, activeCompanions, playerCharacter) => {
-        const { combatPositions, combatEnemies } = get()
-        if (!companion || companion.currentHP <= 0) return
-
-        // Utiliser la nouvelle architecture séparée
-        const gameState = {
-          playerCharacter,
-          activeCompanions,
-          combatEnemies,
-          combatPositions
-        }
-
-        // Exécuter l'action via le nouveau système d'IA
-        const result = CombatService.executeCompanionAction(companionId, companion, gameState)
-
-        if (result && result.success) {
-          // Appliquer les dégâts aux ennemis
-          result.damage?.forEach(dmg => {
-            get().dealDamageToEnemy(dmg.targetId, dmg.damage)
-          })
-
-          // Appliquer les soins aux alliés
-          result.healing?.forEach(heal => {
-            if (heal.targetId === 'player') {
-              get().dealDamageToPlayer(-heal.amount) // Soin = dégâts négatifs
-            } else {
-              get().dealDamageToCompanionById(heal.targetId, -heal.amount)
-            }
-          })
-
-          // Appliquer les effets (pour plus tard)
-          // TODO: Implémenter la gestion des effets de combat
-        }
-      },
-
-      // === UTILITAIRES ===
-
+      removeSpellEffect: (targetId, effectId) => set(state => ({
+        spellEffects: state.spellEffects.filter(
+          e => !(e.targetId === targetId && e.id === effectId)
+        )
+      })),
       incrementCombatKey: () => set((state) => ({
         combatKey: state.combatKey + 1
       })),
@@ -716,9 +714,9 @@ export const useCombatStore = create(
         for (let x = 0; x < GRID_WIDTH; x++) {
           for (let y = 0; y < GRID_HEIGHT; y++) {
             const distance = calculateDistance(currentPos, { x, y })
-            
-            if (distance <= movementRange && 
-                !CombatEngine.isPositionOccupied(x, y, combatPositions, combatEnemies, characterId)) {
+
+            if (distance <= movementRange &&
+              !CombatEngine.isPositionOccupied(x, y, combatPositions, combatEnemies, characterId)) {
               validSquares.push({ x, y })
             }
           }
@@ -729,9 +727,9 @@ export const useCombatStore = create(
 
       getValidTargetSquares: (action, attackerPosition) => {
         const { combatPositions, combatEnemies } = get()
-        
+
         return CombatEngine.getTargetsInRange(
-          { type: 'player' }, // Assumons que c'est le joueur pour l'instant
+          { type: 'player' }, 
           attackerPosition,
           action,
           { combatPositions, combatEnemies }
@@ -740,44 +738,44 @@ export const useCombatStore = create(
     }),
     { name: 'combat-store' }
   )
-)
+);
 
-// Sélecteurs optimisés
+// ... (sélecteurs existants)
 export const combatSelectors = {
   isInCombat: (state) => state.isActive,
-  
+
   getCurrentPhase: (state) => state.combatPhase,
-  
-  getCurrentTurnData: (state) => 
+
+  getCurrentTurnData: (state) =>
     state.turnOrder[state.currentTurnIndex],
-  
+
   isPlayerTurn: (state) => {
     const currentTurn = state.turnOrder[state.currentTurnIndex]
     return currentTurn?.type === 'player'
   },
-  
+
   isCompanionTurn: (state) => {
     const currentTurn = state.turnOrder[state.currentTurnIndex]
     return currentTurn?.type === 'companion'
   },
-  
+
   isEnemyTurn: (state) => {
     const currentTurn = state.turnOrder[state.currentTurnIndex]
     return currentTurn?.type === 'enemy'
   },
-  
-  getAliveEnemies: (state) => 
+
+  getAliveEnemies: (state) =>
     state.combatEnemies.filter(enemy => enemy.currentHP > 0),
-  
+
   getDeadEnemies: (state) =>
     state.combatEnemies.filter(enemy => enemy.currentHP <= 0),
-  
+
   getTurnOrder: (state) => state.turnOrder,
-  
+
   getCombatPositions: (state) => state.combatPositions,
-  
+
   hasMovedThisTurn: (state) => state.hasMovedThisTurn,
-  
+
   canEndTurn: (state) => {
     const currentTurn = state.turnOrder[state.currentTurnIndex]
     if (currentTurn?.type === 'player') {
@@ -785,10 +783,17 @@ export const combatSelectors = {
     }
     return true // AI turns auto-complete
   },
-  
+
   getCombatResults: (state) => ({
     victory: state.victory,
     defeated: state.defeated,
     isEnded: state.victory || state.defeated
   })
 }
+
+
+export const useCombat = () => useCombatStore(state => state)
+export const useCombatActions = () => useCombatStore(state => state)
+export const useCombatSelector = (selector) => useCombatStore(selector)
+
+

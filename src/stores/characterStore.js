@@ -1,21 +1,21 @@
-import { create } from 'zustand'
-import { devtools, subscribeWithSelector } from 'zustand/middleware'
-import { CharacterManager } from '../services/characterManager'
-import { SpellService } from '../services/SpellService'
-import { CombatEngine } from '../services/combatEngine'
-import { GameUtils } from '../utils/GameUtils'
-import { items } from '../data/items'
-import { weapons } from '../data/weapons'
-import { characterTemplates } from '../data/characterTemplates'
+import { create } from 'zustand';
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
+import { CharacterManager } from '../services/characterManager';
+import { SpellServiceUnified } from '../services/SpellServiceUnified.js';
+import { CombatEngine } from '../services/combatEngine';
+import { GameUtils } from '../utils/GameUtils';
+import { items } from '../data/items';
+import { weapons } from '../data/weapons';
+import { characterTemplates } from '../data/characterTemplates';
 
 // Store pour la gestion des personnages (joueur et compagnon)
 // Helper pour synchroniser playerCharacter et selectedCharacter
 const syncCharacter = (updates) => {
   if (updates.playerCharacter) {
-    updates.selectedCharacter = updates.playerCharacter
+    updates.selectedCharacter = updates.playerCharacter;
   }
-  return updates
-}
+  return updates;
+};
 
 export const useCharacterStore = create(
   subscribeWithSelector(
@@ -39,7 +39,7 @@ export const useCharacterStore = create(
         // === ACTIONS DE BASE ===
 
         // Définir le personnage joueur
-        setPlayerCharacter: (character) => set(syncCharacter({ 
+        setPlayerCharacter: (character) => set(syncCharacter({
           playerCharacter: character ? GameUtils.deepClone(character) : null
         })),
 
@@ -49,16 +49,16 @@ export const useCharacterStore = create(
         // Ajouter un compagnon (max 3)
         addCompanion: (companionData) => set((state) => {
           if (state.playerCompanions.length >= 3) {
-            console.warn('Maximum 3 compagnons autorisés')
-            return state
+            console.warn('Maximum 3 compagnons autorisés');
+            return state;
           }
           
-          const companion = GameUtils.deepClone(companionData)
-          companion.id = companion.id || companion.name || GameUtils.generateId('companion')
+          const companion = GameUtils.deepClone(companionData);
+          companion.id = companion.id || companion.name || GameUtils.generateId('companion');
           
           return {
             playerCompanions: [...state.playerCompanions, companion]
-          }
+          };
         }),
         
         // Retirer un compagnon
@@ -72,22 +72,22 @@ export const useCharacterStore = create(
           // Vérifier que tous les IDs existent
           const validIds = companionIds.filter(id => 
             state.playerCompanions.some(c => c.id === id)
-          )
-          return { activeCompanions: validIds }
+          );
+          return { activeCompanions: validIds };
         }),
         
         // Obtenir un compagnon par ID
         getCompanion: (companionId) => {
-          const { playerCompanions } = get()
-          return playerCompanions.find(c => c.id === companionId)
+          const { playerCompanions } = get();
+          return playerCompanions.find(c => c.id === companionId);
         },
         
         // Obtenir les compagnons actifs
         getActiveCompanions: () => {
-          const { playerCompanions, activeCompanions } = get()
+          const { playerCompanions, activeCompanions } = get();
           return activeCompanions.map(id => 
             playerCompanions.find(c => c.id === id)
-          ).filter(Boolean)
+          ).filter(Boolean);
         },
 
         // Mise à jour générique d'un personnage
@@ -110,125 +110,125 @@ export const useCharacterStore = create(
         // === GESTION DES DÉGÂTS ET SOINS ===
 
         takeDamagePlayer: (damage) => set((state) => {
-          if (!state.playerCharacter) return state
+          if (!state.playerCharacter) return state;
           
-          const updatedCharacter = CharacterManager.takeDamage(state.playerCharacter, damage)
-          return syncCharacter({ playerCharacter: updatedCharacter })
+          const updatedCharacter = CharacterManager.takeDamage(state.playerCharacter, damage);
+          return syncCharacter({ playerCharacter: updatedCharacter });
         }),
 
 
         // Dégâts à un compagnon par ID
         takeDamageCompanionById: (companionId, damage) => set((state) => {
-          const companion = state.playerCompanions.find(c => c.id === companionId)
-          if (!companion) return state
+          const companion = state.playerCompanions.find(c => c.id === companionId);
+          if (!companion) return state;
           
-          const updatedCompanion = CharacterManager.takeDamage(companion, damage)
+          const updatedCompanion = CharacterManager.takeDamage(companion, damage);
           
           return {
             playerCompanions: state.playerCompanions.map(c =>
               c.id === companionId ? updatedCompanion : c
             )
-          }
+          };
         }),
 
         healPlayer: (healing) => set((state) => {
-          if (!state.playerCharacter) return state
+          if (!state.playerCharacter) return state;
           
-          const updatedCharacter = CharacterManager.heal(state.playerCharacter, healing)
-          return syncCharacter({ playerCharacter: updatedCharacter })
+          const updatedCharacter = CharacterManager.heal(state.playerCharacter, healing);
+          return syncCharacter({ playerCharacter: updatedCharacter });
         }),
 
 
         // Soigner un compagnon par ID
         healCompanionById: (companionId, healing) => set((state) => {
-          const companion = state.playerCompanions.find(c => c.id === companionId)
-          if (!companion) return state
+          const companion = state.playerCompanions.find(c => c.id === companionId);
+          if (!companion) return state;
           
-          const updatedCompanion = CharacterManager.heal(companion, healing)
+          const updatedCompanion = CharacterManager.heal(companion, healing);
           
           return {
             playerCompanions: state.playerCompanions.map(c =>
               c.id === companionId ? updatedCompanion : c
             )
-          }
+          };
         }),
 
         // === GESTION DES REPOS ===
 
         shortRestPlayer: (hitDiceSpent = 0) => set((state) => {
-          if (!state.playerCharacter) return state
+          if (!state.playerCharacter) return state;
           
-          const updatedCharacter = CharacterManager.shortRest(state.playerCharacter, hitDiceSpent)
-          return syncCharacter({ playerCharacter: updatedCharacter })
+          const updatedCharacter = CharacterManager.shortRest(state.playerCharacter, hitDiceSpent);
+          return syncCharacter({ playerCharacter: updatedCharacter });
         }),
 
         longRestPlayer: () => set((state) => {
-          if (!state.playerCharacter) return state
+          if (!state.playerCharacter) return state;
           
-          const updatedCharacter = CharacterManager.longRest(state.playerCharacter)
-          return syncCharacter({ playerCharacter: updatedCharacter })
+          const updatedCharacter = CharacterManager.longRest(state.playerCharacter);
+          return syncCharacter({ playerCharacter: updatedCharacter });
         }),
 
 
         // Repos long pour un compagnon par ID
         longRestCompanionById: (companionId) => set((state) => {
-          const companion = state.playerCompanions.find(c => c.id === companionId)
-          if (!companion) return state
+          const companion = state.playerCompanions.find(c => c.id === companionId);
+          if (!companion) return state;
           
-          const updatedCompanion = CharacterManager.longRest(companion)
+          const updatedCompanion = CharacterManager.longRest(companion);
           
           return {
             playerCompanions: state.playerCompanions.map(c =>
               c.id === companionId ? updatedCompanion : c
             )
-          }
+          };
         }),
 
         // Repos complet (joueur + tous les compagnons)
         longRestAll: () => {
-          const { longRestPlayer, playerCompanions } = get()
-          longRestPlayer()
+          const { longRestPlayer, playerCompanions } = get();
+          longRestPlayer();
           
           // Repos pour tous les compagnons
           playerCompanions.forEach(companion => {
-            get().longRestCompanionById(companion.id)
-          })
+            get().longRestCompanionById(companion.id);
+          });
         },
 
         // Dépenser un dé de vie pendant un repos court
         spendHitDie: (targetCharacter = 'player') => set((state) => {
-          const character = state.playerCharacter
-          if (!character) return state
+          const character = state.playerCharacter;
+          if (!character) return state;
 
           // Utiliser CombatEngine pour les calculs de guérison
-          const healingResult = CombatEngine.calculateHitDieHealing(character)
+          const healingResult = CombatEngine.calculateHitDieHealing(character);
           
           if (!healingResult.canHeal) {
-            return state // Aucune guérison possible
+            return state; // Aucune guérison possible
           }
           
-          const updatedCharacter = healingResult.character
+          const updatedCharacter = healingResult.character;
 
-          return syncCharacter({ playerCharacter: updatedCharacter })
+          return syncCharacter({ playerCharacter: updatedCharacter });
         }),
 
         // === GESTION DE L'EXPÉRIENCE ET NIVEAUX ===
 
         addExperience: (xp, targetCharacter = 'player') => set((state) => {
-          const character = state.playerCharacter
-          if (!character) return state
-          const updatedCharacter = CharacterManager.addExperience(character, xp)
-          const newState = { ...state }
+          const character = state.playerCharacter;
+          if (!character) return state;
+          const updatedCharacter = CharacterManager.addExperience(character, xp);
+          const newState = { ...state };
 
           // Vérifier si montée de niveau
           if (updatedCharacter.level > character.level) {
-            newState.levelUpPending = true
+            newState.levelUpPending = true;
             newState.levelUpData = {
               character: targetCharacter,
               oldLevel: character.level,
               newLevel: updatedCharacter.level,
               hpGained: updatedCharacter.maxHP - character.maxHP
-            }
+            };
           }
 
           // Enregistrer le gain d'XP
@@ -240,13 +240,13 @@ export const useCharacterStore = create(
               target: targetCharacter,
               timestamp: new Date()
             }
-          ]
+          ];
 
-          newState.playerCharacter = updatedCharacter
+          newState.playerCharacter = updatedCharacter;
           // Synchroniser selectedCharacter
-          newState.selectedCharacter = updatedCharacter
+          newState.selectedCharacter = updatedCharacter;
 
-          return newState
+          return newState;
         }),
 
         confirmLevelUp: () => set((state) => ({
@@ -257,353 +257,363 @@ export const useCharacterStore = create(
         // === GESTION DES SORTS ===
 
         castSpellPlayer: (spell, options = {}) => set((state) => {
-          if (!state.playerCharacter) return state
+          if (!state.playerCharacter) return state;
 
-          const result = SpellService.castSpell(state.playerCharacter, spell, [], options)
+          const spellService = new SpellServiceUnified();
+          const result = spellService.castSpell(state.playerCharacter, spell, [], options);
           
-          
-          return {
-            playerCharacter: result.character
+          if (result.success) {
+            return {
+              playerCharacter: result.caster
+            };
           }
+          return state;
         }),
 
         consumeSpellSlot: (spellLevel, targetCharacter = 'player') => set((state) => {
-          const character = state.playerCharacter
-          if (!character) return state
+          const character = state.playerCharacter;
+          if (!character) return state;
 
-          const updatedCharacter = CharacterManager.consumeSpellSlot(character, spellLevel)
+          const updatedCharacter = CharacterManager.consumeSpellSlot(character, spellLevel);
           
-          return syncCharacter({ playerCharacter: updatedCharacter })
+          return syncCharacter({ playerCharacter: updatedCharacter });
         }),
 
         prepareSpell: (spellName, targetCharacter = 'player') => {
-          const state = get()
-          const character = state.playerCharacter
+          const state = get();
+          const character = state.playerCharacter;
           
           if (!character) {
-            return { success: false, message: `Aucun personnage ${targetCharacter} trouvé` }
+            return { success: false, message: `Aucun personnage ${targetCharacter} trouvé` };
           }
 
-          const updatedCharacter = SpellService.prepareSpell(character, spellName)
+          const maxPrepared = CharacterManager.getMaxPreparedSpells(character);
+          const preparedSpells = character.spellcasting?.preparedSpells || [];
+
+          if (preparedSpells.length >= maxPrepared) {
+            return { success: false, message: `Limite de sorts préparés atteinte (${maxPrepared})` };
+          }
+
+          if (preparedSpells.includes(spellName)) {
+            return { success: false, message: `${spellName} est déjà préparé` };
+          }
+
+          const updatedCharacter = {
+            ...character,
+            spellcasting: {
+              ...character.spellcasting,
+              preparedSpells: [...preparedSpells, spellName]
+            }
+          };
           
-          if (!updatedCharacter) {
-            // Vérifier pourquoi la préparation a échoué
-            const currentPrepared = character.spellcasting?.preparedSpells || []
-            const maxPrepared = SpellService.getMaxPreparedSpells(character)
-            
-            if (currentPrepared.includes(spellName)) {
-              return { success: false, message: `${spellName} est déjà préparé` }
-            }
-            
-            if (currentPrepared.length >= maxPrepared) {
-              return { success: false, message: `Limite de sorts préparés atteinte (${maxPrepared})` }
-            }
-            
-            return { success: false, message: `Impossible de préparer ${spellName}` }
-          }
+          set(syncCharacter({ playerCharacter: updatedCharacter }));
 
-          // Mettre à jour le store
-          set(syncCharacter({ playerCharacter: updatedCharacter }))
-
-          return { success: true, message: `${spellName} préparé avec succès` }
+          return { success: true, message: `${spellName} préparé avec succès` };
         },
 
         unprepareSpell: (spellName, targetCharacter = 'player') => {
-          const state = get()
-          const character = state.playerCharacter
+          const state = get();
+          const character = state.playerCharacter;
           
           if (!character) {
-            return { success: false, message: `Aucun personnage ${targetCharacter} trouvé` }
+            return { success: false, message: `Aucun personnage ${targetCharacter} trouvé` };
           }
 
-          const updatedCharacter = SpellService.unprepareSpell(character, spellName)
-          
-          if (!updatedCharacter) {
-            return { success: false, message: `Impossible de retirer ${spellName}` }
+          const preparedSpells = character.spellcasting?.preparedSpells || [];
+
+          if (!preparedSpells.includes(spellName)) {
+            return { success: false, message: `${spellName} n'est pas préparé.` };
           }
 
-          // Mettre à jour le store
-          set(syncCharacter({ playerCharacter: updatedCharacter }))
+          const updatedCharacter = {
+            ...character,
+            spellcasting: {
+              ...character.spellcasting,
+              preparedSpells: preparedSpells.filter(s => s !== spellName)
+            }
+          };
 
-          return { success: true, message: `${spellName} retiré des sorts préparés` }
+          set(syncCharacter({ playerCharacter: updatedCharacter }));
+
+          return { success: true, message: `${spellName} retiré des sorts préparés` };
         },
 
         // === GESTION DE L'ÉQUIPEMENT ===
 
         equipItem: (itemId, targetCharacter = 'player') => set((state) => {
-          const character = state.playerCharacter
-          if (!character) return state
+          const character = state.playerCharacter;
+          if (!character) return state;
 
           // Chercher l'objet dans l'inventaire OU dans weapons.js
           let item = character.inventory?.find(invItem => 
             (invItem.id || invItem.name || invItem.nom) === itemId
-          )
+          );
           
           // Si pas trouvé dans l'inventaire, chercher dans weapons.js
           if (!item) {
-            const weaponData = weapons[itemId]
+            const weaponData = weapons[itemId];
             if (weaponData) {
-              item = { ...weaponData, id: itemId }
+              item = { ...weaponData, id: itemId };
             }
           }
           
-          if (!item) return state
+          if (!item) return state;
 
           // Vérifier si l'objet peut être équipé
-          const itemType = item.type
+          const itemType = item.type;
           if (!['weapon', 'arme', 'armor', 'armure', 'accessory', 'accessoire'].includes(itemType)) {
-            return state
+            return state;
           }
 
           // Initialiser l'équipement si nécessaire
-          const currentEquipment = character.equipment || {}
-          let newEquipment = { ...currentEquipment }
+          const currentEquipment = character.equipment || {};
+          let newEquipment = { ...currentEquipment };
 
           // Déterminer le slot d'équipement
-          let slot = null
+          let slot = null;
           if (itemType === 'weapon' || itemType === 'arme') {
-            slot = 'mainHand'
+            slot = 'mainHand';
           } else if (itemType === 'armor' || itemType === 'armure') {
-            slot = 'body'
+            slot = 'body';
           } else if (itemType === 'accessory' || itemType === 'accessoire') {
-            slot = 'accessory'
+            slot = 'accessory';
           }
 
-          if (!slot) return state
+          if (!slot) return state;
 
           // Déséquiper l'objet actuel si il y en a un
           if (newEquipment[slot]) {
             // Si l'ancien objet était dans l'inventaire, le remettre
-            const oldEquipmentId = newEquipment[slot]
+            const oldEquipmentId = newEquipment[slot];
             const wasInInventory = character.inventory?.some(invItem => 
               (invItem.id || invItem.name || invItem.nom) === oldEquipmentId
-            )
+            );
             
-            let newInventory = [...(character.inventory || [])]
+            let newInventory = [...(character.inventory || [])];
             if (wasInInventory) {
               // Récupérer les données complètes de l'ancien objet
-              const oldWeaponData = weapons[oldEquipmentId]
+              const oldWeaponData = weapons[oldEquipmentId];
               if (oldWeaponData) {
-                newInventory.push({ ...oldWeaponData, id: oldEquipmentId })
+                newInventory.push({ ...oldWeaponData, id: oldEquipmentId });
               }
             }
             
             // Équiper le nouvel objet (stocker seulement l'ID)
-            newEquipment[slot] = itemId
+            newEquipment[slot] = itemId;
             
             // Retirer le nouvel objet de l'inventaire s'il y était
             newInventory = newInventory.filter(invItem => 
               (invItem.id || invItem.name || invItem.nom) !== itemId
-            )
+            );
 
             const updates = {
               inventory: newInventory,
               equipment: newEquipment
-            }
+            };
 
-            return syncCharacter({ playerCharacter: { ...character, ...updates } })
+            return syncCharacter({ playerCharacter: { ...character, ...updates } });
           } else {
             // Équiper directement (stocker seulement l'ID)
-            newEquipment[slot] = itemId
+            newEquipment[slot] = itemId;
             
             // Retirer de l'inventaire s'il y était
             const newInventory = character.inventory ? character.inventory.filter(invItem => 
               (invItem.id || invItem.name || invItem.nom) !== itemId
-            ) : []
+            ) : [];
 
             const updates = {
               inventory: newInventory,
               equipment: newEquipment
-            }
+            };
 
-            return syncCharacter({ playerCharacter: { ...character, ...updates } })
+            return syncCharacter({ playerCharacter: { ...character, ...updates } });
           }
         }),
 
         unequipItem: (itemId, targetCharacter = 'player') => set((state) => {
-          const character = state.playerCharacter
-          if (!character || !character.equipment) return state
+          const character = state.playerCharacter;
+          if (!character || !character.equipment) return state;
 
           // Chercher l'objet équipé (maintenant ce sont des IDs)
-          const equipment = character.equipment
-          let foundSlot = null
+          const equipment = character.equipment;
+          let foundSlot = null;
 
           for (const [slot, equippedId] of Object.entries(equipment)) {
             if (equippedId === itemId) {
-              foundSlot = slot
-              break
+              foundSlot = slot;
+              break;
             }
           }
 
-          if (!foundSlot) return state
+          if (!foundSlot) return state;
 
           // Retirer de l'équipement
-          const newEquipment = { ...equipment }
-          delete newEquipment[foundSlot]
+          const newEquipment = { ...equipment };
+          delete newEquipment[foundSlot];
 
           // Remettre dans l'inventaire avec les données complètes
-          const weaponData = weapons[itemId]
-          const newInventory = [...(character.inventory || [])]
+          const weaponData = weapons[itemId];
+          const newInventory = [...(character.inventory || [])];
           
           if (weaponData) {
-            newInventory.push({ ...weaponData, id: itemId })
+            newInventory.push({ ...weaponData, id: itemId });
           }
 
           const updates = {
             inventory: newInventory,
             equipment: newEquipment
-          }
+          };
 
-          return syncCharacter({ playerCharacter: { ...character, ...updates } })
+          return syncCharacter({ playerCharacter: { ...character, ...updates } });
         }),
 
         // === GESTION DE L'INVENTAIRE ===
 
         addItemToInventory: (item, targetCharacter = 'player') => set((state) => {
-          const character = state.playerCharacter
-          if (!character) return state
+          const character = state.playerCharacter;
+          if (!character) return state;
 
-          const currentInventory = character.inventory || []
+          const currentInventory = character.inventory || [];
           
           // Identifier l'objet par son nom/type pour le groupement
-          const itemKey = item.id || item.name || item.nom
-          const quantityToAdd = item.quantity || 1
+          const itemKey = item.id || item.name || item.nom;
+          const quantityToAdd = item.quantity || 1;
           
           // Chercher si l'objet existe déjà dans l'inventaire
           const existingItemIndex = currentInventory.findIndex(invItem => {
-            const invItemKey = invItem.id || invItem.name || invItem.nom
-            return invItemKey === itemKey
-          })
+            const invItemKey = invItem.id || invItem.name || invItem.nom;
+            return invItemKey === itemKey;
+          });
 
-          let newInventory
+          let newInventory;
           
           if (existingItemIndex >= 0) {
             // L'objet existe déjà, on augmente sa quantité
-            newInventory = [...currentInventory]
+            newInventory = [...currentInventory];
             newInventory[existingItemIndex] = {
               ...newInventory[existingItemIndex],
               quantity: (newInventory[existingItemIndex].quantity || 1) + quantityToAdd
-            }
+            };
           } else {
             // Nouvel objet, on l'ajoute à l'inventaire
             newInventory = [...currentInventory, {
               ...item,
               id: item.id || item.name || item.nom || GameUtils.generateId('item'),
               quantity: quantityToAdd
-            }]
+            }];
           }
          
-          const updates = { inventory: newInventory }
+          const updates = { inventory: newInventory };
 
-          return syncCharacter({ playerCharacter: { ...character, ...updates } })
+          return syncCharacter({ playerCharacter: { ...character, ...updates } });
         }),
 
         removeItemFromInventory: (itemId, targetCharacter = 'player', quantityToRemove = 1) => set((state) => {
-          const character = state.playerCharacter
-          if (!character) return state
+          const character = state.playerCharacter;
+          if (!character) return state;
 
-          const currentInventory = character.inventory || []
+          const currentInventory = character.inventory || [];
           const itemIndex = currentInventory.findIndex(item => 
             (item.id || item.name || item.nom) === itemId
-          )
+          );
           
-          if (itemIndex === -1) return state // Objet non trouvé
+          if (itemIndex === -1) return state; // Objet non trouvé
 
-          let newInventory = [...currentInventory]
-          const item = newInventory[itemIndex]
-          const currentQuantity = item.quantity || 1
+          let newInventory = [...currentInventory];
+          const item = newInventory[itemIndex];
+          const currentQuantity = item.quantity || 1;
           
           if (currentQuantity <= quantityToRemove) {
             // Supprimer complètement l'objet si la quantité à retirer est >= à la quantité actuelle
-            newInventory.splice(itemIndex, 1)
+            newInventory.splice(itemIndex, 1);
           } else {
             // Réduire la quantité
             newInventory[itemIndex] = {
               ...item,
               quantity: currentQuantity - quantityToRemove
-            }
+            };
           }
 
-          const updates = { inventory: newInventory }
+          const updates = { inventory: newInventory };
 
-          return syncCharacter({ playerCharacter: { ...character, ...updates } })
+          return syncCharacter({ playerCharacter: { ...character, ...updates } });
         }),
 
         useItem: (itemId, targetCharacter = 'player') => {
           // Cette fonction retourne des informations pour que le composant puisse afficher le bon message
-          const character = get().playerCharacter
-          if (!character) return { success: false, message: 'Personnage non trouvé' }
+          const character = get().playerCharacter;
+          if (!character) return { success: false, message: 'Personnage non trouvé' };
 
           // D'abord chercher l'item dans l'inventaire du personnage
-          const item = character.inventory.find(i => (i.id || i.name || i.nom) === itemId)
-          if (!item) return { success: false, message: 'Objet non trouvé dans l\'inventaire' }
+          const item = character.inventory.find(i => (i.id || i.name || i.nom) === itemId);
+          if (!item) return { success: false, message: 'Objet non trouvé dans l\'inventaire' };
 
           // Chercher la définition de l'objet dans data/items.js
-          const itemData = items[itemId] || items[item.id] || items[item.name] || items[item.nom]
+          const itemData = items[itemId] || items[item.id] || items[item.name] || items[item.nom];
           
           if (itemData && itemData.use) {
             try {
               // Calculer l'effet avant de modifier le personnage
-              const oldHP = character.currentHP
+              const oldHP = character.currentHP;
               
               // Utiliser la fonction use de l'objet
-              const updatedCharacter = itemData.use(character)
+              const updatedCharacter = itemData.use(character);
               
               // Calculer la différence pour les potions de soin
-              const healAmount = updatedCharacter.currentHP - oldHP
+              const healAmount = updatedCharacter.currentHP - oldHP;
               
               // Mettre à jour le personnage
-              set({ 
+              set({
                 playerCharacter: updatedCharacter,
                 selectedCharacter: updatedCharacter
-              })
+              });
               
               // Retirer UNE SEULE unité de l'objet s'il est consommable
               if (itemData.type === 'consumable') {
-                get().removeItemFromInventory(itemId, targetCharacter, 1)
+                get().removeItemFromInventory(itemId, targetCharacter, 1);
               }
               
               // Retourner le message pour affichage avec le healAmount calculé
-              const message = typeof itemData.message === 'function' ? itemData.message(healAmount) : itemData.message
-              return { success: true, message, item: itemData }
+              const message = typeof itemData.message === 'function' ? itemData.message(healAmount) : itemData.message;
+              return { success: true, message, item: itemData };
               
             } catch (error) {
-              console.error('Erreur lors de l\'utilisation de l\'objet:', error)
-              return { success: false, message: `Erreur: ${error.message}` }
+              console.error('Erreur lors de l\'utilisation de l\'objet:', error);
+              return { success: false, message: `Erreur: ${error.message}` };
             }
           } else {
             // Fallback vers l'ancien système avec effects
             if (item.effects) {
-              let updatedCharacter = { ...character }
-              let message = `${item.name || item.nom} utilisé`
+              let updatedCharacter = { ...character };
+              let message = `${item.name || item.nom} utilisé`;
               
               item.effects.forEach(effect => {
                 switch (effect.type) {
                   case 'heal':
-                    const healAmount = effect.value
-                    updatedCharacter.currentHP = Math.min(character.maxHP, character.currentHP + healAmount)
-                    message = `Vous récupérez ${healAmount} PV`
-                    break
+                    const healAmount = effect.value;
+                    updatedCharacter.currentHP = Math.min(character.maxHP, character.currentHP + healAmount);
+                    message = `Vous récupérez ${healAmount} PV`;
+                    break;
                   default:
-                    console.warn(`Unknown item effect type: ${effect.type}`)
+                    console.warn(`Unknown item effect type: ${effect.type}`);
                 }
-              })
+              });
 
               // Mettre à jour le personnage
-              set({ 
+              set({
                 playerCharacter: updatedCharacter,
                 selectedCharacter: updatedCharacter
-              })
+              });
 
               // Retirer UNE SEULE unité de l'objet s'il est consommable
               if (item.consumable || item.type === 'consumable') {
-                get().removeItemFromInventory(itemId, targetCharacter, 1)
+                get().removeItemFromInventory(itemId, targetCharacter, 1);
               }
               
-              return { success: true, message }
+              return { success: true, message };
             }
 
-            return { success: false, message: 'Cet objet ne peut pas être utilisé' }
+            return { success: false, message: 'Cet objet ne peut pas être utilisé' };
           }
         },
 
@@ -622,48 +632,48 @@ export const useCharacterStore = create(
         })),
 
         clearExpiredEffects: () => set((state) => {
-          const now = new Date()
+          const now = new Date();
           return {
             activeEffects: state.activeEffects.filter(effect => {
-              if (!effect.duration) return true // Permanent effects
-              const elapsed = now - effect.startTime
-              return elapsed < effect.duration
+              if (!effect.duration) return true; // Permanent effects
+              const elapsed = now - effect.startTime;
+              return elapsed < effect.duration;
             })
-          }
+          };
         }),
 
         // === UTILITAIRES ===
 
         // Nettoyer les doublons dans l'inventaire en regroupant par nom/id
         consolidateInventory: (targetCharacter = 'player') => set((state) => {
-          const character = state.playerCharacter
-          if (!character || !character.inventory) return state
+          const character = state.playerCharacter;
+          if (!character || !character.inventory) return state;
 
-          const consolidatedInventory = []
-          const itemMap = new Map()
+          const consolidatedInventory = [];
+          const itemMap = new Map();
 
           // Regrouper les objets par nom/id
           character.inventory.forEach(item => {
-            const itemKey = item.id || item.name || item.nom
+            const itemKey = item.id || item.name || item.nom;
             if (itemMap.has(itemKey)) {
               // Augmenter la quantité de l'objet existant
-              const existingItem = itemMap.get(itemKey)
-              existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1)
+              const existingItem = itemMap.get(itemKey);
+              existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
             } else {
               // Nouveau type d'objet
               itemMap.set(itemKey, {
                 ...item,
                 quantity: item.quantity || 1
-              })
+              });
             }
-          })
+          });
 
           // Convertir la Map en array
-          itemMap.forEach(item => consolidatedInventory.push(item))
+          itemMap.forEach(item => consolidatedInventory.push(item));
 
-          const updates = { inventory: consolidatedInventory }
+          const updates = { inventory: consolidatedInventory };
 
-          return syncCharacter({ playerCharacter: { ...character, ...updates } })
+          return syncCharacter({ playerCharacter: { ...character, ...updates } });
         }),
 
         resetCharacters: () => set({
@@ -682,7 +692,7 @@ export const useCharacterStore = create(
       { name: 'character-store' }
     )
   )
-)
+);
 
 // Sélecteurs optimisés
 export const characterSelectors = {
@@ -709,8 +719,8 @@ export const characterSelectors = {
   isPlayerAlive: (state) => state.playerCharacter?.currentHP > 0,
   
   isCompanionAliveById: (state, companionId) => {
-    const companion = state.playerCompanions.find(c => c.id === companionId)
-    return companion?.currentHP > 0
+    const companion = state.playerCompanions.find(c => c.id === companionId);
+    return companion?.currentHP > 0;
   },
   
   getPlayerHPPercentage: (state) => 
@@ -733,10 +743,15 @@ export const characterSelectors = {
     state.playerCharacter?.spellcasting?.slotsRemaining || {},
   
   getPreparedSpells: (state) =>
-    SpellService.getPreparedSpells(state.playerCharacter || {}),
+    state.playerCharacter?.spellcasting?.preparedSpells || [],
   
   getInventoryItems: (state) => state.playerCharacter?.inventory || [],
   
   hasItem: (state, itemId) => 
     state.playerCharacter?.inventory?.some(item => item.id === itemId) || false
-}
+};
+
+// Hook personnalisé pour un accès facile
+export const useCharacter = () => useCharacterStore(state => state);
+export const useCharacterActions = () => useCharacterStore(state => state);
+export const useCharacterSelector = (selector) => useCharacterStore(selector);

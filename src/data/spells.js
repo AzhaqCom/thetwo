@@ -10,6 +10,7 @@ export const spells = {
         damage: { dice: "1d4", bonus: 1, type: "force" },
         projectiles: 3,
         requiresAttackRoll: false,
+        targetType: "enemy",
         castableOutOfCombat: false,
         class: ["Magicien"],
         // Enrichissement tactique IA
@@ -34,6 +35,7 @@ export const spells = {
         damage: { dice: "1d10", bonus: 0, type: "feu" },
         projectiles: 1,
         requiresAttackRoll: true,
+        targetType: "enemy",
         castableOutOfCombat: false,
         class: ["Magicien"]
     },
@@ -47,6 +49,7 @@ export const spells = {
         damage: { dice: "1d8", bonus: 0, type: "froid" },
         projectiles: 1,
         requiresAttackRoll: true,
+        targetType: "enemy",
         castableOutOfCombat: false,
         class: ["Magicien"]
     },
@@ -60,6 +63,7 @@ export const spells = {
         damage: { dice: "2d6", bonus: 0, type: "feu" },
         projectiles: 3,
         requiresAttackRoll: true,
+        targetType: "enemy",
         castableOutOfCombat: false,
         class: ["Magicien"]
     },
@@ -78,6 +82,7 @@ export const spells = {
         saveType: "dexterite",
         saveDC: null, // Calculé automatiquement
         requiresAttackRoll: false,
+        targetType: "enemy",
         castableOutOfCombat: false,
         projectiles: 1,
         class: ["Magicien"]
@@ -98,6 +103,7 @@ export const spells = {
         effect: "restrained",
         duration: "1 heure",
         requiresAttackRoll: false,
+        targetType: "enemy",
         castableOutOfCombat: true,
         class: ["Magicien", "Sorcier"]
     },
@@ -110,6 +116,11 @@ export const spells = {
         description: "Vous touchez une créature consentante et non-vêtue d'une armure. Sa Classe d'Armure devient 13 + son modificateur de Dextérité.",
         requiresAttackRoll: false,
         castableOutOfCombat: true,
+        targetType: "ally", // CORRECTION : Sort de protection sur allié
+        buff: {
+            acBonus: 3, // +3 CA de base (13 - 10)
+            duration: 28800 // 8 heures
+        },
         class: ["Magicien"]
     },
 

@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react'
-import { useCombatStore } from '../../../stores/combatStore'
 
 /**
  * Grille de combat tactique

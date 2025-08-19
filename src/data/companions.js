@@ -123,15 +123,33 @@ export const companions = {
             }
         },
         spellcasting: {
-            class: "Clerc",
+            // === CONFIGURATION DE BASE ===
+            ability: "sagesse",
+            type: "prepared",
+            ritual: false,
+            
+            // === EMPLACEMENTS DE SORTS ===
             spellSlots: {
-                "1": { total: 2, used: 0 }
+                1: { max: 2, used: 0, available: 2 }  // Clerc niveau 1
             },
-            knownSpells: ["Soins", "Bénédiction"],
+            
+            // === SORTS CONNUS/PRÉPARÉS ===
+            cantrips: [],
+            knownSpells: ["Soins", "Bénédiction"], 
             preparedSpells: ["Soins", "Bénédiction"],
-            slotsRemaining: {
-                "1": 2
-            }
+            
+            // === MÉTADONNÉES OPTIONNELLES ===
+            spellcastingClass: null,
+            startLevel: 1,
+            maxKnown: null,
+            maxPrepared: null,
+            
+            // === RESTRICTIONS ===
+            schoolRestrictions: [],
+            ritualCasting: false,
+            
+            // === SORTS INNÉS ===
+            innateSpells: {}
         }
     },
     "kael": {
@@ -173,12 +191,7 @@ export const companions = {
         ],
         inventory: [],
         aiPriority: ["ranged_attack", "support_skill"],
-        spellcasting: {
-            class: "Rôdeur",
-            spellSlots: null,
-            knownSpells: [],
-            preparedSpells: []
-        }
+        spellcasting: null  // Rôdeur niveau 1 - pas de sorts
     },
     "finn": {
         name: "Finn",
@@ -229,15 +242,33 @@ export const companions = {
         inventory: ["Détecteur planaire Mark VII", "Kit d'inventeur", "Composants mécaniques"],
         aiPriority: ["support_skill", "ranged_attack", "heal"],
         spellcasting: {
-            class: "Inventeur",
+            // === CONFIGURATION DE BASE ===
+            ability: "intelligence",
+            type: "prepared",
+            ritual: false,
+            
+            // === EMPLACEMENTS DE SORTS ===
             spellSlots: {
-                "1": { total: 1, used: 0 }
+                1: { max: 1, used: 0, available: 1 }  // Inventeur niveau 1
             },
+            
+            // === SORTS CONNUS/PRÉPARÉS ===
+            cantrips: [],
             knownSpells: ["Détection de la magie", "Réparation"],
             preparedSpells: ["Détection de la magie", "Réparation"],
-            slotsRemaining: {
-                "1": 1
-            }
+            
+            // === MÉTADONNÉES OPTIONNELLES ===
+            spellcastingClass: null,
+            startLevel: 1,
+            maxKnown: null,
+            maxPrepared: null,
+            
+            // === RESTRICTIONS ===
+            schoolRestrictions: [],
+            ritualCasting: false,
+            
+            // === SORTS INNÉS ===
+            innateSpells: {}
         }
     },
     "zara": {
@@ -289,17 +320,34 @@ export const companions = {
         inventory: ["Grimoire planaire", "Composants de sorts", "Cristal de focalisation"],
         aiPriority: ["ranged_spell", "area_damage", "debuff"],
         spellcasting: {
-            class: "Sorcière",
+            // === CONFIGURATION DE BASE ===
+            ability: "charisme",
+            type: "known",  // Sorcière = sorts connus
+            ritual: false,
+            
+            // === EMPLACEMENTS DE SORTS ===
             spellSlots: {
-                "1": { total: 3, used: 0 },
-                "2": { total: 1, used: 0 }
+                1: { max: 3, used: 0, available: 3 },  // Sorcière niveau 2
+                2: { max: 1, used: 0, available: 1 }
             },
+            
+            // === SORTS CONNUS/PRÉPARÉS ===
+            cantrips: [],
             knownSpells: ["Trait de feu", "Bouclier", "Détection de la magie", "Invisibilité", "Toile d'araignée"],
-            preparedSpells: ["Trait de feu", "Bouclier", "Détection de la magie", "Invisibilité"],
-            slotsRemaining: {
-                "1": 3,
-                "2": 1
-            }
+            preparedSpells: [],  // Sorcière : tous les sorts connus sont disponibles
+            
+            // === MÉTADONNÉES OPTIONNELLES ===
+            spellcastingClass: null,
+            startLevel: 1,
+            maxKnown: 4,  // Sorcière niveau 2 : 4 sorts connus
+            maxPrepared: null,
+            
+            // === RESTRICTIONS ===
+            schoolRestrictions: [],
+            ritualCasting: false,
+            
+            // === SORTS INNÉS ===
+            innateSpells: {}
         }
     }
 
